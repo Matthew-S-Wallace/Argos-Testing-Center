@@ -350,12 +350,9 @@ function App() {
           <button className="nav-item" type="button" onClick={() => setShowDailySummary(true)}>
             ✦ <span>Daily Summary</span>
           </button>
-          <a className="nav-item">▣ <span>Asset Status</span></a>
-          <a className="nav-item">⚒ <span>Work Orders</span></a>
-          <a className="nav-item">👥 <span>Technicians</span></a>
-          <a className="nav-item">□ <span>Parts & Inventory</span></a>
-          <a className="nav-item">♢ <span>Alerts</span></a>
-          <a className="nav-item">▥ <span>Reports</span></a>
+          <a className="nav-item">⚒ <span>Repair History</span></a>
+<a className="nav-item">👥 <span>Technicians</span></a>
+<a className="nav-item">♢ <span>Alerts</span></a> <a className="nav-item">▥ <span>Reports</span></a>
           <a className="nav-item">⚙ <span>Settings</span></a>
         </nav>
 
