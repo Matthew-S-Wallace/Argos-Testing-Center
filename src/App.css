@@ -1,0 +1,449 @@
+:root {
+  font-family: Georgia, "Times New Roman", serif;
+  color: #071a33;
+  background: #f7f7f4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top right, rgba(191, 151, 58, 0.12), transparent 30%),
+    linear-gradient(135deg, #ffffff 0%, #f7f7f4 55%, #eef1f4 100%);
+}
+
+.argos-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 315px 1fr;
+}
+
+/* Sidebar */
+
+.argos-sidebar {
+  background: linear-gradient(180deg, #061b36 0%, #08294c 58%, #04152a 100%);
+  color: #ffffff;
+  padding: 34px 24px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 18px 0 44px rgba(0, 0, 0, 0.24);
+}
+
+.argos-logo {
+  text-align: center;
+  padding: 8px 4px 30px;
+  border-bottom: 1px solid rgba(212, 166, 61, 0.45);
+}
+
+.argos-logo h1 {
+  margin: 0;
+  font-size: 58px;
+  line-height: 0.95;
+  letter-spacing: 0.03em;
+  font-weight: 500;
+  color: #ffffff;
+  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.38);
+}
+
+.argos-logo p {
+  margin: 8px 0 12px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #d8a93b;
+}
+
+.logo-rule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #d8a93b;
+}
+
+.logo-rule span {
+  height: 1px;
+  flex: 1;
+  background: #d8a93b;
+}
+
+.logo-rule strong {
+  font-size: 18px;
+}
+
+.sidebar-nav {
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nav-item {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 18px;
+  padding: 14px 16px;
+  border-radius: 9px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  cursor: default;
+}
+
+.nav-item.active {
+  color: #d8a93b;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(216, 169, 59, 0.1);
+}
+
+.nav-item span {
+  color: inherit;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid rgba(216, 169, 59, 0.55);
+}
+
+.sidebar-footer strong {
+  display: block;
+  color: #d8a93b;
+  letter-spacing: 0.18em;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.sidebar-footer span {
+  color: #ffffff;
+  font-size: 14px;
+}
+
+/* Dashboard */
+
+.dashboard {
+  padding: 44px 44px 48px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 28px;
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #9a6614;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.dashboard-header h2 {
+  margin: 0;
+  font-size: 48px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: #071a33;
+}
+
+.refresh-box {
+  background: #ffffff;
+  border: 1px solid #d9d9d5;
+  border-radius: 10px;
+  min-width: 210px;
+  padding: 18px 20px;
+  box-shadow: 0 10px 24px rgba(7, 26, 51, 0.08);
+}
+
+.refresh-box span {
+  display: block;
+  font-family: Inter, system-ui, sans-serif;
+  color: #31415a;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.refresh-box strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 18px;
+  color: #071a33;
+}
+
+/* Metrics */
+
+.metrics-row {
+  display: grid;
+  grid-template-columns: 1.6fr repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.availability-card,
+.metric-card {
+  min-height: 160px;
+  border-radius: 11px;
+  border: 1px solid #d8d8d2;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 28px rgba(7, 26, 51, 0.08);
+}
+
+.availability-card {
+  background:
+    radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.12), transparent 32%),
+    linear-gradient(135deg, #061b36, #08294c);
+  padding: 30px 30px;
+  color: #ffffff;
+}
+
+.availability-card span,
+.metric-card span {
+  display: block;
+  font-family: Inter, system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.availability-card span {
+  color: #ffffff;
+}
+
+.availability-card strong {
+  display: block;
+  margin-top: 12px;
+  font-size: 64px;
+  line-height: 0.9;
+  font-weight: 400;
+  color: #d8a93b;
+}
+
+.availability-card p {
+  margin: 20px 0 0;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 15px;
+  color: #ffffff;
+}
+
+.metric-card {
+  padding: 28px 20px;
+  text-align: center;
+}
+
+.metric-card span {
+  color: #071a33;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 18px;
+  font-size: 58px;
+  line-height: 1;
+  font-weight: 400;
+  color: #071a33;
+}
+
+.metric-card strong::after {
+  content: "";
+  display: block;
+  width: 42px;
+  height: 1px;
+  background: #d8a93b;
+  margin: 16px auto 0;
+}
+
+.metric-card.critical {
+  border-color: rgba(188, 38, 38, 0.35);
+}
+
+.metric-card.critical strong {
+  color: #a61b1b;
+}
+
+/* Status Board */
+
+.status-board {
+  background: #ffffff;
+  border: 1px solid #d8d8d2;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 14px 34px rgba(7, 26, 51, 0.1);
+}
+
+.status-board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.status-board-header h3 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 500;
+  color: #071a33;
+}
+
+button {
+  border: 0;
+  background: #061b36;
+  color: #ffffff;
+  padding: 13px 19px;
+  border-radius: 6px;
+  font-family: Inter, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 18px rgba(7, 26, 51, 0.2);
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #d8d8d2;
+  border-radius: 6px;
+  overflow: hidden;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+thead {
+  background: #f7f7f4;
+}
+
+th {
+  text-align: left;
+  padding: 15px 16px;
+  color: #071a33;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid #d8d8d2;
+}
+
+td {
+  padding: 15px 16px;
+  color: #071a33;
+  font-size: 14px;
+  border-bottom: 1px solid #e5e5df;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.unit {
+  font-weight: 800;
+}
+
+.status-pill {
+  display: inline-flex;
+  padding: 5px 11px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ready {
+  background: #dff3e5;
+  color: #146c2e;
+}
+
+.in-shop {
+  background: #dceafe;
+  color: #0c3975;
+}
+
+.waiting-parts {
+  background: #faedc8;
+  color: #875900;
+}
+
+.down {
+  background: #f7dada;
+  color: #a61b1b;
+}
+
+.pm-due {
+  background: #eadff4;
+  color: #4f2675;
+}
+
+.high,
+.critical {
+  color: #a61b1b;
+  font-weight: 700;
+}
+
+.medium {
+  color: #b66a00;
+}
+
+.normal {
+  color: #071a33;
+}
+
+/* Responsive */
+
+@media (max-width: 1150px) {
+  .argos-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .argos-sidebar {
+    min-height: auto;
+  }
+
+  .metrics-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .availability-card {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard {
+    padding: 28px;
+  }
+
+  .dashboard-header,
+  .status-board-header {
+    flex-direction: column;
+  }
+
+  .dashboard-header h2 {
+    font-size: 38px;
+  }
+
+  .metrics-row {
+    grid-template-columns: 1fr;
+  }
+
+  .availability-card {
+    grid-column: auto;
+  }
+
+  .status-board {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 950px;
+  }
+}
