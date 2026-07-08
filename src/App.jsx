@@ -59,10 +59,59 @@ function formatRTS(asset) {
   return "—";
 }
 
+function getAssetsWithDaysDown(assets) {
+  return assets.map((asset) => ({
+    ...asset,
+    daysDown: calculateDaysDown(asset.downSince, asset.status),
+  }));
+}
+
+function buildDailySummary(assets) {
+  const assetsWithDaysDown = getAssetsWithDaysDown(assets);
+  const totalAssets = assetsWithDaysDown.length;
+  const readyAssets = assetsWithDaysDown.filter((asset) => asset.status === "Ready");
+  const unavailableAssets = assetsWithDaysDown.filter((asset) => asset.status !== "Ready");
+  const waitingPartsAssets = assetsWithDaysDown.filter((asset) => asset.status === "Waiting Parts");
+  const criticalUnavailableAssets = unavailableAssets.filter((asset) => asset.priority === "Critical");
+  const tbdAssets = unavailableAssets.filter((asset) => asset.rtsType === "TBD");
+  const noRtsAssets = unavailableAssets.filter((asset) => asset.rtsType === "No RTS Established");
+  const agingThreshold = 7;
+  const agedAssets = unavailableAssets.filter((asset) => asset.daysDown >= agingThreshold);
+  const longestDownAsset = [...unavailableAssets].sort((a, b) => b.daysDown - a.daysDown)[0];
+
+  const departmentCounts = unavailableAssets.reduce((counts, asset) => {
+    counts[asset.department] = (counts[asset.department] || 0) + 1;
+    return counts;
+  }, {});
+
+  const departmentWatch = Object.entries(departmentCounts)
+    .map(([department, count]) => `${department}: ${count}`)
+    .join(" | ");
+
+  const availability =
+    totalAssets > 0 ? ((readyAssets.length / totalAssets) * 100).toFixed(1) : "0.0";
+
+  return {
+    totalAssets,
+    readyAssets,
+    unavailableAssets,
+    waitingPartsAssets,
+    criticalUnavailableAssets,
+    tbdAssets,
+    noRtsAssets,
+    agedAssets,
+    longestDownAsset,
+    departmentWatch,
+    availability,
+    agingThreshold,
+  };
+}
+
 function App() {
   const [assets, setAssets] = useState(initialAssets);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [editAsset, setEditAsset] = useState(null);
+  const [showDailySummary, setShowDailySummary] = useState(false);
 
   const totalAssets = assets.length;
   const readyAssets = assets.filter((asset) => asset.status === "Ready").length;
@@ -70,6 +119,7 @@ function App() {
   const waitingParts = assets.filter((asset) => asset.status === "Waiting Parts").length;
   const criticalAssets = assets.filter((asset) => asset.priority === "Critical").length;
   const availability = totalAssets > 0 ? ((readyAssets / totalAssets) * 100).toFixed(1) : "0.0";
+  const dailySummary = buildDailySummary(assets);
 
   function handleSelectAsset(asset) {
     setSelectedAsset(asset);
@@ -150,6 +200,9 @@ function App() {
 
         <nav className="sidebar-nav">
           <a className="nav-item active">⌂ <span>Command Center</span></a>
+          <button className="nav-item" type="button" onClick={() => setShowDailySummary(true)}>
+            ✦ <span>Daily Summary</span>
+          </button>
           <a className="nav-item">▣ <span>Asset Status</span></a>
           <a className="nav-item">⚒ <span>Work Orders</span></a>
           <a className="nav-item">👥 <span>Technicians</span></a>
@@ -241,6 +294,121 @@ function App() {
             </tbody>
           </table>
         </section>
+
+        {showDailySummary && (
+          <div className="daily-summary-overlay">
+  <section className="daily-summary-panel update-panel">
+              <div className="update-panel-header">
+                <div>
+                  <p className="eyebrow">ARGOS Awareness Engine</p>
+                  <h3>Daily Fleet Summary</h3>
+                  <p className="update-asset-name">
+                    Automated operational brief based on current fleet status
+                  </p>
+                </div>
+
+                <button
+                  className="close-button"
+                  onClick={() => setShowDailySummary(false)}
+                  type="button"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="update-form">
+                <div className="issue-field">
+                  <p className="eyebrow">Operational Readiness</p>
+                  <h3>{dailySummary.availability}% Fleet Availability</h3>
+                  <p>
+                    ARGOS sees {dailySummary.readyAssets.length} ready assets and{" "}
+                    {dailySummary.unavailableAssets.length} unavailable assets out of{" "}
+                    {dailySummary.totalAssets} total tracked assets.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="eyebrow">Highest Risk</p>
+                  <strong>
+                    {dailySummary.criticalUnavailableAssets.length > 0
+                      ? `${dailySummary.criticalUnavailableAssets.length} critical unavailable`
+                      : "No critical unavailable assets"}
+                  </strong>
+                  <p>
+                    {dailySummary.criticalUnavailableAssets.length > 0
+                      ? dailySummary.criticalUnavailableAssets
+                          .map((asset) => `${asset.unit} · ${asset.department}`)
+                          .join(", ")
+                      : "Critical fleet availability is currently stable."}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="eyebrow">Longest Down</p>
+                  <strong>
+                    {dailySummary.longestDownAsset
+                      ? `${dailySummary.longestDownAsset.unit} · ${dailySummary.longestDownAsset.daysDown} days`
+                      : "No down assets"}
+                  </strong>
+                  <p>
+                    {dailySummary.longestDownAsset
+                      ? `${dailySummary.longestDownAsset.asset}: ${dailySummary.longestDownAsset.issue}`
+                      : "All tracked assets are currently available."}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="eyebrow">Parts Constraint</p>
+                  <strong>
+                    {dailySummary.waitingPartsAssets.length} unit
+                    {dailySummary.waitingPartsAssets.length === 1 ? "" : "s"} waiting parts
+                  </strong>
+                  <p>
+                    {dailySummary.waitingPartsAssets.length > 0
+                      ? dailySummary.waitingPartsAssets
+                          .map((asset) => `${asset.unit} · ${asset.issue}`)
+                          .join(", ")
+                      : "No parts-delay assets are currently flagged."}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="eyebrow">RTS Gaps</p>
+                  <strong>
+                    {dailySummary.tbdAssets.length} TBD · {dailySummary.noRtsAssets.length} no RTS
+                  </strong>
+                  <p>
+                    ARGOS is tracking return-to-service uncertainty for assets without firm RTS dates.
+                  </p>
+                </div>
+
+                <div>
+                  <p className="eyebrow">Aging Threshold</p>
+                  <strong>
+                    {dailySummary.agedAssets.length} unit
+                    {dailySummary.agedAssets.length === 1 ? "" : "s"} down{" "}
+                    {dailySummary.agingThreshold}+ days
+                  </strong>
+                  <p>
+                    {dailySummary.agedAssets.length > 0
+                      ? dailySummary.agedAssets
+                          .map((asset) => `${asset.unit} · ${asset.daysDown} days`)
+                          .join(", ")
+                      : "No units are currently beyond the aging threshold."}
+                  </p>
+                </div>
+
+                <div className="issue-field">
+                  <p className="eyebrow">Department Watch</p>
+                  <strong>{dailySummary.departmentWatch || "No department watch items"}</strong>
+                  <p>
+                    Departments listed here currently have unavailable assets requiring visibility.
+                  </p>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
 
         {editAsset && (
           <div className="update-overlay">

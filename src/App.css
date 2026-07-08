@@ -587,4 +587,37 @@ tbody tr:last-child td {
 .save-button {
   background: #061b36;
   color: #ffffff;
+}/* Daily Summary Center Modal */
+
+.daily-summary-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(4, 21, 42, 0.68);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 32px;
+  backdrop-filter: blur(3px);
+}
+
+.daily-summary-panel {
+  width: 760px;
+  max-width: 92vw;
+  max-height: 90vh;
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.35);
+}.sidebar-nav button.nav-item {
+  width: 100%;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 18px;
+  font-weight: normal;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  padding: 14px 16px;
 }
