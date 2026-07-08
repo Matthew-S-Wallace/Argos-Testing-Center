@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import "./App.css";
 
 const STORAGE_KEY = "argosFleetAssets";
+const COMPLETED_STORAGE_KEY = "argosCompletedRepairEvents";
 
 function getTodayDateString() {
   const today = new Date();
@@ -10,6 +11,18 @@ function getTodayDateString() {
   const day = String(today.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function formatDate(dateString) {
+  if (!dateString) return "—";
+
+  const date = new Date(`${dateString}T00:00:00`);
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 const initialAssets = [
@@ -50,6 +63,20 @@ function loadSavedAssets() {
   }
 }
 
+function loadCompletedRepairEvents() {
+  const savedEvents = localStorage.getItem(COMPLETED_STORAGE_KEY);
+
+  if (!savedEvents) {
+    return [];
+  }
+
+  try {
+    return JSON.parse(savedEvents);
+  } catch {
+    return [];
+  }
+}
+
 function getStatusClass(status) {
   return status.toLowerCase().replaceAll(" ", "-");
 }
@@ -60,6 +87,22 @@ function isUnavailable(status) {
 
 function calculateDaysDown(downSince, status) {
   if (!isUnavailable(status) || !downSince) {
+    return 0;
+  }
+
+  const downDate = new Date(`${downSince}T00:00:00`);
+  const today = new Date();
+
+  today.setHours(0, 0, 0, 0);
+
+  const millisecondsPerDay = 1000 * 60 * 60 * 24;
+  const difference = today.getTime() - downDate.getTime();
+
+  return Math.max(0, Math.floor(difference / millisecondsPerDay));
+}
+
+function calculateFinalDaysDown(downSince) {
+  if (!downSince) {
     return 0;
   }
 
@@ -140,14 +183,20 @@ function buildDailySummary(assets) {
 
 function App() {
   const [assets, setAssets] = useState(loadSavedAssets);
+  const [completedRepairEvents, setCompletedRepairEvents] = useState(loadCompletedRepairEvents);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [editAsset, setEditAsset] = useState(null);
   const [newAsset, setNewAsset] = useState(null);
   const [showDailySummary, setShowDailySummary] = useState(false);
+  const [activeView, setActiveView] = useState("command");
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
   }, [assets]);
+
+  useEffect(() => {
+    localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify(completedRepairEvents));
+  }, [completedRepairEvents]);
 
   const totalAssets = assets.length;
   const readyAssets = assets.filter((asset) => asset.status === "Ready").length;
@@ -231,6 +280,38 @@ function App() {
       return;
     }
 
+    const isCompletingRepairEvent =
+      selectedAsset.status !== "Ready" && updatedAsset.status === "Ready";
+
+    if (isCompletingRepairEvent) {
+      const shouldComplete = window.confirm(
+        `Complete the active repair event for Unit ${selectedAsset.unit}? This will move it to Repair History and remove it from the Command Center.`
+      );
+
+      if (!shouldComplete) {
+        return;
+      }
+
+      const completedEvent = {
+        ...selectedAsset,
+        id: `${selectedAsset.unit}-${Date.now()}`,
+        completedDate: getTodayDateString(),
+        finalDaysDown: calculateFinalDaysDown(selectedAsset.downSince),
+        finalStatus: "Ready",
+        completionNote: "Returned to service",
+      };
+
+      setCompletedRepairEvents((currentEvents) => [completedEvent, ...currentEvents]);
+
+      setAssets((currentAssets) =>
+        currentAssets.filter((asset) => asset.unit !== originalUnit)
+      );
+
+      setSelectedAsset(null);
+      setEditAsset(null);
+      return;
+    }
+
     setAssets((currentAssets) =>
       currentAssets.map((asset) =>
         asset.unit === originalUnit ? updatedAsset : asset
@@ -250,6 +331,7 @@ function App() {
     setSelectedAsset(null);
     setEditAsset(null);
     setNewAsset(createBlankAsset());
+    setActiveView("command");
   }
 
   function handleNewAssetChange(event) {
@@ -326,6 +408,7 @@ function App() {
     setAssets((currentAssets) => [...currentAssets, finalizedAsset]);
     setSelectedAsset(finalizedAsset);
     setNewAsset(null);
+    setActiveView("command");
   }
 
   function handleCancelNewAsset() {
@@ -346,13 +429,29 @@ function App() {
         </div>
 
         <nav className="sidebar-nav">
-          <a className="nav-item active">⌂ <span>Command Center</span></a>
+          <button
+            className={`nav-item ${activeView === "command" ? "active" : ""}`}
+            type="button"
+            onClick={() => setActiveView("command")}
+          >
+            ⌂ <span>Command Center</span>
+          </button>
+
           <button className="nav-item" type="button" onClick={() => setShowDailySummary(true)}>
             ✦ <span>Daily Summary</span>
           </button>
-          <a className="nav-item">⚒ <span>Repair History</span></a>
-<a className="nav-item">👥 <span>Technicians</span></a>
-<a className="nav-item">♢ <span>Alerts</span></a> <a className="nav-item">▥ <span>Reports</span></a>
+
+          <button
+            className={`nav-item ${activeView === "history" ? "active" : ""}`}
+            type="button"
+            onClick={() => setActiveView("history")}
+          >
+            ⚒ <span>Repair History</span>
+          </button>
+
+          <a className="nav-item">👥 <span>Technicians</span></a>
+          <a className="nav-item">♢ <span>Alerts</span></a>
+          <a className="nav-item">▥ <span>Reports</span></a>
           <a className="nav-item">⚙ <span>Settings</span></a>
         </nav>
 
@@ -363,84 +462,157 @@ function App() {
       </aside>
 
       <section className="dashboard">
-        <header className="dashboard-header">
-          <div>
-            <p className="eyebrow">Command Center</p>
-            <h2>Fleet Availability Dashboard</h2>
-          </div>
+        {activeView === "command" && (
+          <>
+            <header className="dashboard-header">
+              <div>
+                <p className="eyebrow">Command Center</p>
+                <h2>Fleet Availability Dashboard</h2>
+              </div>
 
-          <div className="refresh-box">
-            <span>Last Refresh</span>
-            <strong>Today · 08:42</strong>
-          </div>
-        </header>
+              <div className="refresh-box">
+                <span>Last Refresh</span>
+                <strong>Today · 08:42</strong>
+              </div>
+            </header>
 
-        <section className="metrics-row">
-          <div className="availability-card">
-            <span>Fleet Availability</span>
-            <strong>{availability}%</strong>
-            <p>{readyAssets} of {totalAssets} assets ready for service</p>
-          </div>
+            <section className="metrics-row">
+              <div className="availability-card">
+                <span>Fleet Availability</span>
+                <strong>{availability}%</strong>
+                <p>{readyAssets} of {totalAssets} assets ready for service</p>
+              </div>
 
-          <div className="metric-card"><span>Total Assets</span><strong>{totalAssets}</strong></div>
-          <div className="metric-card"><span>Unavailable</span><strong>{unavailableAssets}</strong></div>
-          <div className="metric-card"><span>Waiting Parts</span><strong>{waitingParts}</strong></div>
-          <div className="metric-card critical"><span>Critical</span><strong>{criticalAssets}</strong></div>
-        </section>
+              <div className="metric-card"><span>Total Assets</span><strong>{totalAssets}</strong></div>
+              <div className="metric-card"><span>Unavailable</span><strong>{unavailableAssets}</strong></div>
+              <div className="metric-card"><span>Waiting Parts</span><strong>{waitingParts}</strong></div>
+              <div className="metric-card critical"><span>Critical</span><strong>{criticalAssets}</strong></div>
+            </section>
 
-        <section className="status-board">
-          <div className="status-board-header">
-            <div>
-              <p className="eyebrow">✦ Live Status Board</p>
-              <h3>Assets Requiring Visibility</h3>
-            </div>
+            <section className="status-board">
+              <div className="status-board-header">
+                <div>
+                  <p className="eyebrow">✦ Live Status Board</p>
+                  <h3>Assets Requiring Visibility</h3>
+                </div>
 
-            <div>
-              <button type="button" onClick={handleOpenAddAsset}>Add Asset</button>{" "}
-              <button type="button">Export View</button>
-            </div>
-          </div>
+                <div>
+                  <button type="button" onClick={handleOpenAddAsset}>Add Asset</button>{" "}
+                  <button type="button">Export View</button>
+                </div>
+              </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Unit</th>
-                <th>Department</th>
-                <th>Asset</th>
-                <th>Status</th>
-                <th>Priority</th>
-                <th>Days Down</th>
-                <th>Technician</th>
-                <th>RTS</th>
-                <th>Issue</th>
-              </tr>
-            </thead>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Unit</th>
+                    <th>Department</th>
+                    <th>Asset</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Days Down</th>
+                    <th>Technician</th>
+                    <th>RTS</th>
+                    <th>Issue</th>
+                  </tr>
+                </thead>
 
-            <tbody>
-              {assets.map((asset) => (
-                <tr
-                  key={asset.unit}
-                  onClick={() => handleSelectAsset(asset)}
-                  className={selectedAsset?.unit === asset.unit ? "selected-row" : ""}
-                >
-                  <td className="unit">{asset.unit}</td>
-                  <td>{asset.department}</td>
-                  <td>{asset.asset}</td>
-                  <td>
-                    <span className={`status-pill ${getStatusClass(asset.status)}`}>
-                      {asset.status}
-                    </span>
-                  </td>
-                  <td className={asset.priority.toLowerCase()}>{asset.priority}</td>
-                  <td>{calculateDaysDown(asset.downSince, asset.status)}</td>
-                  <td>{asset.technician}</td>
-                  <td>{formatRTS(asset)}</td>
-                  <td>{asset.issue}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+                <tbody>
+                  {assets.map((asset) => (
+                    <tr
+                      key={asset.unit}
+                      onClick={() => handleSelectAsset(asset)}
+                      className={selectedAsset?.unit === asset.unit ? "selected-row" : ""}
+                    >
+                      <td className="unit">{asset.unit}</td>
+                      <td>{asset.department}</td>
+                      <td>{asset.asset}</td>
+                      <td>
+                        <span className={`status-pill ${getStatusClass(asset.status)}`}>
+                          {asset.status}
+                        </span>
+                      </td>
+                      <td className={asset.priority.toLowerCase()}>{asset.priority}</td>
+                      <td>{calculateDaysDown(asset.downSince, asset.status)}</td>
+                      <td>{asset.technician}</td>
+                      <td>{formatRTS(asset)}</td>
+                      <td>{asset.issue}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          </>
+        )}
+
+        {activeView === "history" && (
+          <>
+            <header className="dashboard-header">
+              <div>
+                <p className="eyebrow">Repair History</p>
+                <h2>Completed Repair Events</h2>
+              </div>
+
+              <div className="refresh-box">
+                <span>Completed Events</span>
+                <strong>{completedRepairEvents.length}</strong>
+              </div>
+            </header>
+
+            <section className="status-board">
+              <div className="status-board-header">
+                <div>
+                  <p className="eyebrow">⚒ Completed Work</p>
+                  <h3>Repair Events Moved from Command Center</h3>
+                </div>
+              </div>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Unit</th>
+                    <th>Department</th>
+                    <th>Asset</th>
+                    <th>Prior Status</th>
+                    <th>Priority</th>
+                    <th>Days Down</th>
+                    <th>Technician</th>
+                    <th>Completed</th>
+                    <th>Issue</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {completedRepairEvents.length === 0 ? (
+                    <tr>
+                      <td colSpan="9">
+                        No completed repair events have been moved to Repair History yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    completedRepairEvents.map((event) => (
+                      <tr key={event.id}>
+                        <td className="unit">{event.unit}</td>
+                        <td>{event.department}</td>
+                        <td>{event.asset}</td>
+                        <td>
+                          <span className={`status-pill ${getStatusClass(event.status)}`}>
+                            {event.status}
+                          </span>
+                        </td>
+                        <td className={event.priority.toLowerCase()}>{event.priority}</td>
+                        <td>{event.finalDaysDown}</td>
+                        <td>{event.technician}</td>
+                        <td>{formatDate(event.completedDate)}</td>
+                        <td>{event.issue}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </section>
+          </>
+        )}
 
         {showDailySummary && (
           <div className="daily-summary-overlay">
