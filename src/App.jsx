@@ -21,6 +21,21 @@ const initialAssets = [
   { unit: "7741", department: "Utilities", asset: "RAM 3500 Service Truck", status: "Ready", priority: "Normal", downSince: "", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "Available" },
 ];
 
+function createBlankAsset() {
+  return {
+    unit: "",
+    department: "",
+    asset: "",
+    status: "Ready",
+    priority: "Normal",
+    downSince: "",
+    technician: "—",
+    rtsType: "No RTS Established",
+    rtsDate: "",
+    issue: "Available",
+  };
+}
+
 function loadSavedAssets() {
   const savedAssets = localStorage.getItem(STORAGE_KEY);
 
@@ -127,6 +142,7 @@ function App() {
   const [assets, setAssets] = useState(loadSavedAssets);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [editAsset, setEditAsset] = useState(null);
+  const [newAsset, setNewAsset] = useState(null);
   const [showDailySummary, setShowDailySummary] = useState(false);
 
   useEffect(() => {
@@ -205,6 +221,92 @@ function App() {
     setSelectedAsset(null);
   }
 
+  function handleOpenAddAsset() {
+    setSelectedAsset(null);
+    setEditAsset(null);
+    setNewAsset(createBlankAsset());
+  }
+
+  function handleNewAssetChange(event) {
+    const { name, value } = event.target;
+
+    setNewAsset((currentAsset) => ({
+      ...currentAsset,
+      [name]: value,
+    }));
+  }
+
+  function handleNewAssetStatusChange(event) {
+    const newStatus = event.target.value;
+
+    setNewAsset((currentAsset) => {
+      const isNowReady = newStatus === "Ready";
+
+      return {
+        ...currentAsset,
+        status: newStatus,
+        downSince: isNowReady ? "" : currentAsset.downSince || getTodayDateString(),
+        rtsType: isNowReady ? "No RTS Established" : currentAsset.rtsType,
+        rtsDate: isNowReady ? "" : currentAsset.rtsDate,
+        issue: isNowReady ? "Available" : currentAsset.issue === "Available" ? "" : currentAsset.issue,
+      };
+    });
+  }
+
+  function handleNewAssetRTSTypeChange(event) {
+    const newRTSType = event.target.value;
+
+    setNewAsset((currentAsset) => ({
+      ...currentAsset,
+      rtsType: newRTSType,
+      rtsDate: newRTSType === "Estimated Date" ? currentAsset.rtsDate : "",
+    }));
+  }
+
+  function handleSaveNewAsset() {
+    const cleanedAsset = {
+      ...newAsset,
+      unit: newAsset.unit.trim(),
+      department: newAsset.department.trim(),
+      asset: newAsset.asset.trim(),
+      technician: newAsset.technician.trim() || "—",
+      issue: newAsset.issue.trim() || (newAsset.status === "Ready" ? "Available" : "Status pending"),
+    };
+
+    if (!cleanedAsset.unit || !cleanedAsset.department || !cleanedAsset.asset) {
+      alert("Unit, Department, and Asset are required.");
+      return;
+    }
+
+    const unitAlreadyExists = assets.some(
+      (asset) => asset.unit.toLowerCase() === cleanedAsset.unit.toLowerCase()
+    );
+
+    if (unitAlreadyExists) {
+      alert("That unit number already exists in ARGOS.");
+      return;
+    }
+
+    const finalizedAsset = {
+      ...cleanedAsset,
+      downSince: cleanedAsset.status === "Ready" ? "" : cleanedAsset.downSince || getTodayDateString(),
+      rtsType: cleanedAsset.status === "Ready" ? "No RTS Established" : cleanedAsset.rtsType,
+      rtsDate:
+        cleanedAsset.status !== "Ready" && cleanedAsset.rtsType === "Estimated Date"
+          ? cleanedAsset.rtsDate
+          : "",
+      issue: cleanedAsset.status === "Ready" ? "Available" : cleanedAsset.issue,
+    };
+
+    setAssets((currentAssets) => [...currentAssets, finalizedAsset]);
+    setSelectedAsset(finalizedAsset);
+    setNewAsset(null);
+  }
+
+  function handleCancelNewAsset() {
+    setNewAsset(null);
+  }
+
   return (
     <main className="argos-shell">
       <aside className="argos-sidebar">
@@ -271,7 +373,10 @@ function App() {
               <h3>Assets Requiring Visibility</h3>
             </div>
 
-            <button type="button">Export View</button>
+            <div>
+              <button type="button" onClick={handleOpenAddAsset}>Add Asset</button>{" "}
+              <button type="button">Export View</button>
+            </div>
           </div>
 
           <table>
@@ -425,6 +530,151 @@ function App() {
                     Departments listed here currently have unavailable assets requiring visibility.
                   </p>
                 </div>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {newAsset && (
+          <div className="update-overlay">
+            <section className="update-panel">
+              <div className="update-panel-header">
+                <div>
+                  <p className="eyebrow">Asset Management</p>
+                  <h3>Add New Asset</h3>
+                  <p className="update-asset-name">
+                    Create a new tracked fleet asset in ARGOS
+                  </p>
+                </div>
+
+                <button className="close-button" onClick={handleCancelNewAsset} type="button">
+                  ×
+                </button>
+              </div>
+
+              <div className="update-form">
+                <label>
+                  Unit
+                  <input
+                    type="text"
+                    name="unit"
+                    value={newAsset.unit}
+                    onChange={handleNewAssetChange}
+                    placeholder="Example: 9001"
+                  />
+                </label>
+
+                <label>
+                  Department
+                  <input
+                    type="text"
+                    name="department"
+                    value={newAsset.department}
+                    onChange={handleNewAssetChange}
+                    placeholder="Example: Public Works"
+                  />
+                </label>
+
+                <label>
+                  Asset
+                  <input
+                    type="text"
+                    name="asset"
+                    value={newAsset.asset}
+                    onChange={handleNewAssetChange}
+                    placeholder="Example: Ford F-150"
+                  />
+                </label>
+
+                <label>
+                  Status
+                  <select name="status" value={newAsset.status} onChange={handleNewAssetStatusChange}>
+                    <option>Ready</option>
+                    <option>In Shop</option>
+                    <option>Waiting Parts</option>
+                    <option>Down</option>
+                    <option>PM Due</option>
+                  </select>
+                </label>
+
+                <label>
+                  Priority
+                  <select name="priority" value={newAsset.priority} onChange={handleNewAssetChange}>
+                    <option>Normal</option>
+                    <option>Medium</option>
+                    <option>High</option>
+                    <option>Critical</option>
+                  </select>
+                </label>
+
+                {newAsset.status !== "Ready" && (
+                  <label>
+                    Down Since
+                    <input
+                      type="date"
+                      name="downSince"
+                      value={newAsset.downSince}
+                      onChange={handleNewAssetChange}
+                    />
+                  </label>
+                )}
+
+                <label>
+                  Technician / Responsible Party
+                  <input
+                    type="text"
+                    name="technician"
+                    value={newAsset.technician}
+                    onChange={handleNewAssetChange}
+                  />
+                </label>
+
+                {newAsset.status !== "Ready" && (
+                  <label>
+                    RTS Status
+                    <select
+                      name="rtsType"
+                      value={newAsset.rtsType}
+                      onChange={handleNewAssetRTSTypeChange}
+                    >
+                      <option>Estimated Date</option>
+                      <option>TBD</option>
+                      <option>No RTS Established</option>
+                    </select>
+                  </label>
+                )}
+
+                {newAsset.status !== "Ready" && newAsset.rtsType === "Estimated Date" && (
+                  <label>
+                    Estimated Return to Service
+                    <input
+                      type="date"
+                      name="rtsDate"
+                      value={newAsset.rtsDate}
+                      onChange={handleNewAssetChange}
+                    />
+                  </label>
+                )}
+
+                <label className="issue-field">
+                  Operational Status / Reason
+                  <textarea
+                    name="issue"
+                    value={newAsset.issue}
+                    onChange={handleNewAssetChange}
+                    rows="4"
+                  />
+                </label>
+              </div>
+
+              <div className="update-actions">
+                <button className="cancel-button" onClick={handleCancelNewAsset} type="button">
+                  Cancel
+                </button>
+
+                <button className="save-button" onClick={handleSaveNewAsset} type="button">
+                  Add Asset
+                </button>
               </div>
             </section>
           </div>
