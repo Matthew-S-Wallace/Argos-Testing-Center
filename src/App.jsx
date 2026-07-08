@@ -204,11 +204,36 @@ function App() {
   }
 
   function handleSave() {
-    const updatedAsset = { ...editAsset };
+    const originalUnit = selectedAsset.unit;
+
+    const updatedAsset = {
+      ...editAsset,
+      unit: editAsset.unit.trim(),
+      department: editAsset.department.trim(),
+      asset: editAsset.asset.trim(),
+      technician: editAsset.technician.trim() || "—",
+      issue: editAsset.issue.trim() || (editAsset.status === "Ready" ? "Available" : "Status pending"),
+    };
+
+    if (!updatedAsset.unit || !updatedAsset.department || !updatedAsset.asset) {
+      alert("Unit, Department, and Asset are required.");
+      return;
+    }
+
+    const unitAlreadyExists = assets.some(
+      (asset) =>
+        asset.unit.toLowerCase() !== originalUnit.toLowerCase() &&
+        asset.unit.toLowerCase() === updatedAsset.unit.toLowerCase()
+    );
+
+    if (unitAlreadyExists) {
+      alert("That unit number already exists in ARGOS.");
+      return;
+    }
 
     setAssets((currentAssets) =>
       currentAssets.map((asset) =>
-        asset.unit === updatedAsset.unit ? updatedAsset : asset
+        asset.unit === originalUnit ? updatedAsset : asset
       )
     );
 
@@ -698,6 +723,36 @@ function App() {
               </div>
 
               <div className="update-form">
+                <label>
+                  Unit
+                  <input
+                    type="text"
+                    name="unit"
+                    value={editAsset.unit}
+                    onChange={handleChange}
+                  />
+                </label>
+
+                <label>
+                  Department
+                  <input
+                    type="text"
+                    name="department"
+                    value={editAsset.department}
+                    onChange={handleChange}
+                  />
+                </label>
+
+                <label>
+                  Asset
+                  <input
+                    type="text"
+                    name="asset"
+                    value={editAsset.asset}
+                    onChange={handleChange}
+                  />
+                </label>
+
                 <label>
                   Status
                   <select name="status" value={editAsset.status} onChange={handleStatusChange}>
