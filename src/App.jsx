@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
+
+const STORAGE_KEY = "argosFleetAssets";
 
 function getTodayDateString() {
   const today = new Date();
@@ -18,6 +20,20 @@ const initialAssets = [
   { unit: "6120", department: "Parks", asset: "John Deere Tractor", status: "PM Due", priority: "Normal", downSince: "2026-07-07", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "250-hour service due" },
   { unit: "7741", department: "Utilities", asset: "RAM 3500 Service Truck", status: "Ready", priority: "Normal", downSince: "", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "Available" },
 ];
+
+function loadSavedAssets() {
+  const savedAssets = localStorage.getItem(STORAGE_KEY);
+
+  if (!savedAssets) {
+    return initialAssets;
+  }
+
+  try {
+    return JSON.parse(savedAssets);
+  } catch {
+    return initialAssets;
+  }
+}
 
 function getStatusClass(status) {
   return status.toLowerCase().replaceAll(" ", "-");
@@ -108,10 +124,14 @@ function buildDailySummary(assets) {
 }
 
 function App() {
-  const [assets, setAssets] = useState(initialAssets);
+  const [assets, setAssets] = useState(loadSavedAssets);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [editAsset, setEditAsset] = useState(null);
   const [showDailySummary, setShowDailySummary] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
+  }, [assets]);
 
   const totalAssets = assets.length;
   const readyAssets = assets.filter((asset) => asset.status === "Ready").length;
@@ -297,7 +317,7 @@ function App() {
 
         {showDailySummary && (
           <div className="daily-summary-overlay">
-  <section className="daily-summary-panel update-panel">
+            <section className="daily-summary-panel update-panel">
               <div className="update-panel-header">
                 <div>
                   <p className="eyebrow">ARGOS Awareness Engine</p>
