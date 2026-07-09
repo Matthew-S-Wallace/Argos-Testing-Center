@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
+import { supabase } from "./supabaseClient";
 import "./App.css";
+
 
 const STORAGE_KEY = "argosFleetAssets";
 const COMPLETED_STORAGE_KEY = "argosCompletedRepairEvents";
 const STATUS_HISTORY_STORAGE_KEY = "argosStatusHistoryEvents";
-
+const ARGOS_ORGANIZATION_ID = "3b2125f4-0bbd-4482-adb7-402abb5384cd";
 const STATUS_OPTIONS = [
   "Ready",
   "Down",
@@ -446,7 +448,23 @@ function normalizeImportedAsset(row) {
     details: String(row.details || "").trim() || (isReadyStatus ? "Available" : "Details pending"),
   };
 }
-
+function mapSupabaseAsset(row) {
+  return normalizeAsset({
+    unit: row.unit || "",
+    vin: row.vin || "",
+    department: row.department || "",
+    asset: row.asset || "",
+    status: row.status || "Ready",
+    statusStartedAt: row.status_started_at || row.down_since || getTodayDateString(),
+    reason: row.reason || "Available",
+    priority: row.priority || "Normal",
+    downSince: row.down_since || "",
+    technician: row.technician || "Unassigned",
+    rtsType: row.rts_type || "No RTS Established",
+    rtsDate: row.rts_date || "",
+    details: row.details || "Available",
+  });
+}
 function loadSavedAssets() {
   const savedAssets = localStorage.getItem(STORAGE_KEY);
   if (!savedAssets) return initialAssets;
@@ -700,7 +718,26 @@ function App() {
   const [manualVinEntry, setManualVinEntry] = useState("");
   const [pendingNewAssetDraft, setPendingNewAssetDraft] = useState(null);
   const [scannerRunId, setScannerRunId] = useState(0);
+useEffect(() => {
+  async function loadCloudAssets() {
+    const { data, error } = await supabase
+      .from("assets")
+      .select("*")
+      .eq("organization_id", ARGOS_ORGANIZATION_ID)
+      .order("created_at", { ascending: true });
 
+    if (error) {
+      console.error("ARGOS cloud asset load failed:", error);
+      return;
+    }
+
+    if (data && data.length > 0) {
+      setAssets(data.map(mapSupabaseAsset));
+    }
+  }
+
+  loadCloudAssets();
+}, []);
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
   }, [assets]);
