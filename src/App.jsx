@@ -458,6 +458,80 @@ function buildDailySummary(assets) {
   };
 }
 
+
+
+function buildTechnicianAnalytics(assets, completedRepairRecords) {
+  const activeAssets = assets
+    .filter((asset) => asset.status !== "Ready")
+    .map((asset) => ({
+      ...asset,
+      daysDown: calculateDaysDown(asset.downSince, asset.status),
+      technician:
+        asset.technician && asset.technician !== "—" && asset.technician !== "‚Äî"
+          ? asset.technician
+          : "Unassigned",
+    }));
+
+  const completedRecords = completedRepairRecords.map((record) => ({
+    ...record,
+    technician:
+      record.technician && record.technician !== "—" && record.technician !== "‚Äî"
+        ? record.technician
+        : "Unassigned",
+    repairDuration: Number(record.daysDownDisplay ?? record.finalDaysDown ?? 0),
+  }));
+
+  const technicianNames = Array.from(
+    new Set([
+      ...activeAssets.map((asset) => asset.technician),
+      ...completedRecords.map((record) => record.technician),
+    ])
+  ).sort((a, b) => a.localeCompare(b));
+
+  const rows = technicianNames.map((technician) => {
+    const assignedAssets = activeAssets.filter((asset) => asset.technician === technician);
+    const completedRepairs = completedRecords.filter((record) => record.technician === technician);
+    const totalActiveDaysDown = assignedAssets.reduce((sum, asset) => sum + asset.daysDown, 0);
+    const totalCompletedDuration = completedRepairs.reduce(
+      (sum, record) => sum + record.repairDuration,
+      0
+    );
+    const longestOpenAsset = [...assignedAssets].sort((a, b) => b.daysDown - a.daysDown)[0];
+
+    return {
+      technician,
+      activeUnits: assignedAssets.length,
+      averageActiveDaysDown:
+        assignedAssets.length > 0 ? (totalActiveDaysDown / assignedAssets.length).toFixed(1) : "0.0",
+      longestOpenUnit: longestOpenAsset ? longestOpenAsset.unit : "—",
+      longestOpenDays: longestOpenAsset ? longestOpenAsset.daysDown : 0,
+      completedRepairs: completedRepairs.length,
+      averageRepairDuration:
+        completedRepairs.length > 0
+          ? (totalCompletedDuration / completedRepairs.length).toFixed(1)
+          : "0.0",
+    };
+  });
+
+  const activeTechnicians = rows.filter(
+    (row) => row.technician !== "Unassigned" && row.activeUnits > 0
+  ).length;
+  const assignedActiveRepairs = activeAssets.filter(
+    (asset) => asset.technician !== "Unassigned"
+  ).length;
+  const unassignedRepairs = activeAssets.filter((asset) => asset.technician === "Unassigned").length;
+  const totalActiveDaysDown = activeAssets.reduce((sum, asset) => sum + asset.daysDown, 0);
+
+  return {
+    rows,
+    activeTechnicians,
+    assignedActiveRepairs,
+    unassignedRepairs,
+    averageActiveDaysDown:
+      activeAssets.length > 0 ? (totalActiveDaysDown / activeAssets.length).toFixed(1) : "0.0",
+  };
+}
+
 function App() {
   const [assets, setAssets] = useState(loadSavedAssets);
   const [completedRepairEvents, setCompletedRepairEvents] = useState(loadCompletedRepairEvents);
@@ -522,6 +596,7 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
   const criticalAssets = activeBoardAssets.filter((asset) => asset.priority === "Critical").length;
   const availability = totalAssets > 0 ? ((readyAssets / totalAssets) * 100).toFixed(1) : "0.0";
   const dailySummary = buildDailySummary(assets);
+  const technicianAnalytics = buildTechnicianAnalytics(assets, completedRepairRecords);
 
   function handleSelectAsset(asset) {
     const liveAsset = assets.find((currentAsset) => currentAsset.unit === asset.unit) || asset;
@@ -977,7 +1052,13 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
             ⚒ <span>Repair History</span>
           </button>
 
-          <a className="nav-item">👥 <span>Technicians</span></a>
+          <button
+            className={`nav-item ${activeView === "technicians" ? "active" : ""}`}
+            type="button"
+            onClick={() => setActiveView("technicians")}
+          >
+            👥 <span>Technicians</span>
+          </button>
           <a className="nav-item">♢ <span>Alerts</span></a>
           <a className="nav-item">▥ <span>Reports</span></a>
           <a className="nav-item">⚙ <span>Settings</span></a>
@@ -1171,6 +1252,88 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
                         <td>{record.technician}</td>
                         <td>{formatDate(record.completedDisplayDate)}</td>
                         <td>{record.details}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </section>
+          </>
+        )}
+
+        {activeView === "technicians" && (
+          <>
+            <header className="dashboard-header">
+              <div>
+                <p className="eyebrow">Technician Analytics</p>
+                <h2>Technician Workload Dashboard</h2>
+              </div>
+
+              <div className="refresh-box">
+                <span>Active Technicians</span>
+                <strong>{technicianAnalytics.activeTechnicians}</strong>
+              </div>
+            </header>
+
+            <section className="metrics-row">
+              <div className="availability-card">
+                <span>Average Active Days Down</span>
+                <strong>{technicianAnalytics.averageActiveDaysDown}</strong>
+                <p>
+                  Active repair duration across all currently unavailable assigned and unassigned assets
+                </p>
+              </div>
+
+              <div className="metric-card">
+                <span>Active Technicians</span>
+                <strong>{technicianAnalytics.activeTechnicians}</strong>
+              </div>
+              <div className="metric-card">
+                <span>Assigned Active Repairs</span>
+                <strong>{technicianAnalytics.assignedActiveRepairs}</strong>
+              </div>
+              <div className="metric-card critical">
+                <span>Unassigned Repairs</span>
+                <strong>{technicianAnalytics.unassignedRepairs}</strong>
+              </div>
+            </section>
+
+            <section className="status-board">
+              <div className="status-board-header">
+                <div>
+                  <p className="eyebrow">👥 Workload Visibility</p>
+                  <h3>Technician / Responsible Party Analytics</h3>
+                </div>
+              </div>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Technician</th>
+                    <th>Active Units</th>
+                    <th>Average Active Days Down</th>
+                    <th>Longest Open Unit</th>
+                    <th>Longest Open Days</th>
+                    <th>Completed Repairs</th>
+                    <th>Average Repair Duration</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {technicianAnalytics.rows.length === 0 ? (
+                    <tr>
+                      <td colSpan="7">No technician analytics are currently available.</td>
+                    </tr>
+                  ) : (
+                    technicianAnalytics.rows.map((row) => (
+                      <tr key={row.technician}>
+                        <td className="unit">{row.technician}</td>
+                        <td>{row.activeUnits}</td>
+                        <td>{row.averageActiveDaysDown}</td>
+                        <td>{row.longestOpenUnit}</td>
+                        <td>{row.longestOpenDays}</td>
+                        <td>{row.completedRepairs}</td>
+                        <td>{row.averageRepairDuration}</td>
                       </tr>
                     ))
                   )}
