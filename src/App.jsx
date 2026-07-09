@@ -4,6 +4,18 @@ import "./App.css";
 const STORAGE_KEY = "argosFleetAssets";
 const COMPLETED_STORAGE_KEY = "argosCompletedRepairEvents";
 
+const STATUS_OPTIONS = [
+  "Ready",
+  "Down",
+  "In Shop",
+  "At 3rd Party Shop",
+  "Waiting Parts",
+  "Awaiting Approval",
+  "Awaiting QC",
+  "Ready for Pickup",
+  "Completed",
+];
+
 function getTodayDateString() {
   const today = new Date();
   const year = today.getFullYear();
@@ -30,7 +42,7 @@ const initialAssets = [
   { unit: "2217", department: "Police", asset: "Ford Explorer", status: "In Shop", priority: "Medium", downSince: "2026-07-05", technician: "Jones", rtsType: "Estimated Date", rtsDate: "2026-07-08", issue: "Brake inspection" },
   { unit: "3314", department: "Fire", asset: "Chevrolet Tahoe", status: "Ready", priority: "Normal", downSince: "", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "Available" },
   { unit: "5088", department: "Solid Waste", asset: "Freightliner M2", status: "Down", priority: "Critical", downSince: "2026-06-26", technician: "Garcia", rtsType: "TBD", rtsDate: "", issue: "Hydraulic leak" },
-  { unit: "6120", department: "Parks", asset: "John Deere Tractor", status: "PM Due", priority: "Normal", downSince: "2026-07-07", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "250-hour service due" },
+  { unit: "6120", department: "Parks", asset: "John Deere Tractor", status: "Awaiting QC", priority: "Normal", downSince: "2026-07-07", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "250-hour service due" },
   { unit: "7741", department: "Utilities", asset: "RAM 3500 Service Truck", status: "Ready", priority: "Normal", downSince: "", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "Available" },
 ];
 
@@ -281,11 +293,12 @@ function App() {
     }
 
     const isCompletingRepairEvent =
-      selectedAsset.status !== "Ready" && updatedAsset.status === "Ready";
+      selectedAsset.status !== "Ready" &&
+      (updatedAsset.status === "Ready" || updatedAsset.status === "Completed");
 
     if (isCompletingRepairEvent) {
       const shouldComplete = window.confirm(
-        `Complete the active repair event for Unit ${selectedAsset.unit}? This will move it to Repair History and remove it from the Command Center.`
+        `Complete the active repair event for Unit ${selectedAsset.unit}? This will copy the event to Repair History and return the asset to Ready in the Command Center.`
       );
 
       if (!shouldComplete) {
@@ -299,15 +312,28 @@ function App() {
         finalDaysDown: calculateFinalDaysDown(selectedAsset.downSince),
         finalStatus: "Ready",
         completionNote: "Returned to service",
+        issue: updatedAsset.issue,
+      };
+
+      const returnedAsset = {
+        ...updatedAsset,
+        status: "Ready",
+        priority: "Normal",
+        downSince: "",
+        rtsType: "No RTS Established",
+        rtsDate: "",
+        issue: "Available",
       };
 
       setCompletedRepairEvents((currentEvents) => [completedEvent, ...currentEvents]);
 
       setAssets((currentAssets) =>
-        currentAssets.filter((asset) => asset.unit !== originalUnit)
+        currentAssets.map((asset) =>
+          asset.unit === originalUnit ? returnedAsset : asset
+        )
       );
 
-      setSelectedAsset(null);
+      setSelectedAsset(returnedAsset);
       setEditAsset(null);
       return;
     }
@@ -396,13 +422,25 @@ function App() {
 
     const finalizedAsset = {
       ...cleanedAsset,
-      downSince: cleanedAsset.status === "Ready" ? "" : cleanedAsset.downSince || getTodayDateString(),
-      rtsType: cleanedAsset.status === "Ready" ? "No RTS Established" : cleanedAsset.rtsType,
+      status: cleanedAsset.status === "Completed" ? "Ready" : cleanedAsset.status,
+      downSince:
+        cleanedAsset.status === "Ready" || cleanedAsset.status === "Completed"
+          ? ""
+          : cleanedAsset.downSince || getTodayDateString(),
+      rtsType:
+        cleanedAsset.status === "Ready" || cleanedAsset.status === "Completed"
+          ? "No RTS Established"
+          : cleanedAsset.rtsType,
       rtsDate:
-        cleanedAsset.status !== "Ready" && cleanedAsset.rtsType === "Estimated Date"
+        cleanedAsset.status !== "Ready" &&
+        cleanedAsset.status !== "Completed" &&
+        cleanedAsset.rtsType === "Estimated Date"
           ? cleanedAsset.rtsDate
           : "",
-      issue: cleanedAsset.status === "Ready" ? "Available" : cleanedAsset.issue,
+      issue:
+        cleanedAsset.status === "Ready" || cleanedAsset.status === "Completed"
+          ? "Available"
+          : cleanedAsset.issue,
     };
 
     setAssets((currentAssets) => [...currentAssets, finalizedAsset]);
@@ -563,7 +601,7 @@ function App() {
               <div className="status-board-header">
                 <div>
                   <p className="eyebrow">⚒ Completed Work</p>
-                  <h3>Repair Events Moved from Command Center</h3>
+                  <h3>Completed Service Records</h3>
                 </div>
               </div>
 
@@ -783,11 +821,9 @@ function App() {
                 <label>
                   Status
                   <select name="status" value={newAsset.status} onChange={handleNewAssetStatusChange}>
-                    <option>Ready</option>
-                    <option>In Shop</option>
-                    <option>Waiting Parts</option>
-                    <option>Down</option>
-                    <option>PM Due</option>
+                    {STATUS_OPTIONS.map((status) => (
+                      <option key={status}>{status}</option>
+                    ))}
                   </select>
                 </label>
 
@@ -801,7 +837,7 @@ function App() {
                   </select>
                 </label>
 
-                {newAsset.status !== "Ready" && (
+                {newAsset.status !== "Ready" && newAsset.status !== "Completed" && (
                   <label>
                     Down Since
                     <input
@@ -823,7 +859,7 @@ function App() {
                   />
                 </label>
 
-                {newAsset.status !== "Ready" && (
+                {newAsset.status !== "Ready" && newAsset.status !== "Completed" && (
                   <label>
                     RTS Status
                     <select
@@ -838,7 +874,7 @@ function App() {
                   </label>
                 )}
 
-                {newAsset.status !== "Ready" && newAsset.rtsType === "Estimated Date" && (
+                {newAsset.status !== "Ready" && newAsset.status !== "Completed" && newAsset.rtsType === "Estimated Date" && (
                   <label>
                     Estimated Return to Service
                     <input
@@ -925,11 +961,9 @@ function App() {
                 <label>
                   Status
                   <select name="status" value={editAsset.status} onChange={handleStatusChange}>
-                    <option>Ready</option>
-                    <option>In Shop</option>
-                    <option>Waiting Parts</option>
-                    <option>Down</option>
-                    <option>PM Due</option>
+                    {STATUS_OPTIONS.map((status) => (
+                      <option key={status}>{status}</option>
+                    ))}
                   </select>
                 </label>
 
@@ -943,7 +977,7 @@ function App() {
                   </select>
                 </label>
 
-                {editAsset.status !== "Ready" && (
+                {editAsset.status !== "Ready" && editAsset.status !== "Completed" && (
                   <label>
                     Down Since
                     <input
@@ -965,7 +999,7 @@ function App() {
                   />
                 </label>
 
-                {editAsset.status !== "Ready" && (
+                {editAsset.status !== "Ready" && editAsset.status !== "Completed" && (
                   <label>
                     RTS Status
                     <select name="rtsType" value={editAsset.rtsType} onChange={handleRTSTypeChange}>
@@ -976,7 +1010,7 @@ function App() {
                   </label>
                 )}
 
-                {editAsset.status !== "Ready" && editAsset.rtsType === "Estimated Date" && (
+                {editAsset.status !== "Ready" && editAsset.status !== "Completed" && editAsset.rtsType === "Estimated Date" && (
                   <label>
                     Estimated Return to Service
                     <input
