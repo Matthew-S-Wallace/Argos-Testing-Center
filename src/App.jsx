@@ -38,17 +38,18 @@ function formatDate(dateString) {
 }
 
 const initialAssets = [
-  { unit: "1042", department: "Public Works", asset: "Ford F-250", status: "Waiting Parts", priority: "High", downSince: "2026-07-01", technician: "Smith", rtsType: "Estimated Date", rtsDate: "2026-07-10", issue: "Alternator on order" },
-  { unit: "2217", department: "Police", asset: "Ford Explorer", status: "In Shop", priority: "Medium", downSince: "2026-07-05", technician: "Jones", rtsType: "Estimated Date", rtsDate: "2026-07-08", issue: "Brake inspection" },
-  { unit: "3314", department: "Fire", asset: "Chevrolet Tahoe", status: "Ready", priority: "Normal", downSince: "", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "Available" },
-  { unit: "5088", department: "Solid Waste", asset: "Freightliner M2", status: "Down", priority: "Critical", downSince: "2026-06-26", technician: "Garcia", rtsType: "TBD", rtsDate: "", issue: "Hydraulic leak" },
-  { unit: "6120", department: "Parks", asset: "John Deere Tractor", status: "Awaiting QC", priority: "Normal", downSince: "2026-07-07", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "250-hour service due" },
-  { unit: "7741", department: "Utilities", asset: "RAM 3500 Service Truck", status: "Ready", priority: "Normal", downSince: "", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "Available" },
+  { unit: "1042", vin: "1FT7X2B60NEC10420", department: "Public Works", asset: "Ford F-250", status: "Waiting Parts", priority: "High", downSince: "2026-07-01", technician: "Smith", rtsType: "Estimated Date", rtsDate: "2026-07-10", issue: "Alternator on order" },
+  { unit: "2217", vin: "1FM5K8AB4NGA22170", department: "Police", asset: "Ford Explorer", status: "In Shop", priority: "Medium", downSince: "2026-07-05", technician: "Jones", rtsType: "Estimated Date", rtsDate: "2026-07-08", issue: "Brake inspection" },
+  { unit: "3314", vin: "1GNSKLED5NR33140", department: "Fire", asset: "Chevrolet Tahoe", status: "Ready", priority: "Normal", downSince: "", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "Available" },
+  { unit: "5088", vin: "3ALACWFC8ND50880", department: "Solid Waste", asset: "Freightliner M2", status: "Down", priority: "Critical", downSince: "2026-06-26", technician: "Garcia", rtsType: "TBD", rtsDate: "", issue: "Hydraulic leak" },
+  { unit: "6120", vin: "1LV5065EEN061200", department: "Parks", asset: "John Deere Tractor", status: "Awaiting QC", priority: "Normal", downSince: "2026-07-07", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "250-hour service due" },
+  { unit: "7741", vin: "3C7WRKBL6NG77410", department: "Utilities", asset: "RAM 3500 Service Truck", status: "Ready", priority: "Normal", downSince: "", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "Available" },
 ];
 
 function createBlankAsset() {
   return {
     unit: "",
+    vin: "",
     department: "",
     asset: "",
     status: "Ready",
@@ -69,7 +70,10 @@ function loadSavedAssets() {
   }
 
   try {
-    return JSON.parse(savedAssets);
+    return JSON.parse(savedAssets).map((asset) => ({
+      vin: "",
+      ...asset,
+    }));
   } catch {
     return initialAssets;
   }
@@ -83,7 +87,10 @@ function loadCompletedRepairEvents() {
   }
 
   try {
-    return JSON.parse(savedEvents);
+    return JSON.parse(savedEvents).map((event) => ({
+      vin: "",
+      ...event,
+    }));
   } catch {
     return [];
   }
@@ -220,7 +227,7 @@ function App() {
 
   function handleSelectAsset(asset) {
     setSelectedAsset(asset);
-    setEditAsset({ ...asset });
+    setEditAsset({ vin: "", ...asset });
   }
 
   function handleChange(event) {
@@ -266,10 +273,12 @@ function App() {
 
   function handleSave() {
     const originalUnit = selectedAsset.unit;
+    const originalVin = selectedAsset.vin || "";
 
     const updatedAsset = {
       ...editAsset,
       unit: editAsset.unit.trim(),
+      vin: editAsset.vin.trim().toUpperCase(),
       department: editAsset.department.trim(),
       asset: editAsset.asset.trim(),
       technician: editAsset.technician.trim() || "—",
@@ -292,6 +301,19 @@ function App() {
       return;
     }
 
+    const vinAlreadyExists =
+      updatedAsset.vin &&
+      assets.some(
+        (asset) =>
+          (asset.vin || "").toLowerCase() !== originalVin.toLowerCase() &&
+          (asset.vin || "").toLowerCase() === updatedAsset.vin.toLowerCase()
+      );
+
+    if (vinAlreadyExists) {
+      alert("That VIN already exists in ARGOS.");
+      return;
+    }
+
     const isCompletingRepairEvent =
       selectedAsset.status !== "Ready" &&
       (updatedAsset.status === "Ready" || updatedAsset.status === "Completed");
@@ -307,6 +329,7 @@ function App() {
 
       const completedEvent = {
         ...selectedAsset,
+        vin: updatedAsset.vin,
         id: `${selectedAsset.unit}-${Date.now()}`,
         completedDate: getTodayDateString(),
         finalDaysDown: calculateFinalDaysDown(selectedAsset.downSince),
@@ -400,6 +423,7 @@ function App() {
     const cleanedAsset = {
       ...newAsset,
       unit: newAsset.unit.trim(),
+      vin: newAsset.vin.trim().toUpperCase(),
       department: newAsset.department.trim(),
       asset: newAsset.asset.trim(),
       technician: newAsset.technician.trim() || "—",
@@ -417,6 +441,17 @@ function App() {
 
     if (unitAlreadyExists) {
       alert("That unit number already exists in ARGOS.");
+      return;
+    }
+
+    const vinAlreadyExists =
+      cleanedAsset.vin &&
+      assets.some(
+        (asset) => (asset.vin || "").toLowerCase() === cleanedAsset.vin.toLowerCase()
+      );
+
+    if (vinAlreadyExists) {
+      alert("That VIN already exists in ARGOS.");
       return;
     }
 
@@ -797,6 +832,17 @@ function App() {
                 </label>
 
                 <label>
+                  VIN
+                  <input
+                    type="text"
+                    name="vin"
+                    value={newAsset.vin}
+                    onChange={handleNewAssetChange}
+                    placeholder="Optional"
+                  />
+                </label>
+
+                <label>
                   Department
                   <input
                     type="text"
@@ -935,6 +981,17 @@ function App() {
                     name="unit"
                     value={editAsset.unit}
                     onChange={handleChange}
+                  />
+                </label>
+
+                <label>
+                  VIN
+                  <input
+                    type="text"
+                    name="vin"
+                    value={editAsset.vin}
+                    onChange={handleChange}
+                    placeholder="Optional"
                   />
                 </label>
 
