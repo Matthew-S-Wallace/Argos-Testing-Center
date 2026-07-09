@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
 const STORAGE_KEY = "argosFleetAssets";
@@ -30,6 +30,103 @@ const REASON_OPTIONS = [
   "Other",
 ];
 
+const PRIORITY_OPTIONS = ["Normal", "Medium", "High", "Critical"];
+const RTS_TYPE_OPTIONS = ["Estimated Date", "TBD", "No RTS Established"];
+
+const CSV_COLUMNS = [
+  "unit",
+  "vin",
+  "department",
+  "asset",
+  "status",
+  "reason",
+  "priority",
+  "downSince",
+  "technician",
+  "rtsType",
+  "rtsDate",
+  "details",
+];
+
+function escapeCSVValue(value) {
+  const stringValue = String(value ?? "");
+
+  if (stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")) {
+    return `"${stringValue.replaceAll('"', '""')}"`;
+  }
+
+  return stringValue;
+}
+
+function downloadFile(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function parseCSVLine(line) {
+  const values = [];
+  let currentValue = "";
+  let isInsideQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    const nextCharacter = line[index + 1];
+
+    if (character === '"' && isInsideQuotes && nextCharacter === '"') {
+      currentValue += '"';
+      index += 1;
+    } else if (character === '"') {
+      isInsideQuotes = !isInsideQuotes;
+    } else if (character === "," && !isInsideQuotes) {
+      values.push(currentValue.trim());
+      currentValue = "";
+    } else {
+      currentValue += character;
+    }
+  }
+
+  values.push(currentValue.trim());
+
+  return values;
+}
+
+function parseCSVText(text) {
+  const normalizedText = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const lines = normalizedText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) {
+    return [];
+  }
+
+  const headers = parseCSVLine(lines[0]).map((header) => header.trim());
+
+  return lines.slice(1).map((line) => {
+    const values = parseCSVLine(line);
+
+    return headers.reduce((row, header, index) => {
+      row[header] = values[index] || "";
+      return row;
+    }, {});
+  });
+}
+
+function findOptionMatch(value, options) {
+  const cleanedValue = String(value || "").trim().toLowerCase();
+
+  return options.find((option) => option.toLowerCase() === cleanedValue);
+}
+
 function getTodayDateString() {
   const today = new Date();
   const year = today.getFullYear();
@@ -37,6 +134,37 @@ function getTodayDateString() {
   const day = String(today.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function normalizeImportedAsset(row) {
+  const status = findOptionMatch(row.status, STATUS_OPTIONS) || "Ready";
+  const isReadyStatus = status === "Ready" || status === "Completed";
+  const priority = findOptionMatch(row.priority, PRIORITY_OPTIONS) || "Normal";
+  const reason = isReadyStatus
+    ? "Available"
+    : findOptionMatch(row.reason, REASON_OPTIONS) || "Other";
+  const rtsType = isReadyStatus
+    ? "No RTS Established"
+    : findOptionMatch(row.rtsType, RTS_TYPE_OPTIONS) || "No RTS Established";
+  const downSince = isReadyStatus ? "" : String(row.downSince || "").trim() || getTodayDateString();
+
+  return {
+    unit: String(row.unit || "").trim(),
+    vin: String(row.vin || "").trim().toUpperCase(),
+    department: String(row.department || "").trim(),
+    asset: String(row.asset || "").trim(),
+    status: isReadyStatus ? "Ready" : status,
+    statusStartedAt: isReadyStatus ? getTodayDateString() : downSince,
+    reason,
+    priority,
+    downSince,
+    technician: String(row.technician || "").trim() || "—",
+    rtsType,
+    rtsDate: !isReadyStatus && rtsType === "Estimated Date" ? String(row.rtsDate || "").trim() : "",
+    details:
+      String(row.details || "").trim() ||
+      (isReadyStatus ? "Available" : "Details pending"),
+  };
 }
 
 function formatDate(dateString) {
@@ -366,6 +494,8 @@ function App() {
   const [newAsset, setNewAsset] = useState(null);
   const [showDailySummary, setShowDailySummary] = useState(false);
   const [activeView, setActiveView] = useState("command");
+  const [importStatus, setImportStatus] = useState("");
+  const csvInputRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
@@ -679,6 +809,104 @@ function App() {
     setNewAsset(null);
   }
 
+  function handleDownloadCSVTemplate() {
+    const exampleRow = {
+      unit: "9001",
+      vin: "1FTEXAMPLE0009001",
+      department: "Public Works",
+      asset: "Ford F-150",
+      status: "Ready",
+      reason: "Available",
+      priority: "Normal",
+      downSince: "",
+      technician: "—",
+      rtsType: "No RTS Established",
+      rtsDate: "",
+      details: "Available",
+    };
+
+    const csvContent = [
+      CSV_COLUMNS.join(","),
+      CSV_COLUMNS.map((column) => escapeCSVValue(exampleRow[column])).join(","),
+    ].join("\n");
+
+    downloadFile("argos-csv-template.csv", csvContent, "text/csv;charset=utf-8");
+  }
+
+  function handleImportCSV(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = (readerEvent) => {
+      const text = String(readerEvent.target?.result || "");
+      const rows = parseCSVText(text);
+      const existingUnits = new Set(assets.map((asset) => asset.unit.toLowerCase()));
+      const existingVins = new Set(
+        assets
+          .map((asset) => (asset.vin || "").toLowerCase())
+          .filter(Boolean)
+      );
+      const importedUnits = new Set();
+      const importedVins = new Set();
+      const validImportedAssets = [];
+      const rejectedRows = [];
+
+      rows.forEach((row, index) => {
+        const importedAsset = normalizeImportedAsset(row);
+        const rowNumber = index + 2;
+        const rowErrors = [];
+        const unitKey = importedAsset.unit.toLowerCase();
+        const vinKey = importedAsset.vin.toLowerCase();
+
+        if (!importedAsset.unit) rowErrors.push("missing Unit");
+        if (!importedAsset.department) rowErrors.push("missing Department");
+        if (!importedAsset.asset) rowErrors.push("missing Asset");
+        if (unitKey && existingUnits.has(unitKey)) rowErrors.push("duplicate Unit already exists");
+        if (unitKey && importedUnits.has(unitKey)) rowErrors.push("duplicate Unit inside CSV");
+        if (vinKey && existingVins.has(vinKey)) rowErrors.push("duplicate VIN already exists");
+        if (vinKey && importedVins.has(vinKey)) rowErrors.push("duplicate VIN inside CSV");
+
+        if (rowErrors.length > 0) {
+          rejectedRows.push(`Row ${rowNumber}: ${rowErrors.join(", ")}`);
+          return;
+        }
+
+        importedUnits.add(unitKey);
+        if (vinKey) importedVins.add(vinKey);
+        validImportedAssets.push(importedAsset);
+      });
+
+      if (validImportedAssets.length > 0) {
+        setAssets((currentAssets) => [...currentAssets, ...validImportedAssets]);
+        setActiveView("command");
+      }
+
+      if (validImportedAssets.length === 0 && rejectedRows.length === 0) {
+        setImportStatus("No asset rows were found in that CSV file.");
+      } else if (rejectedRows.length > 0) {
+        setImportStatus(
+          `Imported ${validImportedAssets.length} asset${validImportedAssets.length === 1 ? "" : "s"}. Rejected ${rejectedRows.length} row${rejectedRows.length === 1 ? "" : "s"}: ${rejectedRows.join(" | ")}`
+        );
+      } else {
+        setImportStatus(
+          `Imported ${validImportedAssets.length} asset${validImportedAssets.length === 1 ? "" : "s"} successfully.`
+        );
+      }
+    };
+
+    reader.onerror = () => {
+      setImportStatus("ARGOS could not read that CSV file. Please try again.");
+    };
+
+    reader.readAsText(file);
+    event.target.value = "";
+  }
+
   return (
     <main className="argos-shell">
       <aside className="argos-sidebar">
@@ -762,9 +990,24 @@ function App() {
 
                 <div>
                   <button type="button" onClick={handleOpenAddAsset}>Add Asset</button>{" "}
+                  <button type="button" onClick={handleDownloadCSVTemplate}>Download CSV Template</button>{" "}
+                  <input
+                    ref={csvInputRef}
+                    type="file"
+                    accept=".csv,text/csv"
+                    onChange={handleImportCSV}
+                    style={{ display: "none" }}
+                  />
+                  <button type="button" onClick={() => csvInputRef.current?.click()}>
+                    Import CSV
+                  </button>{" "}
                   <button type="button">Export View</button>
                 </div>
               </div>
+
+              {importStatus && (
+                <p className="eyebrow">{importStatus}</p>
+              )}
 
               <table>
                 <thead>
