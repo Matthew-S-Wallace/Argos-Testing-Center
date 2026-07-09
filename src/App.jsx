@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { BrowserMultiFormatReader } from "@zxing/browser";
 import "./App.css";
 
 const STORAGE_KEY = "argosFleetAssets";
@@ -176,6 +177,18 @@ function calculateFinalDaysDown(downSince) {
 
 function getStatusClass(status) {
   return String(status || "Ready").toLowerCase().replaceAll(" ", "-").replaceAll("/", "");
+}
+
+
+function normalizeScannedVIN(value) {
+  return String(value || "")
+    .toUpperCase()
+    .replace(/[^A-HJ-NPR-Z0-9]/g, "")
+    .slice(0, 17);
+}
+
+function isLikelyVIN(value) {
+  return /^[A-HJ-NPR-Z0-9]{17}$/.test(normalizeScannedVIN(value));
 }
 
 function formatRTS(asset) {
@@ -609,6 +622,12 @@ function App() {
   const [activeView, setActiveView] = useState("command");
   const [importStatus, setImportStatus] = useState("");
   const csvInputRef = useRef(null);
+  const vinScannerVideoRef = useRef(null);
+  const vinScannerControlsRef = useRef(null);
+  const [showVinScanner, setShowVinScanner] = useState(false);
+  const [vinScanStatus, setVinScanStatus] = useState("");
+  const [lastScannedVin, setLastScannedVin] = useState("");
+  const [scannerRunId, setScannerRunId] = useState(0);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
@@ -621,6 +640,71 @@ function App() {
   useEffect(() => {
     localStorage.setItem(STATUS_HISTORY_STORAGE_KEY, JSON.stringify(statusHistoryEvents));
   }, [statusHistoryEvents]);
+
+  useEffect(() => {
+    if (!showVinScanner) return undefined;
+
+    let isCancelled = false;
+    const codeReader = new BrowserMultiFormatReader();
+
+    async function startVinScanner() {
+      if (!vinScannerVideoRef.current) return;
+
+      setLastScannedVin("");
+      setVinScanStatus("Starting camera. Allow camera access when prompted.");
+
+      try {
+        const controls = await codeReader.decodeFromVideoDevice(
+          undefined,
+          vinScannerVideoRef.current,
+          (result) => {
+            if (isCancelled || !result) return;
+
+            const scannedVin = normalizeScannedVIN(result.getText());
+            if (!isLikelyVIN(scannedVin)) {
+              setLastScannedVin(scannedVin || result.getText());
+              setVinScanStatus("Barcode detected, but ARGOS could not read it as a valid 17-character VIN. Reposition the camera and try again.");
+              return;
+            }
+
+            const matchedAsset = assets.find(
+              (asset) => normalizeScannedVIN(asset.vin) === scannedVin
+            );
+
+            vinScannerControlsRef.current?.stop();
+
+            if (matchedAsset) {
+              setLastScannedVin(scannedVin);
+              setVinScanStatus(`Matched VIN ${scannedVin} to Unit ${matchedAsset.unit}.`);
+              setShowVinScanner(false);
+              handleSelectAsset(matchedAsset);
+              return;
+            }
+
+            setLastScannedVin(scannedVin);
+            setVinScanStatus(`VIN ${scannedVin} was scanned, but it does not match an active ARGOS fleet asset.`);
+          }
+        );
+
+        if (!isCancelled) {
+          vinScannerControlsRef.current = controls;
+          setVinScanStatus("Camera active. Center the vehicle VIN barcode in view.");
+        } else {
+          controls.stop();
+        }
+      } catch (error) {
+        setVinScanStatus("ARGOS could not start the camera. Confirm browser camera permissions and use HTTPS or localhost.");
+      }
+    }
+
+    startVinScanner();
+
+    return () => {
+      isCancelled = true;
+      vinScannerControlsRef.current?.stop();
+      vinScannerControlsRef.current = null;
+    };
+  }, [showVinScanner, scannerRunId, assets]);
 
   const activeBoardAssets = assets.filter((asset) => asset.status !== "Ready");
   const readyArchiveAssets = assets.filter((asset) => asset.status === "Ready");
@@ -1080,6 +1164,31 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     );
   }
 
+
+  function handleOpenVinScanner() {
+    setSelectedAsset(null);
+    setEditAsset(null);
+    setNewAsset(null);
+    setLastScannedVin("");
+    setVinScanStatus("");
+    setShowVinScanner(true);
+    setScannerRunId((currentRunId) => currentRunId + 1);
+  }
+
+  function handleCloseVinScanner() {
+    vinScannerControlsRef.current?.stop();
+    vinScannerControlsRef.current = null;
+    setShowVinScanner(false);
+  }
+
+  function handleScanAgain() {
+    vinScannerControlsRef.current?.stop();
+    vinScannerControlsRef.current = null;
+    setLastScannedVin("");
+    setVinScanStatus("");
+    setScannerRunId((currentRunId) => currentRunId + 1);
+  }
+
   function renderAssetForm(asset, onChange, onStatusChange, onRTSTypeChange) {
     return (
       <div className="update-form">
@@ -1194,6 +1303,10 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
             ✦ <span>Daily Summary</span>
           </button>
 
+          <button className="nav-item" type="button" onClick={handleOpenVinScanner}>
+            ▣ <span>Scan VIN</span>
+          </button>
+
           <button
             className={`nav-item ${activeView === "history" ? "active" : ""}`}
             type="button"
@@ -1264,6 +1377,7 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
                 </div>
 
                 <div>
+                  <button type="button" onClick={handleOpenVinScanner}>Scan VIN</button>{" "}
                   <button type="button" onClick={() => {
                     setSelectedAsset(null);
                     setEditAsset(null);
@@ -1607,6 +1721,53 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
               )}
             </section>
           </>
+        )}
+
+
+        {showVinScanner && (
+          <div className="update-overlay">
+            <section className="update-panel">
+              <div className="update-panel-header">
+                <div>
+                  <p className="eyebrow">Mobile Fleet Lookup</p>
+                  <h3>Scan VIN</h3>
+                  <p className="update-asset-name">Scan a vehicle VIN barcode to open the matching ARGOS asset record</p>
+                </div>
+
+                <button className="close-button" onClick={handleCloseVinScanner} type="button">
+                  ×
+                </button>
+              </div>
+
+              <div className="update-form">
+                <div className="issue-field">
+                  <video
+                    ref={vinScannerVideoRef}
+                    style={{ width: "100%", borderRadius: "18px", background: "#071a33" }}
+                    muted
+                    playsInline
+                  />
+                </div>
+
+                <div className="issue-field">
+                  <p className="eyebrow">Scanner Status</p>
+                  <strong>{vinScanStatus || "Preparing VIN scanner."}</strong>
+                  {lastScannedVin && <p>Last scanned value: {lastScannedVin}</p>}
+                  <p>VIN scanning works best on mobile through localhost during development or HTTPS after deployment.</p>
+                </div>
+              </div>
+
+              <div className="update-actions">
+                <button className="cancel-button" onClick={handleCloseVinScanner} type="button">
+                  Cancel
+                </button>
+
+                <button className="save-button" onClick={handleScanAgain} type="button">
+                  Scan Again
+                </button>
+              </div>
+            </section>
+          </div>
         )}
 
         {showDailySummary && (
