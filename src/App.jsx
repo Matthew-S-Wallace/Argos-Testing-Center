@@ -16,6 +16,8 @@ const STATUS_OPTIONS = [
   "Ready for Pickup",
 ];
 
+const STATUS_DURATION_STATUS_OPTIONS = STATUS_OPTIONS.filter((status) => status !== "Ready");
+
 const REASON_OPTIONS = [
   "Available",
   "Mechanical Failure",
@@ -532,6 +534,70 @@ function buildTechnicianAnalytics(assets, completedRepairRecords) {
   };
 }
 
+
+function buildStatusDurationAnalytics(assets, statusHistoryEvents) {
+  const activeAssets = assets.filter((asset) => asset.status !== "Ready");
+
+  const normalizedHistoryEvents = statusHistoryEvents
+    .filter((event) => STATUS_DURATION_STATUS_OPTIONS.includes(event.previousStatus))
+    .map((event) => ({
+      ...event,
+      durationDays: Number(event.durationDays ?? 0),
+    }));
+
+  const totalRecordedDuration = normalizedHistoryEvents.reduce(
+    (sum, event) => sum + event.durationDays,
+    0
+  );
+
+  const rows = STATUS_DURATION_STATUS_OPTIONS.map((status) => {
+    const currentUnits = activeAssets.filter((asset) => asset.status === status).length;
+    const completedEvents = normalizedHistoryEvents.filter(
+      (event) => event.previousStatus === status
+    );
+    const completedStatusEvents = completedEvents.length;
+    const totalDuration = completedEvents.reduce((sum, event) => sum + event.durationDays, 0);
+    const longestDuration =
+      completedEvents.length > 0
+        ? Math.max(...completedEvents.map((event) => event.durationDays))
+        : 0;
+
+    return {
+      status,
+      currentUnits,
+      completedStatusEvents,
+      averageDuration:
+        completedStatusEvents > 0 ? (totalDuration / completedStatusEvents).toFixed(1) : "0.0",
+      longestDuration,
+      totalDuration,
+      percentageOfRecordedDowntime:
+        totalRecordedDuration > 0 ? ((totalDuration / totalRecordedDuration) * 100).toFixed(1) : "0.0",
+    };
+  });
+
+  const trackedStatusTransitions = normalizedHistoryEvents.length;
+  const averageRecordedStatusDuration =
+    trackedStatusTransitions > 0
+      ? (totalRecordedDuration / trackedStatusTransitions).toFixed(1)
+      : "0.0";
+  const longestRecordedStatusDuration =
+    normalizedHistoryEvents.length > 0
+      ? Math.max(...normalizedHistoryEvents.map((event) => event.durationDays))
+      : 0;
+  const currentLargestBottleneck = [...rows].sort((a, b) => b.currentUnits - a.currentUnits)[0];
+
+  return {
+    rows,
+    trackedStatusTransitions,
+    averageRecordedStatusDuration,
+    longestRecordedStatusDuration,
+    currentLargestBottleneck:
+      currentLargestBottleneck && currentLargestBottleneck.currentUnits > 0
+        ? currentLargestBottleneck
+        : null,
+  };
+}
+
 function App() {
   const [assets, setAssets] = useState(loadSavedAssets);
   const [completedRepairEvents, setCompletedRepairEvents] = useState(loadCompletedRepairEvents);
@@ -597,6 +663,8 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
   const availability = totalAssets > 0 ? ((readyAssets / totalAssets) * 100).toFixed(1) : "0.0";
   const dailySummary = buildDailySummary(assets);
   const technicianAnalytics = buildTechnicianAnalytics(assets, completedRepairRecords);
+
+  const statusDurationAnalytics = buildStatusDurationAnalytics(assets, statusHistoryEvents);
 
   function handleSelectAsset(asset) {
     const liveAsset = assets.find((currentAsset) => currentAsset.unit === asset.unit) || asset;
@@ -1060,7 +1128,13 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
             👥 <span>Technicians</span>
           </button>
           <a className="nav-item">♢ <span>Alerts</span></a>
-          <a className="nav-item">▥ <span>Reports</span></a>
+          <button
+            className={`nav-item ${activeView === "reports" ? "active" : ""}`}
+            type="button"
+            onClick={() => setActiveView("reports")}
+          >
+            ▥ <span>Reports</span>
+          </button>
           <a className="nav-item">⚙ <span>Settings</span></a>
         </nav>
 
@@ -1339,6 +1413,104 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
                   )}
                 </tbody>
               </table>
+            </section>
+          </>
+        )}
+
+        {activeView === "reports" && (
+          <>
+            <header className="dashboard-header">
+              <div>
+                <p className="eyebrow">Reports</p>
+                <h2>Status Duration Analytics</h2>
+              </div>
+
+              <div className="refresh-box">
+                <span>Tracked Transitions</span>
+                <strong>{statusDurationAnalytics.trackedStatusTransitions}</strong>
+              </div>
+            </header>
+
+            <section className="metrics-row">
+              <div className="availability-card">
+                <span>Current Largest Bottleneck</span>
+                <strong>
+                  {statusDurationAnalytics.currentLargestBottleneck
+                    ? statusDurationAnalytics.currentLargestBottleneck.status
+                    : "None"}
+                </strong>
+                <p>
+                  {statusDurationAnalytics.currentLargestBottleneck
+                    ? `${statusDurationAnalytics.currentLargestBottleneck.currentUnits} current unit${
+                        statusDurationAnalytics.currentLargestBottleneck.currentUnits === 1 ? "" : "s"
+                      } in this status`
+                    : "No unavailable assets are currently creating a status bottleneck."}
+                </p>
+              </div>
+
+              <div className="metric-card">
+                <span>Tracked Status Transitions</span>
+                <strong>{statusDurationAnalytics.trackedStatusTransitions}</strong>
+              </div>
+              <div className="metric-card">
+                <span>Average Recorded Status Duration</span>
+                <strong>{statusDurationAnalytics.averageRecordedStatusDuration}</strong>
+              </div>
+              <div className="metric-card critical">
+                <span>Longest Recorded Status Duration</span>
+                <strong>{statusDurationAnalytics.longestRecordedStatusDuration}</strong>
+              </div>
+            </section>
+
+            <section className="status-board">
+              <div className="status-board-header">
+                <div>
+                  <p className="eyebrow">▥ Bottleneck Visibility</p>
+                  <h3>Status Duration Analytics</h3>
+                </div>
+              </div>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th>Current Units</th>
+                    <th>Completed Status Events</th>
+                    <th>Average Duration</th>
+                    <th>Longest Duration</th>
+                    <th>Percentage of Recorded Downtime</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {statusDurationAnalytics.rows.length === 0 ? (
+                    <tr>
+                      <td colSpan="6">No status duration analytics are currently available.</td>
+                    </tr>
+                  ) : (
+                    statusDurationAnalytics.rows.map((row) => (
+                      <tr key={row.status}>
+                        <td>
+                          <span className={`status-pill ${getStatusClass(row.status)}`}>
+                            {row.status}
+                          </span>
+                        </td>
+                        <td>{row.currentUnits}</td>
+                        <td>{row.completedStatusEvents}</td>
+                        <td>{row.averageDuration}</td>
+                        <td>{row.longestDuration}</td>
+                        <td>{row.percentageOfRecordedDowntime}%</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+
+              {statusDurationAnalytics.trackedStatusTransitions === 0 && (
+                <p className="eyebrow">
+                  Status duration data will populate after assets move between unavailable statuses or return to Ready.
+                </p>
+              )}
             </section>
           </>
         )}
