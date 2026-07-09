@@ -204,6 +204,62 @@ function isLikelyVIN(value) {
   return /^[A-HJ-NPR-Z0-9]{17}$/.test(normalizeScannedVIN(value));
 }
 
+function cleanDecodedVehicleValue(value) {
+  const cleanedValue = String(value || "").trim();
+
+  if (
+    !cleanedValue ||
+    cleanedValue.toLowerCase() === "not applicable" ||
+    cleanedValue.toLowerCase() === "unknown"
+  ) {
+    return "";
+  }
+
+  return cleanedValue;
+}
+
+function buildDecodedAssetDescription(decodedVehicle) {
+  return [decodedVehicle.year, decodedVehicle.make, decodedVehicle.model]
+    .map(cleanDecodedVehicleValue)
+    .filter(Boolean)
+    .join(" ");
+}
+
+async function decodeVinVehicleInformation(vin) {
+  const normalizedVin = normalizeScannedVIN(vin);
+
+  if (!isLikelyVIN(normalizedVin)) {
+    return { year: "", make: "", model: "", assetDescription: "" };
+  }
+
+  try {
+    const response = await fetch(
+      `https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/${encodeURIComponent(
+        normalizedVin
+      )}?format=json`
+    );
+
+    if (!response.ok) {
+      throw new Error("VIN decoder request failed.");
+    }
+
+    const data = await response.json();
+    const result = data?.Results?.[0] || {};
+    const decodedVehicle = {
+      year: cleanDecodedVehicleValue(result.ModelYear),
+      make: cleanDecodedVehicleValue(result.Make),
+      model: cleanDecodedVehicleValue(result.Model),
+    };
+
+    return {
+      ...decodedVehicle,
+      assetDescription: buildDecodedAssetDescription(decodedVehicle),
+    };
+  } catch {
+    return { year: "", make: "", model: "", assetDescription: "" };
+  }
+}
+
 function formatRTS(asset) {
   if (asset.rtsType === "TBD") return "TBD";
   if (asset.rtsType === "No RTS Established") return "—";
@@ -642,7 +698,7 @@ function App() {
   const [vinScanStatus, setVinScanStatus] = useState("");
   const [lastScannedVin, setLastScannedVin] = useState("");
   const [manualVinEntry, setManualVinEntry] = useState("");
-  const [pendingNewAssetVin, setPendingNewAssetVin] = useState("");
+  const [pendingNewAssetDraft, setPendingNewAssetDraft] = useState(null);
   const [scannerRunId, setScannerRunId] = useState(0);
 
   useEffect(() => {
@@ -658,17 +714,20 @@ function App() {
   }, [statusHistoryEvents]);
 
   useEffect(() => {
-    if (!pendingNewAssetVin || showVinScanner) return;
+    if (!pendingNewAssetDraft || showVinScanner) return;
 
     setSelectedAsset(null);
     setEditAsset(null);
     setActiveView("command");
     setNewAsset({
       ...createBlankAsset(),
-      vin: pendingNewAssetVin,
+      vin: pendingNewAssetDraft.vin || "",
+      asset: pendingNewAssetDraft.asset || "",
+      __fromVinScan: true,
+      __decodedAssetDescription: pendingNewAssetDraft.asset || "",
     });
-    setPendingNewAssetVin("");
-  }, [pendingNewAssetVin, showVinScanner]);
+    setPendingNewAssetDraft(null);
+  }, [pendingNewAssetDraft, showVinScanner]);
 
   useEffect(() => {
     if (!showVinScanner) return undefined;
@@ -775,24 +834,25 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
   }
 
   function cleanAsset(assetToClean) {
-    const isReadyStatus = assetToClean.status === "Ready";
+    const { __fromVinScan, __decodedAssetDescription, ...assetFields } = assetToClean;
+    const isReadyStatus = assetFields.status === "Ready";
 
     return {
-      ...assetToClean,
-      unit: assetToClean.unit.trim(),
-      vin: assetToClean.vin.trim().toUpperCase(),
-      department: assetToClean.department.trim(),
-      asset: assetToClean.asset.trim(),
+      ...assetFields,
+      unit: assetFields.unit.trim(),
+      vin: assetFields.vin.trim().toUpperCase(),
+      department: assetFields.department.trim(),
+      asset: assetFields.asset.trim(),
       technician:
-        assetToClean.technician && assetToClean.technician.trim() && assetToClean.technician !== "—"
-          ? assetToClean.technician.trim()
+        assetFields.technician && assetFields.technician.trim() && assetFields.technician !== "—"
+          ? assetFields.technician.trim()
           : "Unassigned",
-      reason: isReadyStatus ? "Available" : assetToClean.reason || "Other",
-      priority: isReadyStatus ? assetToClean.priority || "Normal" : assetToClean.priority,
-      downSince: isReadyStatus ? "" : assetToClean.downSince || getTodayDateString(),
-      rtsType: isReadyStatus ? "No RTS Established" : assetToClean.rtsType,
-      rtsDate: isReadyStatus ? "" : assetToClean.rtsDate,
-      details: assetToClean.details.trim() || (isReadyStatus ? "Available" : "Details pending"),
+      reason: isReadyStatus ? "Available" : assetFields.reason || "Other",
+      priority: isReadyStatus ? assetFields.priority || "Normal" : assetFields.priority,
+      downSince: isReadyStatus ? "" : assetFields.downSince || getTodayDateString(),
+      rtsType: isReadyStatus ? "No RTS Established" : assetFields.rtsType,
+      rtsDate: isReadyStatus ? "" : assetFields.rtsDate,
+      details: assetFields.details.trim() || (isReadyStatus ? "Available" : "Details pending"),
     };
   }
 
@@ -1190,7 +1250,7 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     setNewAsset(null);
     setLastScannedVin("");
     setManualVinEntry("");
-    setPendingNewAssetVin("");
+    setPendingNewAssetDraft(null);
     setVinScanStatus("");
     setShowVinScanner(true);
     setScannerRunId((currentRunId) => currentRunId + 1);
@@ -1212,7 +1272,7 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     setScannerRunId((currentRunId) => currentRunId + 1);
   }
 
-  function openAssetFromVin(vin, sourceLabel) {
+  async function openAssetFromVin(vin, sourceLabel) {
     const scannedVin = normalizeScannedVIN(vin);
 
     if (!isLikelyVIN(scannedVin)) {
@@ -1230,22 +1290,40 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     vinScannerControlsRef.current?.stop();
     vinScannerControlsRef.current = null;
     setLastScannedVin(scannedVin);
-    setShowVinScanner(false);
 
     if (matchedAsset) {
       setVinScanStatus(`Matched VIN ${scannedVin} to Unit ${matchedAsset.unit}.`);
+      setShowVinScanner(false);
       handleSelectAsset(matchedAsset);
       return;
     }
 
-    setVinScanStatus(`VIN ${scannedVin} was scanned and is ready for new asset onboarding.`);
+    setVinScanStatus("VIN scanned successfully. Decoding vehicle information...");
+
+    const decodedVehicle = await decodeVinVehicleInformation(scannedVin);
+    const decodedAssetDescription = decodedVehicle.assetDescription;
+
+    if (decodedAssetDescription) {
+      setVinScanStatus(
+        `VIN scanned successfully. Vehicle identified as ${decodedAssetDescription}. Opening new asset record.`
+      );
+    } else {
+      setVinScanStatus(
+        "VIN scanned successfully, but vehicle information could not be retrieved. Opening new asset record for manual completion."
+      );
+    }
+
+    setShowVinScanner(false);
     setSelectedAsset(null);
     setEditAsset(null);
-    setPendingNewAssetVin(scannedVin);
+    setPendingNewAssetDraft({
+      vin: scannedVin,
+      asset: decodedAssetDescription,
+    });
     setActiveView("command");
   }
 
-  function handleVinScanResult(rawValue, source = "scanner") {
+  async function handleVinScanResult(rawValue, source = "scanner") {
     if (vinScanLockedRef.current) return;
 
     const scannedVin = normalizeScannedVIN(rawValue);
@@ -1259,7 +1337,7 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     }
 
     vinScanLockedRef.current = true;
-    openAssetFromVin(scannedVin, source === "manual" ? "Manual entry" : "Scanner");
+    await openAssetFromVin(scannedVin, source === "manual" ? "Manual entry" : "Scanner");
   }
 
   function handleManualVinSubmit() {
@@ -1297,6 +1375,17 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
             ))}
           </select>
         </label>
+
+        {asset.__fromVinScan && (
+          <div className="issue-field">
+            <p className="eyebrow">Scanned VIN Onboarding</p>
+            <strong>
+              {asset.status === "Ready"
+                ? "This vehicle will be added to ARGOS, but Ready assets do not appear on the Command Center."
+                : "This vehicle will be added to ARGOS and will appear on the Command Center because this status requires operational visibility."}
+            </strong>
+          </div>
+        )}
 
         <label>
           Reason
@@ -1986,6 +2075,16 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
                   ×
                 </button>
               </div>
+
+              {newAsset.__fromVinScan && newAsset.__decodedAssetDescription && (
+                <div className="update-form">
+                  <div className="issue-field">
+                    <p className="eyebrow">VIN Decoded</p>
+                    <strong>{newAsset.__decodedAssetDescription}</strong>
+                    <p>ARGOS populated the Asset field from the scanned VIN. You can edit it before saving.</p>
+                  </div>
+                </div>
+              )}
 
               {renderAssetForm(
                 newAsset,
