@@ -3,6 +3,7 @@ import "./App.css";
 
 const STORAGE_KEY = "argosFleetAssets";
 const COMPLETED_STORAGE_KEY = "argosCompletedRepairEvents";
+const STATUS_HISTORY_STORAGE_KEY = "argosStatusHistoryEvents";
 
 const STATUS_OPTIONS = [
   "Ready",
@@ -48,6 +49,19 @@ function formatDate(dateString) {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function calculateStatusDurationDays(startDate, endDate) {
+  if (!startDate || !endDate) {
+    return 0;
+  }
+
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  const millisecondsPerDay = 1000 * 60 * 60 * 24;
+  const difference = end.getTime() - start.getTime();
+
+  return Math.max(0, Math.floor(difference / millisecondsPerDay));
 }
 
 const initialAssets = [
@@ -202,6 +216,43 @@ function loadCompletedRepairEvents() {
   }
 }
 
+function loadStatusHistoryEvents() {
+  const savedEvents = localStorage.getItem(STATUS_HISTORY_STORAGE_KEY);
+
+  if (!savedEvents) {
+    return [];
+  }
+
+  try {
+    return JSON.parse(savedEvents);
+  } catch {
+    return [];
+  }
+}
+
+function createStatusHistoryEvent(previousAsset, updatedAsset) {
+  const statusEndedAt = getTodayDateString();
+  const statusStartedAt =
+    previousAsset.statusStartedAt || previousAsset.downSince || getTodayDateString();
+
+  return {
+    id: `${previousAsset.unit}-${previousAsset.status}-${updatedAsset.status}-${Date.now()}`,
+    unit: previousAsset.unit,
+    vin: updatedAsset.vin || previousAsset.vin || "",
+    department: updatedAsset.department || previousAsset.department,
+    asset: updatedAsset.asset || previousAsset.asset,
+    previousStatus: previousAsset.status,
+    newStatus: updatedAsset.status,
+    reason: updatedAsset.reason || previousAsset.reason || "Other",
+    details: updatedAsset.details || previousAsset.details || "Details pending",
+    technician: updatedAsset.technician || previousAsset.technician || "—",
+    statusStartedAt,
+    statusEndedAt,
+    durationDays: calculateStatusDurationDays(statusStartedAt, statusEndedAt),
+    recordedAt: new Date().toISOString(),
+  };
+}
+
 function getStatusClass(status) {
   return status.toLowerCase().replaceAll(" ", "-").replaceAll("/", "");
 }
@@ -309,6 +360,7 @@ function buildDailySummary(assets) {
 function App() {
   const [assets, setAssets] = useState(loadSavedAssets);
   const [completedRepairEvents, setCompletedRepairEvents] = useState(loadCompletedRepairEvents);
+  const [statusHistoryEvents, setStatusHistoryEvents] = useState(loadStatusHistoryEvents);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [editAsset, setEditAsset] = useState(null);
   const [newAsset, setNewAsset] = useState(null);
@@ -322,6 +374,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify(completedRepairEvents));
   }, [completedRepairEvents]);
+
+  useEffect(() => {
+    localStorage.setItem(STATUS_HISTORY_STORAGE_KEY, JSON.stringify(statusHistoryEvents));
+  }, [statusHistoryEvents]);
 
   const totalAssets = assets.length;
   const readyAssets = assets.filter((asset) => asset.status === "Ready").length;
@@ -465,6 +521,9 @@ function App() {
         details: "Available",
       };
 
+      const historyEvent = createStatusHistoryEvent(selectedAsset, returnedAsset);
+
+      setStatusHistoryEvents((currentEvents) => [historyEvent, ...currentEvents]);
       setCompletedRepairEvents((currentEvents) => [completedEvent, ...currentEvents]);
 
       setAssets((currentAssets) =>
@@ -476,6 +535,11 @@ function App() {
       setSelectedAsset(returnedAsset);
       setEditAsset(null);
       return;
+    }
+
+    if (statusChanged) {
+      const historyEvent = createStatusHistoryEvent(selectedAsset, updatedAsset);
+      setStatusHistoryEvents((currentEvents) => [historyEvent, ...currentEvents]);
     }
 
     setAssets((currentAssets) =>
