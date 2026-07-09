@@ -57,6 +57,7 @@ const initialAssets = [
     department: "Public Works",
     asset: "Ford F-250",
     status: "Waiting Parts",
+    statusStartedAt: "2026-07-01",
     reason: "Parts Availability",
     priority: "High",
     downSince: "2026-07-01",
@@ -71,6 +72,7 @@ const initialAssets = [
     department: "Police",
     asset: "Ford Explorer",
     status: "In Shop",
+    statusStartedAt: "2026-07-05",
     reason: "Mechanical Failure",
     priority: "Medium",
     downSince: "2026-07-05",
@@ -85,6 +87,7 @@ const initialAssets = [
     department: "Fire",
     asset: "Chevrolet Tahoe",
     status: "Ready",
+    statusStartedAt: getTodayDateString(),
     reason: "Available",
     priority: "Normal",
     downSince: "",
@@ -99,6 +102,7 @@ const initialAssets = [
     department: "Solid Waste",
     asset: "Freightliner M2",
     status: "Down",
+    statusStartedAt: "2026-06-26",
     reason: "Mechanical Failure",
     priority: "Critical",
     downSince: "2026-06-26",
@@ -113,6 +117,7 @@ const initialAssets = [
     department: "Parks",
     asset: "John Deere Tractor",
     status: "Awaiting QC",
+    statusStartedAt: "2026-07-07",
     reason: "Inspection / QC",
     priority: "Normal",
     downSince: "2026-07-07",
@@ -127,6 +132,7 @@ const initialAssets = [
     department: "Utilities",
     asset: "RAM 3500 Service Truck",
     status: "Ready",
+    statusStartedAt: getTodayDateString(),
     reason: "Available",
     priority: "Normal",
     downSince: "",
@@ -144,6 +150,7 @@ function createBlankAsset() {
     department: "",
     asset: "",
     status: "Ready",
+    statusStartedAt: getTodayDateString(),
     reason: "Available",
     priority: "Normal",
     downSince: "",
@@ -159,9 +166,11 @@ function normalizeAsset(asset) {
     vin: "",
     reason: asset.reason || asset.issue || "Available",
     details: asset.details || asset.issue || "Available",
+    statusStartedAt: asset.statusStartedAt || asset.downSince || getTodayDateString(),
     ...asset,
     reason: asset.reason || asset.issue || "Available",
     details: asset.details || asset.issue || "Available",
+    statusStartedAt: asset.statusStartedAt || asset.downSince || getTodayDateString(),
   };
 }
 
@@ -342,10 +351,12 @@ function App() {
     setEditAsset((currentAsset) => {
       const wasReady = currentAsset.status === "Ready";
       const isNowReady = newStatus === "Ready";
+      const statusChanged = currentAsset.status !== newStatus;
 
       return {
         ...currentAsset,
         status: newStatus,
+        statusStartedAt: statusChanged ? getTodayDateString() : currentAsset.statusStartedAt,
         reason: isNowReady ? "Available" : currentAsset.reason === "Available" ? "Other" : currentAsset.reason,
         downSince: isNowReady
           ? ""
@@ -372,6 +383,7 @@ function App() {
   function handleSave() {
     const originalUnit = selectedAsset.unit;
     const originalVin = selectedAsset.vin || "";
+    const statusChanged = selectedAsset.status !== editAsset.status;
 
     const updatedAsset = {
       ...editAsset,
@@ -380,6 +392,7 @@ function App() {
       department: editAsset.department.trim(),
       asset: editAsset.asset.trim(),
       technician: editAsset.technician.trim() || "—",
+      statusStartedAt: statusChanged ? getTodayDateString() : editAsset.statusStartedAt,
       reason: editAsset.reason || (editAsset.status === "Ready" ? "Available" : "Other"),
       details: editAsset.details.trim() || (editAsset.status === "Ready" ? "Available" : "Details pending"),
     };
@@ -431,6 +444,8 @@ function App() {
         vin: updatedAsset.vin,
         reason: updatedAsset.reason,
         details: updatedAsset.details,
+        statusStartedAt: selectedAsset.statusStartedAt || selectedAsset.downSince || getTodayDateString(),
+        statusEndedAt: getTodayDateString(),
         id: `${selectedAsset.unit}-${Date.now()}`,
         completedDate: getTodayDateString(),
         finalDaysDown: calculateFinalDaysDown(selectedAsset.downSince),
@@ -441,6 +456,7 @@ function App() {
       const returnedAsset = {
         ...updatedAsset,
         status: "Ready",
+        statusStartedAt: getTodayDateString(),
         reason: "Available",
         priority: "Normal",
         downSince: "",
@@ -498,10 +514,12 @@ function App() {
 
     setNewAsset((currentAsset) => {
       const isNowReady = newStatus === "Ready";
+      const statusChanged = currentAsset.status !== newStatus;
 
       return {
         ...currentAsset,
         status: newStatus,
+        statusStartedAt: statusChanged ? getTodayDateString() : currentAsset.statusStartedAt,
         reason: isNowReady ? "Available" : currentAsset.reason === "Available" ? "Other" : currentAsset.reason,
         downSince: isNowReady ? "" : currentAsset.downSince || getTodayDateString(),
         rtsType: isNowReady ? "No RTS Established" : currentAsset.rtsType,
@@ -529,6 +547,7 @@ function App() {
       department: newAsset.department.trim(),
       asset: newAsset.asset.trim(),
       technician: newAsset.technician.trim() || "—",
+      statusStartedAt: newAsset.statusStartedAt || getTodayDateString(),
       reason: newAsset.reason || (newAsset.status === "Ready" ? "Available" : "Other"),
       details: newAsset.details.trim() || (newAsset.status === "Ready" ? "Available" : "Details pending"),
     };
@@ -561,6 +580,7 @@ function App() {
     const finalizedAsset = {
       ...cleanedAsset,
       status: cleanedAsset.status === "Completed" ? "Ready" : cleanedAsset.status,
+      statusStartedAt: cleanedAsset.statusStartedAt || getTodayDateString(),
       reason:
         cleanedAsset.status === "Ready" || cleanedAsset.status === "Completed"
           ? "Available"
