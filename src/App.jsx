@@ -14,7 +14,6 @@ const STATUS_OPTIONS = [
   "Awaiting Approval",
   "Awaiting QC",
   "Ready for Pickup",
-  "Completed",
 ];
 
 const REASON_OPTIONS = [
@@ -48,13 +47,18 @@ const CSV_COLUMNS = [
   "details",
 ];
 
+function getTodayDateString() {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
+    today.getDate()
+  ).padStart(2, "0")}`;
+}
+
 function escapeCSVValue(value) {
   const stringValue = String(value ?? "");
-
   if (stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")) {
     return `"${stringValue.replaceAll('"', '""')}"`;
   }
-
   return stringValue;
 }
 
@@ -94,26 +98,23 @@ function parseCSVLine(line) {
   }
 
   values.push(currentValue.trim());
-
   return values;
 }
 
 function parseCSVText(text) {
-  const normalizedText = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-  const lines = normalizedText
+  const lines = text
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
 
-  if (lines.length < 2) {
-    return [];
-  }
+  if (lines.length < 2) return [];
 
   const headers = parseCSVLine(lines[0]).map((header) => header.trim());
 
   return lines.slice(1).map((line) => {
     const values = parseCSVLine(line);
-
     return headers.reduce((row, header, index) => {
       row[header] = values[index] || "";
       return row;
@@ -123,55 +124,13 @@ function parseCSVText(text) {
 
 function findOptionMatch(value, options) {
   const cleanedValue = String(value || "").trim().toLowerCase();
-
   return options.find((option) => option.toLowerCase() === cleanedValue);
-}
-
-function getTodayDateString() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-function normalizeImportedAsset(row) {
-  const status = findOptionMatch(row.status, STATUS_OPTIONS) || "Ready";
-  const isReadyStatus = status === "Ready" || status === "Completed";
-  const priority = findOptionMatch(row.priority, PRIORITY_OPTIONS) || "Normal";
-  const reason = isReadyStatus
-    ? "Available"
-    : findOptionMatch(row.reason, REASON_OPTIONS) || "Other";
-  const rtsType = isReadyStatus
-    ? "No RTS Established"
-    : findOptionMatch(row.rtsType, RTS_TYPE_OPTIONS) || "No RTS Established";
-  const downSince = isReadyStatus ? "" : String(row.downSince || "").trim() || getTodayDateString();
-
-  return {
-    unit: String(row.unit || "").trim(),
-    vin: String(row.vin || "").trim().toUpperCase(),
-    department: String(row.department || "").trim(),
-    asset: String(row.asset || "").trim(),
-    status: isReadyStatus ? "Ready" : status,
-    statusStartedAt: isReadyStatus ? getTodayDateString() : downSince,
-    reason,
-    priority,
-    downSince,
-    technician: String(row.technician || "").trim() || "Unassigned",
-    rtsType,
-    rtsDate: !isReadyStatus && rtsType === "Estimated Date" ? String(row.rtsDate || "").trim() : "",
-    details:
-      String(row.details || "").trim() ||
-      (isReadyStatus ? "Available" : "Details pending"),
-  };
 }
 
 function formatDate(dateString) {
   if (!dateString) return "—";
 
   const date = new Date(`${dateString}T00:00:00`);
-
   return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -180,16 +139,56 @@ function formatDate(dateString) {
 }
 
 function calculateStatusDurationDays(startDate, endDate) {
-  if (!startDate || !endDate) {
-    return 0;
-  }
+  if (!startDate || !endDate) return 0;
 
   const start = new Date(`${startDate}T00:00:00`);
   const end = new Date(`${endDate}T00:00:00`);
   const millisecondsPerDay = 1000 * 60 * 60 * 24;
-  const difference = end.getTime() - start.getTime();
 
-  return Math.max(0, Math.floor(difference / millisecondsPerDay));
+  return Math.max(0, Math.floor((end.getTime() - start.getTime()) / millisecondsPerDay));
+}
+
+function calculateDaysDown(downSince, status) {
+  if (status === "Ready" || !downSince) return 0;
+
+  const downDate = new Date(`${downSince}T00:00:00`);
+  const today = new Date();
+
+  today.setHours(0, 0, 0, 0);
+
+  const millisecondsPerDay = 1000 * 60 * 60 * 24;
+  return Math.max(0, Math.floor((today.getTime() - downDate.getTime()) / millisecondsPerDay));
+}
+
+function calculateFinalDaysDown(downSince) {
+  if (!downSince) return 0;
+
+  const downDate = new Date(`${downSince}T00:00:00`);
+  const today = new Date();
+
+  today.setHours(0, 0, 0, 0);
+
+  const millisecondsPerDay = 1000 * 60 * 60 * 24;
+  return Math.max(0, Math.floor((today.getTime() - downDate.getTime()) / millisecondsPerDay));
+}
+
+function getStatusClass(status) {
+  return String(status || "Ready").toLowerCase().replaceAll(" ", "-").replaceAll("/", "");
+}
+
+function formatRTS(asset) {
+  if (asset.rtsType === "TBD") return "TBD";
+  if (asset.rtsType === "No RTS Established") return "—";
+
+  if (asset.rtsType === "Estimated Date" && asset.rtsDate) {
+    const date = new Date(`${asset.rtsDate}T00:00:00`);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  }
+
+  return "—";
 }
 
 const initialAssets = [
@@ -233,7 +232,7 @@ const initialAssets = [
     reason: "Available",
     priority: "Normal",
     downSince: "",
-    technician: "—",
+    technician: "Unassigned",
     rtsType: "No RTS Established",
     rtsDate: "",
     details: "Available",
@@ -263,7 +262,7 @@ const initialAssets = [
     reason: "Inspection / QC",
     priority: "Normal",
     downSince: "2026-07-07",
-    technician: "—",
+    technician: "Unassigned",
     rtsType: "No RTS Established",
     rtsDate: "",
     details: "250-hour service due",
@@ -278,7 +277,7 @@ const initialAssets = [
     reason: "Available",
     priority: "Normal",
     downSince: "",
-    technician: "—",
+    technician: "Unassigned",
     rtsType: "No RTS Established",
     rtsDate: "",
     details: "Available",
@@ -296,7 +295,7 @@ function createBlankAsset() {
     reason: "Available",
     priority: "Normal",
     downSince: "",
-    technician: "—",
+    technician: "Unassigned",
     rtsType: "No RTS Established",
     rtsDate: "",
     details: "Available",
@@ -304,24 +303,57 @@ function createBlankAsset() {
 }
 
 function normalizeAsset(asset) {
+  const normalizedStatus = asset.status === "Completed" ? "Ready" : asset.status || "Ready";
+  const isReadyStatus = normalizedStatus === "Ready";
+  const technician =
+    asset.technician && asset.technician !== "—" && asset.technician !== "‚Äî"
+      ? asset.technician
+      : "Unassigned";
+
   return {
     vin: "",
-    reason: asset.reason || asset.issue || "Available",
-    details: asset.details || asset.issue || "Available",
-    statusStartedAt: asset.statusStartedAt || asset.downSince || getTodayDateString(),
     ...asset,
-    reason: asset.reason || asset.issue || "Available",
-    details: asset.details || asset.issue || "Available",
+    status: normalizedStatus,
+    reason: isReadyStatus ? "Available" : asset.reason || asset.issue || "Other",
+    details: asset.details || asset.issue || (isReadyStatus ? "Available" : "Details pending"),
     statusStartedAt: asset.statusStartedAt || asset.downSince || getTodayDateString(),
+    technician,
+    downSince: isReadyStatus ? "" : asset.downSince || getTodayDateString(),
+    rtsType: isReadyStatus ? "No RTS Established" : asset.rtsType || "No RTS Established",
+    rtsDate: isReadyStatus ? "" : asset.rtsDate || "",
+  };
+}
+
+function normalizeImportedAsset(row) {
+  const importedStatus = findOptionMatch(row.status, STATUS_OPTIONS) || "Ready";
+  const isReadyStatus = importedStatus === "Ready";
+  const priority = findOptionMatch(row.priority, PRIORITY_OPTIONS) || "Normal";
+  const reason = isReadyStatus ? "Available" : findOptionMatch(row.reason, REASON_OPTIONS) || "Other";
+  const rtsType = isReadyStatus
+    ? "No RTS Established"
+    : findOptionMatch(row.rtsType, RTS_TYPE_OPTIONS) || "No RTS Established";
+  const downSince = isReadyStatus ? "" : String(row.downSince || "").trim() || getTodayDateString();
+
+  return {
+    unit: String(row.unit || "").trim(),
+    vin: String(row.vin || "").trim().toUpperCase(),
+    department: String(row.department || "").trim(),
+    asset: String(row.asset || "").trim(),
+    status: importedStatus,
+    statusStartedAt: isReadyStatus ? getTodayDateString() : downSince,
+    reason,
+    priority,
+    downSince,
+    technician: String(row.technician || "").trim() || "Unassigned",
+    rtsType,
+    rtsDate: !isReadyStatus && rtsType === "Estimated Date" ? String(row.rtsDate || "").trim() : "",
+    details: String(row.details || "").trim() || (isReadyStatus ? "Available" : "Details pending"),
   };
 }
 
 function loadSavedAssets() {
   const savedAssets = localStorage.getItem(STORAGE_KEY);
-
-  if (!savedAssets) {
-    return initialAssets;
-  }
+  if (!savedAssets) return initialAssets;
 
   try {
     return JSON.parse(savedAssets).map(normalizeAsset);
@@ -332,10 +364,7 @@ function loadSavedAssets() {
 
 function loadCompletedRepairEvents() {
   const savedEvents = localStorage.getItem(COMPLETED_STORAGE_KEY);
-
-  if (!savedEvents) {
-    return [];
-  }
+  if (!savedEvents) return [];
 
   try {
     return JSON.parse(savedEvents).map(normalizeAsset);
@@ -346,10 +375,7 @@ function loadCompletedRepairEvents() {
 
 function loadStatusHistoryEvents() {
   const savedEvents = localStorage.getItem(STATUS_HISTORY_STORAGE_KEY);
-
-  if (!savedEvents) {
-    return [];
-  }
+  if (!savedEvents) return [];
 
   try {
     return JSON.parse(savedEvents);
@@ -360,8 +386,7 @@ function loadStatusHistoryEvents() {
 
 function createStatusHistoryEvent(previousAsset, updatedAsset) {
   const statusEndedAt = getTodayDateString();
-  const statusStartedAt =
-    previousAsset.statusStartedAt || previousAsset.downSince || getTodayDateString();
+  const statusStartedAt = previousAsset.statusStartedAt || previousAsset.downSince || getTodayDateString();
 
   return {
     id: `${previousAsset.unit}-${previousAsset.status}-${updatedAsset.status}-${Date.now()}`,
@@ -373,7 +398,7 @@ function createStatusHistoryEvent(previousAsset, updatedAsset) {
     newStatus: updatedAsset.status,
     reason: updatedAsset.reason || previousAsset.reason || "Other",
     details: updatedAsset.details || previousAsset.details || "Details pending",
-    technician: updatedAsset.technician || previousAsset.technician || "—",
+    technician: updatedAsset.technician || previousAsset.technician || "Unassigned",
     statusStartedAt,
     statusEndedAt,
     durationDays: calculateStatusDurationDays(statusStartedAt, statusEndedAt),
@@ -381,71 +406,12 @@ function createStatusHistoryEvent(previousAsset, updatedAsset) {
   };
 }
 
-function getStatusClass(status) {
-  return status.toLowerCase().replaceAll(" ", "-").replaceAll("/", "");
-}
-
-function isUnavailable(status) {
-  return status !== "Ready";
-}
-
-function calculateDaysDown(downSince, status) {
-  if (!isUnavailable(status) || !downSince) {
-    return 0;
-  }
-
-  const downDate = new Date(`${downSince}T00:00:00`);
-  const today = new Date();
-
-  today.setHours(0, 0, 0, 0);
-
-  const millisecondsPerDay = 1000 * 60 * 60 * 24;
-  const difference = today.getTime() - downDate.getTime();
-
-  return Math.max(0, Math.floor(difference / millisecondsPerDay));
-}
-
-function calculateFinalDaysDown(downSince) {
-  if (!downSince) {
-    return 0;
-  }
-
-  const downDate = new Date(`${downSince}T00:00:00`);
-  const today = new Date();
-
-  today.setHours(0, 0, 0, 0);
-
-  const millisecondsPerDay = 1000 * 60 * 60 * 24;
-  const difference = today.getTime() - downDate.getTime();
-
-  return Math.max(0, Math.floor(difference / millisecondsPerDay));
-}
-
-function formatRTS(asset) {
-  if (asset.rtsType === "TBD") return "TBD";
-  if (asset.rtsType === "No RTS Established") return "—";
-
-  if (asset.rtsType === "Estimated Date" && asset.rtsDate) {
-    const date = new Date(`${asset.rtsDate}T00:00:00`);
-
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-  }
-
-  return "—";
-}
-
-function getAssetsWithDaysDown(assets) {
-  return assets.map((asset) => ({
+function buildDailySummary(assets) {
+  const assetsWithDaysDown = assets.map((asset) => ({
     ...asset,
     daysDown: calculateDaysDown(asset.downSince, asset.status),
   }));
-}
 
-function buildDailySummary(assets) {
-  const assetsWithDaysDown = getAssetsWithDaysDown(assets);
   const totalAssets = assetsWithDaysDown.length;
   const readyAssets = assetsWithDaysDown.filter((asset) => asset.status === "Ready");
   const unavailableAssets = assetsWithDaysDown.filter((asset) => asset.status !== "Ready");
@@ -462,13 +428,6 @@ function buildDailySummary(assets) {
     return counts;
   }, {});
 
-  const departmentWatch = Object.entries(departmentCounts)
-    .map(([department, count]) => `${department}: ${count}`)
-    .join(" | ");
-
-  const availability =
-    totalAssets > 0 ? ((readyAssets.length / totalAssets) * 100).toFixed(1) : "0.0";
-
   return {
     totalAssets,
     readyAssets,
@@ -479,8 +438,10 @@ function buildDailySummary(assets) {
     noRtsAssets,
     agedAssets,
     longestDownAsset,
-    departmentWatch,
-    availability,
+    departmentWatch: Object.entries(departmentCounts)
+      .map(([department, count]) => `${department}: ${count}`)
+      .join(" | "),
+    availability: totalAssets > 0 ? ((readyAssets.length / totalAssets) * 100).toFixed(1) : "0.0",
     agingThreshold,
   };
 }
@@ -509,56 +470,116 @@ function App() {
     localStorage.setItem(STATUS_HISTORY_STORAGE_KEY, JSON.stringify(statusHistoryEvents));
   }, [statusHistoryEvents]);
 
+  const activeBoardAssets = assets.filter((asset) => asset.status !== "Ready");
+  const readyArchiveAssets = assets.filter((asset) => asset.status === "Ready");
+
+  const completedRepairUnitKeys = new Set(
+    completedRepairEvents.map((event) => String(event.unit || "").toLowerCase())
+  );
+
+  const readyOnlyArchiveAssets = readyArchiveAssets.filter(
+    (asset) => !completedRepairUnitKeys.has(String(asset.unit || "").toLowerCase())
+  );
+
+  const completedRepairRecords = [
+    ...completedRepairEvents.map((event) => ({
+      ...event,
+      recordId: `completed-${event.id || event.unit}`,
+      recordType: "Completed Repair",
+      displayStatus: event.finalStatus || "Ready",
+      completedDisplayDate: event.completedDate || event.statusEndedAt || event.statusStartedAt,
+      daysDownDisplay: event.finalDaysDown ?? calculateFinalDaysDown(event.downSince),
+      isClickableAsset: false,
+    })),
+    ...readyOnlyArchiveAssets.map((asset) => ({
+      ...asset,
+      recordId: `ready-${asset.unit}`,
+      recordType: "Ready Record",
+      displayStatus: "Ready",
+      completedDisplayDate: asset.statusStartedAt,
+      daysDownDisplay: "—",
+      isClickableAsset: true,
+    })),
+  ];
+
   const totalAssets = assets.length;
-  const readyAssets = assets.filter((asset) => asset.status === "Ready").length;
-  const unavailableAssets = totalAssets - readyAssets;
-  const waitingParts = assets.filter((asset) => asset.status === "Waiting Parts").length;
-  const criticalAssets = assets.filter((asset) => asset.priority === "Critical").length;
+  const readyAssets = readyArchiveAssets.length;
+  const unavailableAssets = activeBoardAssets.length;
+  const waitingParts = activeBoardAssets.filter((asset) => asset.status === "Waiting Parts").length;
+  const criticalAssets = activeBoardAssets.filter((asset) => asset.priority === "Critical").length;
   const availability = totalAssets > 0 ? ((readyAssets / totalAssets) * 100).toFixed(1) : "0.0";
   const dailySummary = buildDailySummary(assets);
 
   function handleSelectAsset(asset) {
-    setSelectedAsset(asset);
-    setEditAsset(normalizeAsset(asset));
+    const liveAsset = assets.find((currentAsset) => currentAsset.unit === asset.unit) || asset;
+    setSelectedAsset(liveAsset);
+    setEditAsset(normalizeAsset(liveAsset));
+  }
+
+  function cleanAsset(assetToClean) {
+    const isReadyStatus = assetToClean.status === "Ready";
+
+    return {
+      ...assetToClean,
+      unit: assetToClean.unit.trim(),
+      vin: assetToClean.vin.trim().toUpperCase(),
+      department: assetToClean.department.trim(),
+      asset: assetToClean.asset.trim(),
+      technician:
+        assetToClean.technician && assetToClean.technician.trim() && assetToClean.technician !== "—"
+          ? assetToClean.technician.trim()
+          : "Unassigned",
+      reason: isReadyStatus ? "Available" : assetToClean.reason || "Other",
+      priority: isReadyStatus ? assetToClean.priority || "Normal" : assetToClean.priority,
+      downSince: isReadyStatus ? "" : assetToClean.downSince || getTodayDateString(),
+      rtsType: isReadyStatus ? "No RTS Established" : assetToClean.rtsType,
+      rtsDate: isReadyStatus ? "" : assetToClean.rtsDate,
+      details:
+        assetToClean.details.trim() || (isReadyStatus ? "Available" : "Details pending"),
+    };
   }
 
   function handleChange(event) {
     const { name, value } = event.target;
+    setEditAsset((currentAsset) => ({ ...currentAsset, [name]: value }));
+  }
 
-    setEditAsset((currentAsset) => ({
+  function handleNewAssetChange(event) {
+    const { name, value } = event.target;
+    setNewAsset((currentAsset) => ({ ...currentAsset, [name]: value }));
+  }
+
+  function applyStatusChange(currentAsset, newStatus) {
+    const wasReady = currentAsset.status === "Ready";
+    const isNowReady = newStatus === "Ready";
+    const statusChanged = currentAsset.status !== newStatus;
+
+    return {
       ...currentAsset,
-      [name]: value,
-    }));
+      status: newStatus,
+      statusStartedAt: statusChanged ? getTodayDateString() : currentAsset.statusStartedAt,
+      reason: isNowReady ? "Available" : currentAsset.reason === "Available" ? "Other" : currentAsset.reason,
+      downSince: isNowReady
+        ? ""
+        : wasReady && !currentAsset.downSince
+          ? getTodayDateString()
+          : currentAsset.downSince || getTodayDateString(),
+      rtsType: isNowReady ? "No RTS Established" : currentAsset.rtsType,
+      rtsDate: isNowReady ? "" : currentAsset.rtsDate,
+      details: isNowReady ? "Available" : currentAsset.details === "Available" ? "" : currentAsset.details,
+    };
   }
 
   function handleStatusChange(event) {
-    const newStatus = event.target.value;
+    setEditAsset((currentAsset) => applyStatusChange(currentAsset, event.target.value));
+  }
 
-    setEditAsset((currentAsset) => {
-      const wasReady = currentAsset.status === "Ready";
-      const isNowReady = newStatus === "Ready";
-      const statusChanged = currentAsset.status !== newStatus;
-
-      return {
-        ...currentAsset,
-        status: newStatus,
-        statusStartedAt: statusChanged ? getTodayDateString() : currentAsset.statusStartedAt,
-        reason: isNowReady ? "Available" : currentAsset.reason === "Available" ? "Other" : currentAsset.reason,
-        downSince: isNowReady
-          ? ""
-          : wasReady && !currentAsset.downSince
-            ? getTodayDateString()
-            : currentAsset.downSince,
-        rtsType: isNowReady ? "No RTS Established" : currentAsset.rtsType,
-        rtsDate: isNowReady ? "" : currentAsset.rtsDate,
-        details: isNowReady ? "Available" : currentAsset.details,
-      };
-    });
+  function handleNewAssetStatusChange(event) {
+    setNewAsset((currentAsset) => applyStatusChange(currentAsset, event.target.value));
   }
 
   function handleRTSTypeChange(event) {
     const newRTSType = event.target.value;
-
     setEditAsset((currentAsset) => ({
       ...currentAsset,
       rtsType: newRTSType,
@@ -566,26 +587,19 @@ function App() {
     }));
   }
 
-  function handleSave() {
-    const originalUnit = selectedAsset.unit;
-    const originalVin = selectedAsset.vin || "";
-    const statusChanged = selectedAsset.status !== editAsset.status;
+  function handleNewAssetRTSTypeChange(event) {
+    const newRTSType = event.target.value;
+    setNewAsset((currentAsset) => ({
+      ...currentAsset,
+      rtsType: newRTSType,
+      rtsDate: newRTSType === "Estimated Date" ? currentAsset.rtsDate : "",
+    }));
+  }
 
-    const updatedAsset = {
-      ...editAsset,
-      unit: editAsset.unit.trim(),
-      vin: editAsset.vin.trim().toUpperCase(),
-      department: editAsset.department.trim(),
-      asset: editAsset.asset.trim(),
-      technician: editAsset.technician.trim() || "—",
-      statusStartedAt: statusChanged ? getTodayDateString() : editAsset.statusStartedAt,
-      reason: editAsset.reason || (editAsset.status === "Ready" ? "Available" : "Other"),
-      details: editAsset.details.trim() || (editAsset.status === "Ready" ? "Available" : "Details pending"),
-    };
-
+  function validateAsset(updatedAsset, originalUnit = "", originalVin = "") {
     if (!updatedAsset.unit || !updatedAsset.department || !updatedAsset.asset) {
       alert("Unit, Department, and Asset are required.");
-      return;
+      return false;
     }
 
     const unitAlreadyExists = assets.some(
@@ -596,7 +610,7 @@ function App() {
 
     if (unitAlreadyExists) {
       alert("That unit number already exists in ARGOS.");
-      return;
+      return false;
     }
 
     const vinAlreadyExists =
@@ -609,34 +623,45 @@ function App() {
 
     if (vinAlreadyExists) {
       alert("That VIN already exists in ARGOS.");
-      return;
+      return false;
     }
 
-    const isCompletingRepairEvent =
-      selectedAsset.status !== "Ready" &&
-      (updatedAsset.status === "Ready" || updatedAsset.status === "Completed");
+    return true;
+  }
+
+  function handleSave() {
+    const originalUnit = selectedAsset.unit;
+    const originalVin = selectedAsset.vin || "";
+    const statusChanged = selectedAsset.status !== editAsset.status;
+
+    const updatedAsset = cleanAsset({
+      ...editAsset,
+      statusStartedAt: statusChanged ? getTodayDateString() : editAsset.statusStartedAt,
+    });
+
+    if (!validateAsset(updatedAsset, originalUnit, originalVin)) return;
+
+    const isCompletingRepairEvent = selectedAsset.status !== "Ready" && updatedAsset.status === "Ready";
 
     if (isCompletingRepairEvent) {
       const shouldComplete = window.confirm(
-        `Complete the active repair event for Unit ${selectedAsset.unit}? This will copy the event to Repair History and return the asset to Ready in the Command Center.`
+        `Return Unit ${selectedAsset.unit} to Ready? This will move the active repair event to Repair History and remove the unit from the Command Center.`
       );
 
-      if (!shouldComplete) {
-        return;
-      }
+      if (!shouldComplete) return;
 
       const completedEvent = {
         ...selectedAsset,
         vin: updatedAsset.vin,
-        reason: updatedAsset.reason,
-        details: updatedAsset.details,
+        reason: selectedAsset.reason || updatedAsset.reason,
+        details: selectedAsset.details || updatedAsset.details,
         statusStartedAt: selectedAsset.statusStartedAt || selectedAsset.downSince || getTodayDateString(),
         statusEndedAt: getTodayDateString(),
         id: `${selectedAsset.unit}-${Date.now()}`,
         completedDate: getTodayDateString(),
         finalDaysDown: calculateFinalDaysDown(selectedAsset.downSince),
         finalStatus: "Ready",
-        completionNote: "Returned to service",
+        completionNote: "Returned to Ready",
       };
 
       const returnedAsset = {
@@ -651,162 +676,49 @@ function App() {
         details: "Available",
       };
 
-      const historyEvent = createStatusHistoryEvent(selectedAsset, returnedAsset);
-
-      setStatusHistoryEvents((currentEvents) => [historyEvent, ...currentEvents]);
+      setStatusHistoryEvents((currentEvents) => [
+        createStatusHistoryEvent(selectedAsset, returnedAsset),
+        ...currentEvents,
+      ]);
       setCompletedRepairEvents((currentEvents) => [completedEvent, ...currentEvents]);
-
       setAssets((currentAssets) =>
-        currentAssets.map((asset) =>
-          asset.unit === originalUnit ? returnedAsset : asset
-        )
+        currentAssets.map((asset) => (asset.unit === originalUnit ? returnedAsset : asset))
       );
 
-      setSelectedAsset(returnedAsset);
+      setSelectedAsset(null);
       setEditAsset(null);
+      setActiveView("history");
       return;
     }
 
     if (statusChanged) {
-      const historyEvent = createStatusHistoryEvent(selectedAsset, updatedAsset);
-      setStatusHistoryEvents((currentEvents) => [historyEvent, ...currentEvents]);
+      setStatusHistoryEvents((currentEvents) => [
+        createStatusHistoryEvent(selectedAsset, updatedAsset),
+        ...currentEvents,
+      ]);
     }
 
     setAssets((currentAssets) =>
-      currentAssets.map((asset) =>
-        asset.unit === originalUnit ? updatedAsset : asset
-      )
+      currentAssets.map((asset) => (asset.unit === originalUnit ? updatedAsset : asset))
     );
 
     setSelectedAsset(updatedAsset);
     setEditAsset(null);
-  }
-
-  function handleCancel() {
-    setEditAsset(null);
-    setSelectedAsset(null);
-  }
-
-  function handleOpenAddAsset() {
-    setSelectedAsset(null);
-    setEditAsset(null);
-    setNewAsset(createBlankAsset());
-    setActiveView("command");
-  }
-
-  function handleNewAssetChange(event) {
-    const { name, value } = event.target;
-
-    setNewAsset((currentAsset) => ({
-      ...currentAsset,
-      [name]: value,
-    }));
-  }
-
-  function handleNewAssetStatusChange(event) {
-    const newStatus = event.target.value;
-
-    setNewAsset((currentAsset) => {
-      const isNowReady = newStatus === "Ready";
-      const statusChanged = currentAsset.status !== newStatus;
-
-      return {
-        ...currentAsset,
-        status: newStatus,
-        statusStartedAt: statusChanged ? getTodayDateString() : currentAsset.statusStartedAt,
-        reason: isNowReady ? "Available" : currentAsset.reason === "Available" ? "Other" : currentAsset.reason,
-        downSince: isNowReady ? "" : currentAsset.downSince || getTodayDateString(),
-        rtsType: isNowReady ? "No RTS Established" : currentAsset.rtsType,
-        rtsDate: isNowReady ? "" : currentAsset.rtsDate,
-        details: isNowReady ? "Available" : currentAsset.details === "Available" ? "" : currentAsset.details,
-      };
-    });
-  }
-
-  function handleNewAssetRTSTypeChange(event) {
-    const newRTSType = event.target.value;
-
-    setNewAsset((currentAsset) => ({
-      ...currentAsset,
-      rtsType: newRTSType,
-      rtsDate: newRTSType === "Estimated Date" ? currentAsset.rtsDate : "",
-    }));
+    setActiveView(updatedAsset.status === "Ready" ? "history" : "command");
   }
 
   function handleSaveNewAsset() {
-    const cleanedAsset = {
+    const cleanedAsset = cleanAsset({
       ...newAsset,
-      unit: newAsset.unit.trim(),
-      vin: newAsset.vin.trim().toUpperCase(),
-      department: newAsset.department.trim(),
-      asset: newAsset.asset.trim(),
-      technician: newAsset.technician.trim() || "—",
       statusStartedAt: newAsset.statusStartedAt || getTodayDateString(),
-      reason: newAsset.reason || (newAsset.status === "Ready" ? "Available" : "Other"),
-      details: newAsset.details.trim() || (newAsset.status === "Ready" ? "Available" : "Details pending"),
-    };
+    });
 
-    if (!cleanedAsset.unit || !cleanedAsset.department || !cleanedAsset.asset) {
-      alert("Unit, Department, and Asset are required.");
-      return;
-    }
+    if (!validateAsset(cleanedAsset)) return;
 
-    const unitAlreadyExists = assets.some(
-      (asset) => asset.unit.toLowerCase() === cleanedAsset.unit.toLowerCase()
-    );
-
-    if (unitAlreadyExists) {
-      alert("That unit number already exists in ARGOS.");
-      return;
-    }
-
-    const vinAlreadyExists =
-      cleanedAsset.vin &&
-      assets.some(
-        (asset) => (asset.vin || "").toLowerCase() === cleanedAsset.vin.toLowerCase()
-      );
-
-    if (vinAlreadyExists) {
-      alert("That VIN already exists in ARGOS.");
-      return;
-    }
-
-    const finalizedAsset = {
-      ...cleanedAsset,
-      status: cleanedAsset.status === "Completed" ? "Ready" : cleanedAsset.status,
-      statusStartedAt: cleanedAsset.statusStartedAt || getTodayDateString(),
-      reason:
-        cleanedAsset.status === "Ready" || cleanedAsset.status === "Completed"
-          ? "Available"
-          : cleanedAsset.reason,
-      downSince:
-        cleanedAsset.status === "Ready" || cleanedAsset.status === "Completed"
-          ? ""
-          : cleanedAsset.downSince || getTodayDateString(),
-      rtsType:
-        cleanedAsset.status === "Ready" || cleanedAsset.status === "Completed"
-          ? "No RTS Established"
-          : cleanedAsset.rtsType,
-      rtsDate:
-        cleanedAsset.status !== "Ready" &&
-        cleanedAsset.status !== "Completed" &&
-        cleanedAsset.rtsType === "Estimated Date"
-          ? cleanedAsset.rtsDate
-          : "",
-      details:
-        cleanedAsset.status === "Ready" || cleanedAsset.status === "Completed"
-          ? "Available"
-          : cleanedAsset.details,
-    };
-
-    setAssets((currentAssets) => [...currentAssets, finalizedAsset]);
-    setSelectedAsset(finalizedAsset);
+    setAssets((currentAssets) => [...currentAssets, cleanedAsset]);
+    setSelectedAsset(cleanedAsset);
     setNewAsset(null);
-    setActiveView("command");
-  }
-
-  function handleCancelNewAsset() {
-    setNewAsset(null);
+    setActiveView(cleanedAsset.status === "Ready" ? "history" : "command");
   }
 
   function handleDownloadCSVTemplate() {
@@ -819,7 +731,7 @@ function App() {
       reason: "Available",
       priority: "Normal",
       downSince: "",
-      technician: "—",
+      technician: "Unassigned",
       rtsType: "No RTS Established",
       rtsDate: "",
       details: "Available",
@@ -830,26 +742,20 @@ function App() {
       CSV_COLUMNS.map((column) => escapeCSVValue(exampleRow[column])).join(","),
     ].join("\n");
 
-    downloadFile("argos-csv-template.csv", csvContent, "text/csv;charset=utf-8");
+    downloadFile("argos-csv-template.csv", `\uFEFF${csvContent}`, "text/csv;charset=utf-8");
   }
 
   function handleImportCSV(event) {
     const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
     const reader = new FileReader();
 
     reader.onload = (readerEvent) => {
-      const text = String(readerEvent.target?.result || "");
-      const rows = parseCSVText(text);
+      const rows = parseCSVText(String(readerEvent.target?.result || ""));
       const existingUnits = new Set(assets.map((asset) => asset.unit.toLowerCase()));
       const existingVins = new Set(
-        assets
-          .map((asset) => (asset.vin || "").toLowerCase())
-          .filter(Boolean)
+        assets.map((asset) => (asset.vin || "").toLowerCase()).filter(Boolean)
       );
       const importedUnits = new Set();
       const importedVins = new Set();
@@ -909,7 +815,7 @@ function App() {
 
   function handleExportView() {
     if (assets.length === 0) {
-      setImportStatus("There are no active assets to export.");
+      setImportStatus("There are no assets to export.");
       return;
     }
 
@@ -929,13 +835,99 @@ function App() {
     ].join("\n");
 
     downloadFile(
-      `argos-active-fleet-export-${getTodayDateString()}.csv`,
+      `argos-fleet-export-${getTodayDateString()}.csv`,
       `\uFEFF${csvContent}`,
       "text/csv;charset=utf-8"
     );
 
-    setImportStatus(
-      `Exported ${assets.length} active asset${assets.length === 1 ? "" : "s"} successfully.`
+    setImportStatus(`Exported ${assets.length} asset${assets.length === 1 ? "" : "s"} successfully.`);
+  }
+
+  function renderAssetForm(asset, onChange, onStatusChange, onRTSTypeChange) {
+    return (
+      <div className="update-form">
+        <label>
+          Unit
+          <input type="text" name="unit" value={asset.unit} onChange={onChange} />
+        </label>
+
+        <label>
+          VIN
+          <input type="text" name="vin" value={asset.vin} onChange={onChange} placeholder="Optional" />
+        </label>
+
+        <label>
+          Department
+          <input type="text" name="department" value={asset.department} onChange={onChange} />
+        </label>
+
+        <label>
+          Asset
+          <input type="text" name="asset" value={asset.asset} onChange={onChange} />
+        </label>
+
+        <label>
+          Status
+          <select name="status" value={asset.status} onChange={onStatusChange}>
+            {STATUS_OPTIONS.map((status) => (
+              <option key={status}>{status}</option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Reason
+          <select name="reason" value={asset.reason} onChange={onChange}>
+            {REASON_OPTIONS.map((reason) => (
+              <option key={reason}>{reason}</option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Priority
+          <select name="priority" value={asset.priority} onChange={onChange}>
+            {PRIORITY_OPTIONS.map((priority) => (
+              <option key={priority}>{priority}</option>
+            ))}
+          </select>
+        </label>
+
+        {asset.status !== "Ready" && (
+          <label>
+            Down Since
+            <input type="date" name="downSince" value={asset.downSince} onChange={onChange} />
+          </label>
+        )}
+
+        <label>
+          Technician / Responsible Party
+          <input type="text" name="technician" value={asset.technician} onChange={onChange} />
+        </label>
+
+        {asset.status !== "Ready" && (
+          <label>
+            RTS Status
+            <select name="rtsType" value={asset.rtsType} onChange={onRTSTypeChange}>
+              {RTS_TYPE_OPTIONS.map((rtsType) => (
+                <option key={rtsType}>{rtsType}</option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {asset.status !== "Ready" && asset.rtsType === "Estimated Date" && (
+          <label>
+            Estimated Return to Service
+            <input type="date" name="rtsDate" value={asset.rtsDate} onChange={onChange} />
+          </label>
+        )}
+
+        <label className="issue-field">
+          Details / Notes
+          <textarea name="details" value={asset.details} onChange={onChange} rows="4" />
+        </label>
+      </div>
     );
   }
 
@@ -991,12 +983,12 @@ function App() {
             <header className="dashboard-header">
               <div>
                 <p className="eyebrow">Command Center</p>
-                <h2>Fleet Availability Dashboard</h2>
+                <h2>Fleet Visibility Dashboard</h2>
               </div>
 
               <div className="refresh-box">
-                <span>Last Refresh</span>
-                <strong>Today · 08:42</strong>
+                <span>Active Exceptions</span>
+                <strong>{activeBoardAssets.length}</strong>
               </div>
             </header>
 
@@ -1004,11 +996,11 @@ function App() {
               <div className="availability-card">
                 <span>Fleet Availability</span>
                 <strong>{availability}%</strong>
-                <p>{readyAssets} of {totalAssets} assets ready for service</p>
+                <p>{readyAssets} of {totalAssets} assets currently Ready / Archived</p>
               </div>
 
               <div className="metric-card"><span>Total Assets</span><strong>{totalAssets}</strong></div>
-              <div className="metric-card"><span>Unavailable</span><strong>{unavailableAssets}</strong></div>
+              <div className="metric-card"><span>Active Exceptions</span><strong>{unavailableAssets}</strong></div>
               <div className="metric-card"><span>Waiting Parts</span><strong>{waitingParts}</strong></div>
               <div className="metric-card critical"><span>Critical</span><strong>{criticalAssets}</strong></div>
             </section>
@@ -1021,7 +1013,14 @@ function App() {
                 </div>
 
                 <div>
-                  <button type="button" onClick={handleOpenAddAsset}>Add Asset</button>{" "}
+                  <button type="button" onClick={() => {
+                    setSelectedAsset(null);
+                    setEditAsset(null);
+                    setNewAsset(createBlankAsset());
+                    setActiveView("command");
+                  }}>
+                    Add Asset
+                  </button>{" "}
                   <button type="button" onClick={handleDownloadCSVTemplate}>Download CSV Template</button>{" "}
                   <input
                     ref={csvInputRef}
@@ -1030,16 +1029,12 @@ function App() {
                     onChange={handleImportCSV}
                     style={{ display: "none" }}
                   />
-                  <button type="button" onClick={() => csvInputRef.current?.click()}>
-                    Import CSV
-                  </button>{" "}
+                  <button type="button" onClick={() => csvInputRef.current?.click()}>Import CSV</button>{" "}
                   <button type="button" onClick={handleExportView}>Export View</button>
                 </div>
               </div>
 
-              {importStatus && (
-                <p className="eyebrow">{importStatus}</p>
-              )}
+              {importStatus && <p className="eyebrow">{importStatus}</p>}
 
               <table>
                 <thead>
@@ -1058,28 +1053,36 @@ function App() {
                 </thead>
 
                 <tbody>
-                  {assets.map((asset) => (
-                    <tr
-                      key={asset.unit}
-                      onClick={() => handleSelectAsset(asset)}
-                      className={selectedAsset?.unit === asset.unit ? "selected-row" : ""}
-                    >
-                      <td className="unit">{asset.unit}</td>
-                      <td>{asset.department}</td>
-                      <td>{asset.asset}</td>
-                      <td>
-                        <span className={`status-pill ${getStatusClass(asset.status)}`}>
-                          {asset.status}
-                        </span>
+                  {activeBoardAssets.length === 0 ? (
+                    <tr>
+                      <td colSpan="10">
+                        No assets currently require visibility. Ready assets are available in Repair History / Archive.
                       </td>
-                      <td>{asset.reason}</td>
-                      <td className={asset.priority.toLowerCase()}>{asset.priority}</td>
-                      <td>{calculateDaysDown(asset.downSince, asset.status)}</td>
-                      <td>{asset.technician}</td>
-                      <td>{formatRTS(asset)}</td>
-                      <td>{asset.details}</td>
                     </tr>
-                  ))}
+                  ) : (
+                    activeBoardAssets.map((asset) => (
+                      <tr
+                        key={asset.unit}
+                        onClick={() => handleSelectAsset(asset)}
+                        className={selectedAsset?.unit === asset.unit ? "selected-row" : ""}
+                      >
+                        <td className="unit">{asset.unit}</td>
+                        <td>{asset.department}</td>
+                        <td>{asset.asset}</td>
+                        <td>
+                          <span className={`status-pill ${getStatusClass(asset.status)}`}>
+                            {asset.status}
+                          </span>
+                        </td>
+                        <td>{asset.reason}</td>
+                        <td className={asset.priority.toLowerCase()}>{asset.priority}</td>
+                        <td>{calculateDaysDown(asset.downSince, asset.status)}</td>
+                        <td>{asset.technician}</td>
+                        <td>{formatRTS(asset)}</td>
+                        <td>{asset.details}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </section>
@@ -1090,13 +1093,13 @@ function App() {
           <>
             <header className="dashboard-header">
               <div>
-                <p className="eyebrow">Repair History</p>
-                <h2>Completed Repair Events</h2>
+                <p className="eyebrow">Repair History / Archive</p>
+                <h2>Completed Repair Records</h2>
               </div>
 
               <div className="refresh-box">
-                <span>Completed Events</span>
-                <strong>{completedRepairEvents.length}</strong>
+                <span>Completed Records</span>
+                <strong>{completedRepairRecords.length}</strong>
               </div>
             </header>
 
@@ -1104,7 +1107,7 @@ function App() {
               <div className="status-board-header">
                 <div>
                   <p className="eyebrow">⚒ Completed Work</p>
-                  <h3>Completed Service Records</h3>
+                  <h3>Completed Repair Records</h3>
                 </div>
               </div>
 
@@ -1114,40 +1117,46 @@ function App() {
                     <th>Unit</th>
                     <th>Department</th>
                     <th>Asset</th>
-                    <th>Prior Status</th>
+                    <th>Record Type</th>
+                    <th>Status</th>
                     <th>Reason</th>
                     <th>Priority</th>
                     <th>Days Down</th>
                     <th>Technician</th>
-                    <th>Completed</th>
+                    <th>Completed / Archived</th>
                     <th>Details</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {completedRepairEvents.length === 0 ? (
+                  {completedRepairRecords.length === 0 ? (
                     <tr>
-                      <td colSpan="10">
-                        No completed repair events have been moved to Repair History yet.
-                      </td>
+                      <td colSpan="11">No completed repair records are currently available.</td>
                     </tr>
                   ) : (
-                    completedRepairEvents.map((event) => (
-                      <tr key={event.id}>
-                        <td className="unit">{event.unit}</td>
-                        <td>{event.department}</td>
-                        <td>{event.asset}</td>
+                    completedRepairRecords.map((record) => (
+                      <tr
+                        key={record.recordId}
+                        onClick={() => {
+                          if (record.isClickableAsset) handleSelectAsset(record);
+                        }}
+                        className={selectedAsset?.unit === record.unit ? "selected-row" : ""}
+                      >
+                        <td className="unit">{record.unit}</td>
+                        <td>{record.department}</td>
+                        <td>{record.asset}</td>
+                        <td>{record.recordType}</td>
                         <td>
-                          <span className={`status-pill ${getStatusClass(event.status)}`}>
-                            {event.status}
+                          <span className={`status-pill ${getStatusClass(record.displayStatus)}`}>
+                            {record.displayStatus}
                           </span>
                         </td>
-                        <td>{event.reason}</td>
-                        <td className={event.priority.toLowerCase()}>{event.priority}</td>
-                        <td>{event.finalDaysDown}</td>
-                        <td>{event.technician}</td>
-                        <td>{formatDate(event.completedDate)}</td>
-                        <td>{event.details}</td>
+                        <td>{record.reason}</td>
+                        <td className={record.priority.toLowerCase()}>{record.priority}</td>
+                        <td>{record.daysDownDisplay}</td>
+                        <td>{record.technician}</td>
+                        <td>{formatDate(record.completedDisplayDate)}</td>
+                        <td>{record.details}</td>
                       </tr>
                     ))
                   )}
@@ -1169,11 +1178,7 @@ function App() {
                   </p>
                 </div>
 
-                <button
-                  className="close-button"
-                  onClick={() => setShowDailySummary(false)}
-                  type="button"
-                >
+                <button className="close-button" onClick={() => setShowDailySummary(false)} type="button">
                   ×
                 </button>
               </div>
@@ -1279,151 +1284,23 @@ function App() {
                 <div>
                   <p className="eyebrow">Asset Management</p>
                   <h3>Add New Asset</h3>
-                  <p className="update-asset-name">
-                    Create a new tracked fleet asset in ARGOS
-                  </p>
+                  <p className="update-asset-name">Create a new tracked fleet asset in ARGOS</p>
                 </div>
 
-                <button className="close-button" onClick={handleCancelNewAsset} type="button">
+                <button className="close-button" onClick={() => setNewAsset(null)} type="button">
                   ×
                 </button>
               </div>
 
-              <div className="update-form">
-                <label>
-                  Unit
-                  <input
-                    type="text"
-                    name="unit"
-                    value={newAsset.unit}
-                    onChange={handleNewAssetChange}
-                    placeholder="Example: 9001"
-                  />
-                </label>
-
-                <label>
-                  VIN
-                  <input
-                    type="text"
-                    name="vin"
-                    value={newAsset.vin}
-                    onChange={handleNewAssetChange}
-                    placeholder="Optional"
-                  />
-                </label>
-
-                <label>
-                  Department
-                  <input
-                    type="text"
-                    name="department"
-                    value={newAsset.department}
-                    onChange={handleNewAssetChange}
-                    placeholder="Example: Public Works"
-                  />
-                </label>
-
-                <label>
-                  Asset
-                  <input
-                    type="text"
-                    name="asset"
-                    value={newAsset.asset}
-                    onChange={handleNewAssetChange}
-                    placeholder="Example: Ford F-150"
-                  />
-                </label>
-
-                <label>
-                  Status
-                  <select name="status" value={newAsset.status} onChange={handleNewAssetStatusChange}>
-                    {STATUS_OPTIONS.map((status) => (
-                      <option key={status}>{status}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  Reason
-                  <select name="reason" value={newAsset.reason} onChange={handleNewAssetChange}>
-                    {REASON_OPTIONS.map((reason) => (
-                      <option key={reason}>{reason}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  Priority
-                  <select name="priority" value={newAsset.priority} onChange={handleNewAssetChange}>
-                    <option>Normal</option>
-                    <option>Medium</option>
-                    <option>High</option>
-                    <option>Critical</option>
-                  </select>
-                </label>
-
-                {newAsset.status !== "Ready" && newAsset.status !== "Completed" && (
-                  <label>
-                    Down Since
-                    <input
-                      type="date"
-                      name="downSince"
-                      value={newAsset.downSince}
-                      onChange={handleNewAssetChange}
-                    />
-                  </label>
-                )}
-
-                <label>
-                  Technician / Responsible Party
-                  <input
-                    type="text"
-                    name="technician"
-                    value={newAsset.technician}
-                    onChange={handleNewAssetChange}
-                  />
-                </label>
-
-                {newAsset.status !== "Ready" && newAsset.status !== "Completed" && (
-                  <label>
-                    RTS Status
-                    <select
-                      name="rtsType"
-                      value={newAsset.rtsType}
-                      onChange={handleNewAssetRTSTypeChange}
-                    >
-                      <option>Estimated Date</option>
-                      <option>TBD</option>
-                      <option>No RTS Established</option>
-                    </select>
-                  </label>
-                )}
-
-                {newAsset.status !== "Ready" && newAsset.status !== "Completed" && newAsset.rtsType === "Estimated Date" && (
-                  <label>
-                    Estimated Return to Service
-                    <input
-                      type="date"
-                      name="rtsDate"
-                      value={newAsset.rtsDate}
-                      onChange={handleNewAssetChange}
-                    />
-                  </label>
-                )}
-
-                <label className="issue-field">
-                  Details / Notes
-                  <textarea
-                    name="details"
-                    value={newAsset.details}
-                    onChange={handleNewAssetChange}
-                    rows="4"
-                  />
-                </label>
-              </div>
+              {renderAssetForm(
+                newAsset,
+                handleNewAssetChange,
+                handleNewAssetStatusChange,
+                handleNewAssetRTSTypeChange
+              )}
 
               <div className="update-actions">
-                <button className="cancel-button" onClick={handleCancelNewAsset} type="button">
+                <button className="cancel-button" onClick={() => setNewAsset(null)} type="button">
                   Cancel
                 </button>
 
@@ -1447,139 +1324,29 @@ function App() {
                   </p>
                 </div>
 
-                <button className="close-button" onClick={handleCancel} type="button">
+                <button
+                  className="close-button"
+                  onClick={() => {
+                    setEditAsset(null);
+                    setSelectedAsset(null);
+                  }}
+                  type="button"
+                >
                   ×
                 </button>
               </div>
 
-              <div className="update-form">
-                <label>
-                  Unit
-                  <input
-                    type="text"
-                    name="unit"
-                    value={editAsset.unit}
-                    onChange={handleChange}
-                  />
-                </label>
-
-                <label>
-                  VIN
-                  <input
-                    type="text"
-                    name="vin"
-                    value={editAsset.vin}
-                    onChange={handleChange}
-                    placeholder="Optional"
-                  />
-                </label>
-
-                <label>
-                  Department
-                  <input
-                    type="text"
-                    name="department"
-                    value={editAsset.department}
-                    onChange={handleChange}
-                  />
-                </label>
-
-                <label>
-                  Asset
-                  <input
-                    type="text"
-                    name="asset"
-                    value={editAsset.asset}
-                    onChange={handleChange}
-                  />
-                </label>
-
-                <label>
-                  Status
-                  <select name="status" value={editAsset.status} onChange={handleStatusChange}>
-                    {STATUS_OPTIONS.map((status) => (
-                      <option key={status}>{status}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  Reason
-                  <select name="reason" value={editAsset.reason} onChange={handleChange}>
-                    {REASON_OPTIONS.map((reason) => (
-                      <option key={reason}>{reason}</option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  Priority
-                  <select name="priority" value={editAsset.priority} onChange={handleChange}>
-                    <option>Normal</option>
-                    <option>Medium</option>
-                    <option>High</option>
-                    <option>Critical</option>
-                  </select>
-                </label>
-
-                {editAsset.status !== "Ready" && editAsset.status !== "Completed" && (
-                  <label>
-                    Down Since
-                    <input
-                      type="date"
-                      name="downSince"
-                      value={editAsset.downSince}
-                      onChange={handleChange}
-                    />
-                  </label>
-                )}
-
-                <label>
-                  Technician / Responsible Party
-                  <input
-                    type="text"
-                    name="technician"
-                    value={editAsset.technician}
-                    onChange={handleChange}
-                  />
-                </label>
-
-                {editAsset.status !== "Ready" && editAsset.status !== "Completed" && (
-                  <label>
-                    RTS Status
-                    <select name="rtsType" value={editAsset.rtsType} onChange={handleRTSTypeChange}>
-                      <option>Estimated Date</option>
-                      <option>TBD</option>
-                      <option>No RTS Established</option>
-                    </select>
-                  </label>
-                )}
-
-                {editAsset.status !== "Ready" && editAsset.status !== "Completed" && editAsset.rtsType === "Estimated Date" && (
-                  <label>
-                    Estimated Return to Service
-                    <input
-                      type="date"
-                      name="rtsDate"
-                      value={editAsset.rtsDate}
-                      onChange={handleChange}
-                    />
-                  </label>
-                )}
-
-                <label className="issue-field">
-                  Details / Notes
-                  <textarea
-                    name="details"
-                    value={editAsset.details}
-                    onChange={handleChange}
-                    rows="4"
-                  />
-                </label>
-              </div>
+              {renderAssetForm(editAsset, handleChange, handleStatusChange, handleRTSTypeChange)}
 
               <div className="update-actions">
-                <button className="cancel-button" onClick={handleCancel} type="button">
+                <button
+                  className="cancel-button"
+                  onClick={() => {
+                    setEditAsset(null);
+                    setSelectedAsset(null);
+                  }}
+                  type="button"
+                >
                   Cancel
                 </button>
 
