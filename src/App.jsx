@@ -968,34 +968,116 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     event.target.value = "";
   }
 
-  function handleExportView() {
-    if (assets.length === 0) {
-      setImportStatus("There are no assets to export.");
+  function exportCSVReport(filename, columns, rows, emptyMessage, successMessage) {
+    if (rows.length === 0) {
+      setImportStatus(emptyMessage);
       return;
     }
 
-    const exportAssets = assets.map((asset) => ({
+    const csvContent = [
+      columns.map((column) => escapeCSVValue(column.header)).join(","),
+      ...rows.map((row) =>
+        columns
+          .map((column) => {
+            const value = typeof column.value === "function" ? column.value(row) : row[column.value];
+            return escapeCSVValue(value);
+          })
+          .join(",")
+      ),
+    ].join("\n");
+
+    downloadFile(filename, `\uFEFF${csvContent}`, "text/csv;charset=utf-8");
+    setImportStatus(successMessage);
+  }
+
+  function handleExportUnitsDown() {
+    const exportRows = activeBoardAssets.map((asset) => ({
       ...asset,
+      daysDown: calculateDaysDown(asset.downSince, asset.status),
       technician:
         !asset.technician || asset.technician === "—" || asset.technician === "‚Äî"
           ? "Unassigned"
           : asset.technician,
+      rts: formatRTS(asset),
     }));
 
-    const csvContent = [
-      CSV_COLUMNS.join(","),
-      ...exportAssets.map((asset) =>
-        CSV_COLUMNS.map((column) => escapeCSVValue(asset[column])).join(",")
-      ),
-    ].join("\n");
-
-    downloadFile(
-      `argos-fleet-export-${getTodayDateString()}.csv`,
-      `\uFEFF${csvContent}`,
-      "text/csv;charset=utf-8"
+    exportCSVReport(
+      `argos-units-down-${getTodayDateString()}.csv`,
+      [
+        { header: "Unit", value: "unit" },
+        { header: "VIN", value: "vin" },
+        { header: "Department", value: "department" },
+        { header: "Asset", value: "asset" },
+        { header: "Status", value: "status" },
+        { header: "Reason", value: "reason" },
+        { header: "Priority", value: "priority" },
+        { header: "Days Down", value: "daysDown" },
+        { header: "Technician", value: "technician" },
+        { header: "RTS", value: "rts" },
+        { header: "Details", value: "details" },
+      ],
+      exportRows,
+      "There are no units down to export.",
+      `Exported ${exportRows.length} unit${exportRows.length === 1 ? "" : "s"} down successfully.`
     );
+  }
 
-    setImportStatus(`Exported ${assets.length} asset${assets.length === 1 ? "" : "s"} successfully.`);
+  function handleExportRepairHistory() {
+    exportCSVReport(
+      `argos-repair-history-${getTodayDateString()}.csv`,
+      [
+        { header: "Unit", value: "unit" },
+        { header: "Department", value: "department" },
+        { header: "Asset", value: "asset" },
+        { header: "Record Type", value: "recordType" },
+        { header: "Prior Status", value: "priorStatus" },
+        { header: "Final Status", value: "finalStatus" },
+        { header: "Reason", value: "reason" },
+        { header: "Priority", value: "priority" },
+        { header: "Days Down", value: "daysDownDisplay" },
+        { header: "Technician", value: "technician" },
+        { header: "Completed", value: (record) => formatDate(record.completedDisplayDate) },
+        { header: "Details", value: "details" },
+      ],
+      completedRepairRecords,
+      "There are no completed repair records to export.",
+      `Exported ${completedRepairRecords.length} repair history record${completedRepairRecords.length === 1 ? "" : "s"} successfully.`
+    );
+  }
+
+  function handleExportTechnicianAnalytics() {
+    exportCSVReport(
+      `argos-technician-analytics-${getTodayDateString()}.csv`,
+      [
+        { header: "Technician", value: "technician" },
+        { header: "Active Units", value: "activeUnits" },
+        { header: "Average Active Days Down", value: "averageActiveDaysDown" },
+        { header: "Longest Open Unit", value: "longestOpenUnit" },
+        { header: "Longest Open Days", value: "longestOpenDays" },
+        { header: "Completed Repairs", value: "completedRepairs" },
+        { header: "Average Repair Duration", value: "averageRepairDuration" },
+      ],
+      technicianAnalytics.rows,
+      "There is no technician analytics data to export.",
+      `Exported ${technicianAnalytics.rows.length} technician analytics row${technicianAnalytics.rows.length === 1 ? "" : "s"} successfully.`
+    );
+  }
+
+  function handleExportStatusDurationAnalytics() {
+    exportCSVReport(
+      `argos-status-duration-analytics-${getTodayDateString()}.csv`,
+      [
+        { header: "Status", value: "status" },
+        { header: "Current Units", value: "currentUnits" },
+        { header: "Completed Status Events", value: "completedStatusEvents" },
+        { header: "Average Duration", value: "averageDuration" },
+        { header: "Longest Duration", value: "longestDuration" },
+        { header: "Percentage of Recorded Downtime", value: (row) => `${row.percentageOfRecordedDowntime}%` },
+      ],
+      statusDurationAnalytics.rows,
+      "There is no status duration analytics data to export.",
+      `Exported ${statusDurationAnalytics.rows.length} status duration row${statusDurationAnalytics.rows.length === 1 ? "" : "s"} successfully.`
+    );
   }
 
   function renderAssetForm(asset, onChange, onStatusChange, onRTSTypeChange) {
@@ -1154,7 +1236,7 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
               </div>
 
               <div className="refresh-box">
-                <span>Active Exceptions</span>
+                <span>Units Down</span>
                 <strong>{activeBoardAssets.length}</strong>
               </div>
             </header>
@@ -1164,12 +1246,12 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
                 <span>Current Fleet Availability</span>
                 <strong>{availability}%</strong>
                 <p>
-                  {readyAssets} Ready · {unavailableAssets} Active Exceptions · {totalAssets} Total Active Fleet Assets
+                  {readyAssets} Ready · {unavailableAssets} Units Down · {totalAssets} Total Active Fleet Assets
                 </p>
               </div>
 
               <div className="metric-card"><span>Total Assets</span><strong>{totalAssets}</strong></div>
-              <div className="metric-card"><span>Active Exceptions</span><strong>{unavailableAssets}</strong></div>
+              <div className="metric-card"><span>Units Down</span><strong>{unavailableAssets}</strong></div>
               <div className="metric-card"><span>Waiting Parts</span><strong>{waitingParts}</strong></div>
               <div className="metric-card critical"><span>Critical</span><strong>{criticalAssets}</strong></div>
             </section>
@@ -1199,7 +1281,6 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
                     style={{ display: "none" }}
                   />
                   <button type="button" onClick={() => csvInputRef.current?.click()}>Import CSV</button>{" "}
-                  <button type="button" onClick={handleExportView}>Export View</button>
                 </div>
               </div>
 
@@ -1277,6 +1358,10 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
                 <div>
                   <p className="eyebrow">⚒ Completed Work</p>
                   <h3>Completed Repair Records</h3>
+                </div>
+
+                <div>
+                  <button type="button" onClick={handleExportRepairHistory}>Export Repair History</button>
                 </div>
               </div>
 
@@ -1378,6 +1463,10 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
                   <p className="eyebrow">👥 Workload Visibility</p>
                   <h3>Technician / Responsible Party Analytics</h3>
                 </div>
+
+                <div>
+                  <button type="button" onClick={handleExportTechnicianAnalytics}>Export Technician Analytics</button>
+                </div>
               </div>
 
               <table>
@@ -1467,6 +1556,11 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
                 <div>
                   <p className="eyebrow">▥ Bottleneck Visibility</p>
                   <h3>Status Duration Analytics</h3>
+                </div>
+
+                <div>
+                  <button type="button" onClick={handleExportUnitsDown}>Export Units Down</button>{" "}
+                  <button type="button" onClick={handleExportStatusDurationAnalytics}>Export Status Duration Analytics</button>
                 </div>
               </div>
 
