@@ -16,6 +16,19 @@ const STATUS_OPTIONS = [
   "Completed",
 ];
 
+const REASON_OPTIONS = [
+  "Available",
+  "Mechanical Failure",
+  "Preventive Maintenance",
+  "Parts Availability",
+  "Vendor / 3rd Party Delay",
+  "Inspection / QC",
+  "Awaiting Approval",
+  "Accident / Damage",
+  "Operator Reported Issue",
+  "Other",
+];
+
 function getTodayDateString() {
   const today = new Date();
   const year = today.getFullYear();
@@ -38,12 +51,90 @@ function formatDate(dateString) {
 }
 
 const initialAssets = [
-  { unit: "1042", vin: "1FT7X2B60NEC10420", department: "Public Works", asset: "Ford F-250", status: "Waiting Parts", priority: "High", downSince: "2026-07-01", technician: "Smith", rtsType: "Estimated Date", rtsDate: "2026-07-10", issue: "Alternator on order" },
-  { unit: "2217", vin: "1FM5K8AB4NGA22170", department: "Police", asset: "Ford Explorer", status: "In Shop", priority: "Medium", downSince: "2026-07-05", technician: "Jones", rtsType: "Estimated Date", rtsDate: "2026-07-08", issue: "Brake inspection" },
-  { unit: "3314", vin: "1GNSKLED5NR33140", department: "Fire", asset: "Chevrolet Tahoe", status: "Ready", priority: "Normal", downSince: "", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "Available" },
-  { unit: "5088", vin: "3ALACWFC8ND50880", department: "Solid Waste", asset: "Freightliner M2", status: "Down", priority: "Critical", downSince: "2026-06-26", technician: "Garcia", rtsType: "TBD", rtsDate: "", issue: "Hydraulic leak" },
-  { unit: "6120", vin: "1LV5065EEN061200", department: "Parks", asset: "John Deere Tractor", status: "Awaiting QC", priority: "Normal", downSince: "2026-07-07", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "250-hour service due" },
-  { unit: "7741", vin: "3C7WRKBL6NG77410", department: "Utilities", asset: "RAM 3500 Service Truck", status: "Ready", priority: "Normal", downSince: "", technician: "—", rtsType: "No RTS Established", rtsDate: "", issue: "Available" },
+  {
+    unit: "1042",
+    vin: "1FT7X2B60NEC10420",
+    department: "Public Works",
+    asset: "Ford F-250",
+    status: "Waiting Parts",
+    reason: "Parts Availability",
+    priority: "High",
+    downSince: "2026-07-01",
+    technician: "Smith",
+    rtsType: "Estimated Date",
+    rtsDate: "2026-07-10",
+    details: "Alternator on order",
+  },
+  {
+    unit: "2217",
+    vin: "1FM5K8AB4NGA22170",
+    department: "Police",
+    asset: "Ford Explorer",
+    status: "In Shop",
+    reason: "Mechanical Failure",
+    priority: "Medium",
+    downSince: "2026-07-05",
+    technician: "Jones",
+    rtsType: "Estimated Date",
+    rtsDate: "2026-07-08",
+    details: "Brake inspection",
+  },
+  {
+    unit: "3314",
+    vin: "1GNSKLED5NR33140",
+    department: "Fire",
+    asset: "Chevrolet Tahoe",
+    status: "Ready",
+    reason: "Available",
+    priority: "Normal",
+    downSince: "",
+    technician: "—",
+    rtsType: "No RTS Established",
+    rtsDate: "",
+    details: "Available",
+  },
+  {
+    unit: "5088",
+    vin: "3ALACWFC8ND50880",
+    department: "Solid Waste",
+    asset: "Freightliner M2",
+    status: "Down",
+    reason: "Mechanical Failure",
+    priority: "Critical",
+    downSince: "2026-06-26",
+    technician: "Garcia",
+    rtsType: "TBD",
+    rtsDate: "",
+    details: "Hydraulic leak",
+  },
+  {
+    unit: "6120",
+    vin: "1LV5065EEN061200",
+    department: "Parks",
+    asset: "John Deere Tractor",
+    status: "Awaiting QC",
+    reason: "Inspection / QC",
+    priority: "Normal",
+    downSince: "2026-07-07",
+    technician: "—",
+    rtsType: "No RTS Established",
+    rtsDate: "",
+    details: "250-hour service due",
+  },
+  {
+    unit: "7741",
+    vin: "3C7WRKBL6NG77410",
+    department: "Utilities",
+    asset: "RAM 3500 Service Truck",
+    status: "Ready",
+    reason: "Available",
+    priority: "Normal",
+    downSince: "",
+    technician: "—",
+    rtsType: "No RTS Established",
+    rtsDate: "",
+    details: "Available",
+  },
 ];
 
 function createBlankAsset() {
@@ -53,12 +144,24 @@ function createBlankAsset() {
     department: "",
     asset: "",
     status: "Ready",
+    reason: "Available",
     priority: "Normal",
     downSince: "",
     technician: "—",
     rtsType: "No RTS Established",
     rtsDate: "",
-    issue: "Available",
+    details: "Available",
+  };
+}
+
+function normalizeAsset(asset) {
+  return {
+    vin: "",
+    reason: asset.reason || asset.issue || "Available",
+    details: asset.details || asset.issue || "Available",
+    ...asset,
+    reason: asset.reason || asset.issue || "Available",
+    details: asset.details || asset.issue || "Available",
   };
 }
 
@@ -70,10 +173,7 @@ function loadSavedAssets() {
   }
 
   try {
-    return JSON.parse(savedAssets).map((asset) => ({
-      vin: "",
-      ...asset,
-    }));
+    return JSON.parse(savedAssets).map(normalizeAsset);
   } catch {
     return initialAssets;
   }
@@ -87,17 +187,14 @@ function loadCompletedRepairEvents() {
   }
 
   try {
-    return JSON.parse(savedEvents).map((event) => ({
-      vin: "",
-      ...event,
-    }));
+    return JSON.parse(savedEvents).map(normalizeAsset);
   } catch {
     return [];
   }
 }
 
 function getStatusClass(status) {
-  return status.toLowerCase().replaceAll(" ", "-");
+  return status.toLowerCase().replaceAll(" ", "-").replaceAll("/", "");
 }
 
 function isUnavailable(status) {
@@ -227,7 +324,7 @@ function App() {
 
   function handleSelectAsset(asset) {
     setSelectedAsset(asset);
-    setEditAsset({ vin: "", ...asset });
+    setEditAsset(normalizeAsset(asset));
   }
 
   function handleChange(event) {
@@ -249,6 +346,7 @@ function App() {
       return {
         ...currentAsset,
         status: newStatus,
+        reason: isNowReady ? "Available" : currentAsset.reason === "Available" ? "Other" : currentAsset.reason,
         downSince: isNowReady
           ? ""
           : wasReady && !currentAsset.downSince
@@ -256,7 +354,7 @@ function App() {
             : currentAsset.downSince,
         rtsType: isNowReady ? "No RTS Established" : currentAsset.rtsType,
         rtsDate: isNowReady ? "" : currentAsset.rtsDate,
-        issue: isNowReady ? "Available" : currentAsset.issue,
+        details: isNowReady ? "Available" : currentAsset.details,
       };
     });
   }
@@ -282,7 +380,8 @@ function App() {
       department: editAsset.department.trim(),
       asset: editAsset.asset.trim(),
       technician: editAsset.technician.trim() || "—",
-      issue: editAsset.issue.trim() || (editAsset.status === "Ready" ? "Available" : "Status pending"),
+      reason: editAsset.reason || (editAsset.status === "Ready" ? "Available" : "Other"),
+      details: editAsset.details.trim() || (editAsset.status === "Ready" ? "Available" : "Details pending"),
     };
 
     if (!updatedAsset.unit || !updatedAsset.department || !updatedAsset.asset) {
@@ -330,22 +429,24 @@ function App() {
       const completedEvent = {
         ...selectedAsset,
         vin: updatedAsset.vin,
+        reason: updatedAsset.reason,
+        details: updatedAsset.details,
         id: `${selectedAsset.unit}-${Date.now()}`,
         completedDate: getTodayDateString(),
         finalDaysDown: calculateFinalDaysDown(selectedAsset.downSince),
         finalStatus: "Ready",
         completionNote: "Returned to service",
-        issue: updatedAsset.issue,
       };
 
       const returnedAsset = {
         ...updatedAsset,
         status: "Ready",
+        reason: "Available",
         priority: "Normal",
         downSince: "",
         rtsType: "No RTS Established",
         rtsDate: "",
-        issue: "Available",
+        details: "Available",
       };
 
       setCompletedRepairEvents((currentEvents) => [completedEvent, ...currentEvents]);
@@ -401,10 +502,11 @@ function App() {
       return {
         ...currentAsset,
         status: newStatus,
+        reason: isNowReady ? "Available" : currentAsset.reason === "Available" ? "Other" : currentAsset.reason,
         downSince: isNowReady ? "" : currentAsset.downSince || getTodayDateString(),
         rtsType: isNowReady ? "No RTS Established" : currentAsset.rtsType,
         rtsDate: isNowReady ? "" : currentAsset.rtsDate,
-        issue: isNowReady ? "Available" : currentAsset.issue === "Available" ? "" : currentAsset.issue,
+        details: isNowReady ? "Available" : currentAsset.details === "Available" ? "" : currentAsset.details,
       };
     });
   }
@@ -427,7 +529,8 @@ function App() {
       department: newAsset.department.trim(),
       asset: newAsset.asset.trim(),
       technician: newAsset.technician.trim() || "—",
-      issue: newAsset.issue.trim() || (newAsset.status === "Ready" ? "Available" : "Status pending"),
+      reason: newAsset.reason || (newAsset.status === "Ready" ? "Available" : "Other"),
+      details: newAsset.details.trim() || (newAsset.status === "Ready" ? "Available" : "Details pending"),
     };
 
     if (!cleanedAsset.unit || !cleanedAsset.department || !cleanedAsset.asset) {
@@ -458,6 +561,10 @@ function App() {
     const finalizedAsset = {
       ...cleanedAsset,
       status: cleanedAsset.status === "Completed" ? "Ready" : cleanedAsset.status,
+      reason:
+        cleanedAsset.status === "Ready" || cleanedAsset.status === "Completed"
+          ? "Available"
+          : cleanedAsset.reason,
       downSince:
         cleanedAsset.status === "Ready" || cleanedAsset.status === "Completed"
           ? ""
@@ -472,10 +579,10 @@ function App() {
         cleanedAsset.rtsType === "Estimated Date"
           ? cleanedAsset.rtsDate
           : "",
-      issue:
+      details:
         cleanedAsset.status === "Ready" || cleanedAsset.status === "Completed"
           ? "Available"
-          : cleanedAsset.issue,
+          : cleanedAsset.details,
     };
 
     setAssets((currentAssets) => [...currentAssets, finalizedAsset]);
@@ -582,11 +689,12 @@ function App() {
                     <th>Department</th>
                     <th>Asset</th>
                     <th>Status</th>
+                    <th>Reason</th>
                     <th>Priority</th>
                     <th>Days Down</th>
                     <th>Technician</th>
                     <th>RTS</th>
-                    <th>Issue</th>
+                    <th>Details</th>
                   </tr>
                 </thead>
 
@@ -605,11 +713,12 @@ function App() {
                           {asset.status}
                         </span>
                       </td>
+                      <td>{asset.reason}</td>
                       <td className={asset.priority.toLowerCase()}>{asset.priority}</td>
                       <td>{calculateDaysDown(asset.downSince, asset.status)}</td>
                       <td>{asset.technician}</td>
                       <td>{formatRTS(asset)}</td>
-                      <td>{asset.issue}</td>
+                      <td>{asset.details}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -647,18 +756,19 @@ function App() {
                     <th>Department</th>
                     <th>Asset</th>
                     <th>Prior Status</th>
+                    <th>Reason</th>
                     <th>Priority</th>
                     <th>Days Down</th>
                     <th>Technician</th>
                     <th>Completed</th>
-                    <th>Issue</th>
+                    <th>Details</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {completedRepairEvents.length === 0 ? (
                     <tr>
-                      <td colSpan="9">
+                      <td colSpan="10">
                         No completed repair events have been moved to Repair History yet.
                       </td>
                     </tr>
@@ -673,11 +783,12 @@ function App() {
                             {event.status}
                           </span>
                         </td>
+                        <td>{event.reason}</td>
                         <td className={event.priority.toLowerCase()}>{event.priority}</td>
                         <td>{event.finalDaysDown}</td>
                         <td>{event.technician}</td>
                         <td>{formatDate(event.completedDate)}</td>
-                        <td>{event.issue}</td>
+                        <td>{event.details}</td>
                       </tr>
                     ))
                   )}
@@ -744,7 +855,7 @@ function App() {
                   </strong>
                   <p>
                     {dailySummary.longestDownAsset
-                      ? `${dailySummary.longestDownAsset.asset}: ${dailySummary.longestDownAsset.issue}`
+                      ? `${dailySummary.longestDownAsset.asset}: ${dailySummary.longestDownAsset.details}`
                       : "All tracked assets are currently available."}
                   </p>
                 </div>
@@ -758,7 +869,7 @@ function App() {
                   <p>
                     {dailySummary.waitingPartsAssets.length > 0
                       ? dailySummary.waitingPartsAssets
-                          .map((asset) => `${asset.unit} · ${asset.issue}`)
+                          .map((asset) => `${asset.unit} · ${asset.details}`)
                           .join(", ")
                       : "No parts-delay assets are currently flagged."}
                   </p>
@@ -874,6 +985,15 @@ function App() {
                 </label>
 
                 <label>
+                  Reason
+                  <select name="reason" value={newAsset.reason} onChange={handleNewAssetChange}>
+                    {REASON_OPTIONS.map((reason) => (
+                      <option key={reason}>{reason}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
                   Priority
                   <select name="priority" value={newAsset.priority} onChange={handleNewAssetChange}>
                     <option>Normal</option>
@@ -933,10 +1053,10 @@ function App() {
                 )}
 
                 <label className="issue-field">
-                  Operational Status / Reason
+                  Details / Notes
                   <textarea
-                    name="issue"
-                    value={newAsset.issue}
+                    name="details"
+                    value={newAsset.details}
                     onChange={handleNewAssetChange}
                     rows="4"
                   />
@@ -1025,6 +1145,15 @@ function App() {
                 </label>
 
                 <label>
+                  Reason
+                  <select name="reason" value={editAsset.reason} onChange={handleChange}>
+                    {REASON_OPTIONS.map((reason) => (
+                      <option key={reason}>{reason}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
                   Priority
                   <select name="priority" value={editAsset.priority} onChange={handleChange}>
                     <option>Normal</option>
@@ -1080,10 +1209,10 @@ function App() {
                 )}
 
                 <label className="issue-field">
-                  Operational Status / Reason
+                  Details / Notes
                   <textarea
-                    name="issue"
-                    value={editAsset.issue}
+                    name="details"
+                    value={editAsset.details}
                     onChange={handleChange}
                     rows="4"
                   />
