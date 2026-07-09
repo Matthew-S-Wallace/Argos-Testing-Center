@@ -158,7 +158,7 @@ function normalizeImportedAsset(row) {
     reason,
     priority,
     downSince,
-    technician: String(row.technician || "").trim() || "—",
+    technician: String(row.technician || "").trim() || "Unassigned",
     rtsType,
     rtsDate: !isReadyStatus && rtsType === "Estimated Date" ? String(row.rtsDate || "").trim() : "",
     details:
@@ -907,6 +907,38 @@ function App() {
     event.target.value = "";
   }
 
+  function handleExportView() {
+    if (assets.length === 0) {
+      setImportStatus("There are no active assets to export.");
+      return;
+    }
+
+    const exportAssets = assets.map((asset) => ({
+      ...asset,
+      technician:
+        !asset.technician || asset.technician === "—" || asset.technician === "‚Äî"
+          ? "Unassigned"
+          : asset.technician,
+    }));
+
+    const csvContent = [
+      CSV_COLUMNS.join(","),
+      ...exportAssets.map((asset) =>
+        CSV_COLUMNS.map((column) => escapeCSVValue(asset[column])).join(",")
+      ),
+    ].join("\n");
+
+    downloadFile(
+      `argos-active-fleet-export-${getTodayDateString()}.csv`,
+      `\uFEFF${csvContent}`,
+      "text/csv;charset=utf-8"
+    );
+
+    setImportStatus(
+      `Exported ${assets.length} active asset${assets.length === 1 ? "" : "s"} successfully.`
+    );
+  }
+
   return (
     <main className="argos-shell">
       <aside className="argos-sidebar">
@@ -1001,7 +1033,7 @@ function App() {
                   <button type="button" onClick={() => csvInputRef.current?.click()}>
                     Import CSV
                   </button>{" "}
-                  <button type="button">Export View</button>
+                  <button type="button" onClick={handleExportView}>Export View</button>
                 </div>
               </div>
 
