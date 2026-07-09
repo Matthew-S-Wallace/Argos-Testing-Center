@@ -181,10 +181,23 @@ function getStatusClass(status) {
 
 
 function normalizeScannedVIN(value) {
-  return String(value || "")
+  const cleanedValue = String(value || "")
     .toUpperCase()
-    .replace(/[^A-HJ-NPR-Z0-9]/g, "")
-    .slice(0, 17);
+    .replace(/[^A-HJ-NPR-Z0-9]/g, "");
+
+  if (cleanedValue.length <= 17) return cleanedValue;
+
+  const possibleVinMatches = [];
+
+  for (let index = 0; index <= cleanedValue.length - 17; index += 1) {
+    const candidate = cleanedValue.slice(index, index + 17);
+
+    if (/^[A-HJ-NPR-Z0-9]{17}$/.test(candidate)) {
+      possibleVinMatches.push(candidate);
+    }
+  }
+
+  return possibleVinMatches[possibleVinMatches.length - 1] || cleanedValue.slice(-17);
 }
 
 function isLikelyVIN(value) {
@@ -624,9 +637,12 @@ function App() {
   const csvInputRef = useRef(null);
   const vinScannerVideoRef = useRef(null);
   const vinScannerControlsRef = useRef(null);
+  const vinScanLockedRef = useRef(false);
   const [showVinScanner, setShowVinScanner] = useState(false);
   const [vinScanStatus, setVinScanStatus] = useState("");
   const [lastScannedVin, setLastScannedVin] = useState("");
+  const [manualVinEntry, setManualVinEntry] = useState("");
+  const [pendingNewAssetVin, setPendingNewAssetVin] = useState("");
   const [scannerRunId, setScannerRunId] = useState(0);
 
   useEffect(() => {
@@ -642,6 +658,19 @@ function App() {
   }, [statusHistoryEvents]);
 
   useEffect(() => {
+    if (!pendingNewAssetVin || showVinScanner) return;
+
+    setSelectedAsset(null);
+    setEditAsset(null);
+    setActiveView("command");
+    setNewAsset({
+      ...createBlankAsset(),
+      vin: pendingNewAssetVin,
+    });
+    setPendingNewAssetVin("");
+  }, [pendingNewAssetVin, showVinScanner]);
+
+  useEffect(() => {
     if (!showVinScanner) return undefined;
 
     let isCancelled = false;
@@ -654,41 +683,30 @@ function App() {
       setVinScanStatus("Starting camera. Allow camera access when prompted.");
 
       try {
+        const videoDevices = await BrowserMultiFormatReader.listVideoInputDevices();
+        const preferredCamera =
+          videoDevices.find((device) => device.label.toLowerCase().includes("back")) ||
+          videoDevices.find((device) => device.label.toLowerCase().includes("rear")) ||
+          videoDevices.find((device) => device.label.toLowerCase().includes("environment")) ||
+          videoDevices[videoDevices.length - 1];
+
         const controls = await codeReader.decodeFromVideoDevice(
-          undefined,
+          preferredCamera?.deviceId,
           vinScannerVideoRef.current,
           (result) => {
             if (isCancelled || !result) return;
 
-            const scannedVin = normalizeScannedVIN(result.getText());
-            if (!isLikelyVIN(scannedVin)) {
-              setLastScannedVin(scannedVin || result.getText());
-              setVinScanStatus("Barcode detected, but ARGOS could not read it as a valid 17-character VIN. Reposition the camera and try again.");
-              return;
-            }
-
-            const matchedAsset = assets.find(
-              (asset) => normalizeScannedVIN(asset.vin) === scannedVin
-            );
-
-            vinScannerControlsRef.current?.stop();
-
-            if (matchedAsset) {
-              setLastScannedVin(scannedVin);
-              setVinScanStatus(`Matched VIN ${scannedVin} to Unit ${matchedAsset.unit}.`);
-              setShowVinScanner(false);
-              handleSelectAsset(matchedAsset);
-              return;
-            }
-
-            setLastScannedVin(scannedVin);
-            setVinScanStatus(`VIN ${scannedVin} was scanned, but it does not match an active ARGOS fleet asset.`);
+            handleVinScanResult(result.getText(), "scanner");
           }
         );
 
         if (!isCancelled) {
           vinScannerControlsRef.current = controls;
-          setVinScanStatus("Camera active. Center the vehicle VIN barcode in view.");
+          setVinScanStatus(
+            preferredCamera
+              ? `Camera active (${preferredCamera.label || "rear camera"}). Center the VIN barcode or registration barcode in view.`
+              : "Camera active. Center the VIN barcode or registration barcode in view."
+          );
         } else {
           controls.stop();
         }
@@ -1166,27 +1184,86 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
 
 
   function handleOpenVinScanner() {
+    vinScanLockedRef.current = false;
     setSelectedAsset(null);
     setEditAsset(null);
     setNewAsset(null);
     setLastScannedVin("");
+    setManualVinEntry("");
+    setPendingNewAssetVin("");
     setVinScanStatus("");
     setShowVinScanner(true);
     setScannerRunId((currentRunId) => currentRunId + 1);
   }
 
   function handleCloseVinScanner() {
+    vinScanLockedRef.current = false;
     vinScannerControlsRef.current?.stop();
     vinScannerControlsRef.current = null;
     setShowVinScanner(false);
   }
 
   function handleScanAgain() {
+    vinScanLockedRef.current = false;
     vinScannerControlsRef.current?.stop();
     vinScannerControlsRef.current = null;
     setLastScannedVin("");
     setVinScanStatus("");
     setScannerRunId((currentRunId) => currentRunId + 1);
+  }
+
+  function openAssetFromVin(vin, sourceLabel) {
+    const scannedVin = normalizeScannedVIN(vin);
+
+    if (!isLikelyVIN(scannedVin)) {
+      setLastScannedVin(scannedVin || vin);
+      setVinScanStatus(
+        `${sourceLabel} read a value, but ARGOS could not normalize it into a valid 17-character VIN.`
+      );
+      return;
+    }
+
+    const matchedAsset = assets.find(
+      (asset) => normalizeScannedVIN(asset.vin) === scannedVin
+    );
+
+    vinScannerControlsRef.current?.stop();
+    vinScannerControlsRef.current = null;
+    setLastScannedVin(scannedVin);
+    setShowVinScanner(false);
+
+    if (matchedAsset) {
+      setVinScanStatus(`Matched VIN ${scannedVin} to Unit ${matchedAsset.unit}.`);
+      handleSelectAsset(matchedAsset);
+      return;
+    }
+
+    setVinScanStatus(`VIN ${scannedVin} was scanned and is ready for new asset onboarding.`);
+    setSelectedAsset(null);
+    setEditAsset(null);
+    setPendingNewAssetVin(scannedVin);
+    setActiveView("command");
+  }
+
+  function handleVinScanResult(rawValue, source = "scanner") {
+    if (vinScanLockedRef.current) return;
+
+    const scannedVin = normalizeScannedVIN(rawValue);
+
+    if (!isLikelyVIN(scannedVin)) {
+      setLastScannedVin(scannedVin || rawValue);
+      setVinScanStatus(
+        "Barcode detected, but ARGOS could not read it as a valid 17-character VIN. Try reducing glare, moving closer, scanning the registration barcode, or entering the VIN manually."
+      );
+      return;
+    }
+
+    vinScanLockedRef.current = true;
+    openAssetFromVin(scannedVin, source === "manual" ? "Manual entry" : "Scanner");
+  }
+
+  function handleManualVinSubmit() {
+    handleVinScanResult(manualVinEntry, "manual");
   }
 
   function renderAssetForm(asset, onChange, onStatusChange, onRTSTypeChange) {
@@ -1731,7 +1808,7 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
                 <div>
                   <p className="eyebrow">Mobile Fleet Lookup</p>
                   <h3>Scan VIN</h3>
-                  <p className="update-asset-name">Scan a vehicle VIN barcode to open the matching ARGOS asset record</p>
+                  <p className="update-asset-name">Scan a vehicle VIN or registration barcode to find an asset or start a new asset record</p>
                 </div>
 
                 <button className="close-button" onClick={handleCloseVinScanner} type="button">
@@ -1753,8 +1830,18 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
                   <p className="eyebrow">Scanner Status</p>
                   <strong>{vinScanStatus || "Preparing VIN scanner."}</strong>
                   {lastScannedVin && <p>Last scanned value: {lastScannedVin}</p>}
-                  <p>VIN scanning works best on mobile through localhost during development or HTTPS after deployment.</p>
+                  <p>Tips: reduce windshield glare, move slowly, let the barcode fill most of the camera view, or scan the registration barcode instead.</p>
                 </div>
+
+                <label className="issue-field">
+                  Manual VIN Entry
+                  <input
+                    type="text"
+                    value={manualVinEntry}
+                    onChange={(event) => setManualVinEntry(event.target.value.toUpperCase())}
+                    placeholder="Enter or paste 17-character VIN"
+                  />
+                </label>
               </div>
 
               <div className="update-actions">
@@ -1762,8 +1849,12 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
                   Cancel
                 </button>
 
-                <button className="save-button" onClick={handleScanAgain} type="button">
+                <button className="cancel-button" onClick={handleScanAgain} type="button">
                   Scan Again
+                </button>
+
+                <button className="save-button" onClick={handleManualVinSubmit} type="button">
+                  Use VIN
                 </button>
               </div>
             </section>
