@@ -324,6 +324,18 @@ function normalizeAsset(asset) {
   };
 }
 
+function normalizeCompletedRepairEvent(event) {
+  return {
+    ...event,
+    finalStatus: event.finalStatus || "Ready",
+    recordType: "Historical Repair Event",
+    technician:
+      event.technician && event.technician !== "—" && event.technician !== "‚Äî"
+        ? event.technician
+        : "Unassigned",
+  };
+}
+
 function normalizeImportedAsset(row) {
   const importedStatus = findOptionMatch(row.status, STATUS_OPTIONS) || "Ready";
   const isReadyStatus = importedStatus === "Ready";
@@ -367,7 +379,7 @@ function loadCompletedRepairEvents() {
   if (!savedEvents) return [];
 
   try {
-    return JSON.parse(savedEvents).map(normalizeAsset);
+    return JSON.parse(savedEvents).map(normalizeCompletedRepairEvent);
   } catch {
     return [];
   }
@@ -473,34 +485,35 @@ function App() {
   const activeBoardAssets = assets.filter((asset) => asset.status !== "Ready");
   const readyArchiveAssets = assets.filter((asset) => asset.status === "Ready");
 
-  const completedRepairUnitKeys = new Set(
-    completedRepairEvents.map((event) => String(event.unit || "").toLowerCase())
-  );
+const validCompletedRepairEvents = completedRepairEvents.filter(
+  (event) => event.status && event.status !== "Ready" && (event.finalStatus || "Ready") === "Ready"
+);
 
-  const readyOnlyArchiveAssets = readyArchiveAssets.filter(
-    (asset) => !completedRepairUnitKeys.has(String(asset.unit || "").toLowerCase())
-  );
+const dedupedCompletedRepairEvents = validCompletedRepairEvents.filter((event, index, events) => {
+  const completedDate = event.completedDate || event.statusEndedAt || event.statusStartedAt || "";
+  const eventKey = `${event.unit}-${completedDate}`;
 
-  const completedRepairRecords = [
-    ...completedRepairEvents.map((event) => ({
-      ...event,
-      recordId: `completed-${event.id || event.unit}`,
-      recordType: "Completed Repair",
-      displayStatus: event.finalStatus || "Ready",
-      completedDisplayDate: event.completedDate || event.statusEndedAt || event.statusStartedAt,
-      daysDownDisplay: event.finalDaysDown ?? calculateFinalDaysDown(event.downSince),
-      isClickableAsset: false,
-    })),
-    ...readyOnlyArchiveAssets.map((asset) => ({
-      ...asset,
-      recordId: `ready-${asset.unit}`,
-      recordType: "Ready Record",
-      displayStatus: "Ready",
-      completedDisplayDate: asset.statusStartedAt,
-      daysDownDisplay: "—",
-      isClickableAsset: true,
-    })),
-  ];
+  return (
+    index ===
+    events.findIndex((candidate) => {
+      const candidateDate =
+        candidate.completedDate || candidate.statusEndedAt || candidate.statusStartedAt || "";
+      const candidateKey = `${candidate.unit}-${candidateDate}`;
+
+      return candidateKey === eventKey;
+    })
+  );
+});
+
+const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
+  ...event,
+  recordId: `completed-${event.id || event.unit}-${event.completedDate || event.statusEndedAt || ""}`,
+  recordType: "Historical Repair Event",
+  priorStatus: event.status || "Unknown",
+  finalStatus: event.finalStatus || "Ready",
+  completedDisplayDate: event.completedDate || event.statusEndedAt || event.statusStartedAt,
+  daysDownDisplay: event.finalDaysDown ?? calculateFinalDaysDown(event.downSince),
+}));
 
   const totalAssets = assets.length;
   const readyAssets = readyArchiveAssets.length;
@@ -534,8 +547,7 @@ function App() {
       downSince: isReadyStatus ? "" : assetToClean.downSince || getTodayDateString(),
       rtsType: isReadyStatus ? "No RTS Established" : assetToClean.rtsType,
       rtsDate: isReadyStatus ? "" : assetToClean.rtsDate,
-      details:
-        assetToClean.details.trim() || (isReadyStatus ? "Available" : "Details pending"),
+      details: assetToClean.details.trim() || (isReadyStatus ? "Available" : "Details pending"),
     };
   }
 
@@ -994,9 +1006,11 @@ function App() {
 
             <section className="metrics-row">
               <div className="availability-card">
-                <span>Fleet Availability</span>
+                <span>Current Fleet Availability</span>
                 <strong>{availability}%</strong>
-                <p>{readyAssets} of {totalAssets} assets currently Ready / Archived</p>
+                <p>
+                  {readyAssets} Ready · {unavailableAssets} Active Exceptions · {totalAssets} Total Active Fleet Assets
+                </p>
               </div>
 
               <div className="metric-card"><span>Total Assets</span><strong>{totalAssets}</strong></div>
@@ -1056,7 +1070,7 @@ function App() {
                   {activeBoardAssets.length === 0 ? (
                     <tr>
                       <td colSpan="10">
-                        No assets currently require visibility. Ready assets are available in Repair History / Archive.
+                        No assets currently require visibility. Ready assets are not shown on the Command Center.
                       </td>
                     </tr>
                   ) : (
@@ -1098,7 +1112,7 @@ function App() {
               </div>
 
               <div className="refresh-box">
-                <span>Completed Records</span>
+                <span>Historical Records</span>
                 <strong>{completedRepairRecords.length}</strong>
               </div>
             </header>
@@ -1118,12 +1132,13 @@ function App() {
                     <th>Department</th>
                     <th>Asset</th>
                     <th>Record Type</th>
-                    <th>Status</th>
+                    <th>Prior Status</th>
+                    <th>Final Status</th>
                     <th>Reason</th>
                     <th>Priority</th>
                     <th>Days Down</th>
                     <th>Technician</th>
-                    <th>Completed / Archived</th>
+                    <th>Completed</th>
                     <th>Details</th>
                   </tr>
                 </thead>
@@ -1131,24 +1146,23 @@ function App() {
                 <tbody>
                   {completedRepairRecords.length === 0 ? (
                     <tr>
-                      <td colSpan="11">No completed repair records are currently available.</td>
+                      <td colSpan="12">No completed repair records are currently available.</td>
                     </tr>
                   ) : (
                     completedRepairRecords.map((record) => (
-                      <tr
-                        key={record.recordId}
-                        onClick={() => {
-                          if (record.isClickableAsset) handleSelectAsset(record);
-                        }}
-                        className={selectedAsset?.unit === record.unit ? "selected-row" : ""}
-                      >
+                      <tr key={record.recordId}>
                         <td className="unit">{record.unit}</td>
                         <td>{record.department}</td>
                         <td>{record.asset}</td>
                         <td>{record.recordType}</td>
                         <td>
-                          <span className={`status-pill ${getStatusClass(record.displayStatus)}`}>
-                            {record.displayStatus}
+                          <span className={`status-pill ${getStatusClass(record.priorStatus)}`}>
+                            {record.priorStatus}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`status-pill ${getStatusClass(record.finalStatus)}`}>
+                            {record.finalStatus}
                           </span>
                         </td>
                         <td>{record.reason}</td>
