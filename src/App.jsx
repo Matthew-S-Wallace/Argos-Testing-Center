@@ -1143,8 +1143,45 @@ const savedCompletedEvent = normalizeCompletedRepairEvent({
   completedDate: savedRepairHistory.completed,
   details: savedRepairHistory.details,
 });
+const returnToReadyStatusHistoryEvent = createStatusHistoryEvent(
+  selectedAsset,
+  savedReturnedAsset
+);
+
+const { data: savedReturnStatusHistory, error: returnStatusHistoryError } = await supabase
+  .from("status_history")
+  .insert({
+    organization_id: ARGOS_ORGANIZATION_ID,
+    unit: returnToReadyStatusHistoryEvent.unit,
+    department: returnToReadyStatusHistoryEvent.department,
+    asset: returnToReadyStatusHistoryEvent.asset,
+    from_status: returnToReadyStatusHistoryEvent.previousStatus,
+    to_status: returnToReadyStatusHistoryEvent.newStatus,
+    reason: returnToReadyStatusHistoryEvent.reason,
+    priority: selectedAsset.priority || "Normal",
+    technician: returnToReadyStatusHistoryEvent.technician || "Unassigned",
+    changed_at: returnToReadyStatusHistoryEvent.recordedAt,
+    details: returnToReadyStatusHistoryEvent.details,
+  })
+  .select()
+  .single();
+
+if (returnStatusHistoryError) {
+  console.error(
+    "ARGOS cloud return-to-ready status history creation failed:",
+    returnStatusHistoryError
+  );
+  alert(
+    "The asset and Repair History were saved, but ARGOS could not save the Status History record to the cloud."
+  );
+  return;
+}
+
 setStatusHistoryEvents((currentEvents) => [
-  createStatusHistoryEvent(selectedAsset, savedReturnedAsset),
+  {
+    ...returnToReadyStatusHistoryEvent,
+    id: savedReturnStatusHistory.id,
+  },
   ...currentEvents,
 ]);
 setCompletedRepairEvents((currentEvents) => [savedCompletedEvent, ...currentEvents]);
@@ -1159,8 +1196,37 @@ return;
     }
 
     if (statusChanged) {
+      const statusHistoryEvent = createStatusHistoryEvent(selectedAsset, updatedAsset);
+
+      const { data: savedStatusHistory, error: statusHistoryError } = await supabase
+        .from("status_history")
+        .insert({
+          organization_id: ARGOS_ORGANIZATION_ID,
+          unit: statusHistoryEvent.unit,
+          department: statusHistoryEvent.department,
+          asset: statusHistoryEvent.asset,
+          from_status: statusHistoryEvent.previousStatus,
+          to_status: statusHistoryEvent.newStatus,
+          reason: statusHistoryEvent.reason,
+          priority: updatedAsset.priority || "Normal",
+          technician: statusHistoryEvent.technician || "Unassigned",
+          changed_at: statusHistoryEvent.recordedAt,
+          details: statusHistoryEvent.details,
+        })
+        .select()
+        .single();
+
+      if (statusHistoryError) {
+        console.error("ARGOS cloud status history creation failed:", statusHistoryError);
+        alert("ARGOS could not save this Status History record to the cloud.");
+        return;
+      }
+
       setStatusHistoryEvents((currentEvents) => [
-        createStatusHistoryEvent(selectedAsset, updatedAsset),
+        {
+          ...statusHistoryEvent,
+          id: savedStatusHistory.id,
+        },
         ...currentEvents,
       ]);
     }
