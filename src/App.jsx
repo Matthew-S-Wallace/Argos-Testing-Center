@@ -508,6 +508,8 @@ function loadCompletedRepairEvents() {
 function mapSupabaseStatusHistory(row) {
   const changedAt = row.changed_at || new Date().toISOString();
   const changedDate = changedAt.slice(0, 10);
+  const statusStartedAt = row.status_started_at || changedDate;
+  const statusEndedAt = row.status_ended_at || changedDate;
 
   return {
     id: row.id,
@@ -520,9 +522,10 @@ function mapSupabaseStatusHistory(row) {
     reason: row.reason || "Other",
     details: row.details || "Details pending",
     technician: row.technician || "Unassigned",
-    statusStartedAt: changedDate,
-    statusEndedAt: changedDate,
-    durationDays: 0,
+    statusStartedAt,
+    statusEndedAt,
+    durationDays:
+      row.duration_days ?? calculateStatusDurationDays(statusStartedAt, statusEndedAt),
     recordedAt: changedAt,
   };
 }
@@ -1204,6 +1207,9 @@ const { data: savedReturnStatusHistory, error: returnStatusHistoryError } = awai
     priority: selectedAsset.priority || "Normal",
     technician: returnToReadyStatusHistoryEvent.technician || "Unassigned",
     changed_at: returnToReadyStatusHistoryEvent.recordedAt,
+    status_started_at: returnToReadyStatusHistoryEvent.statusStartedAt,
+    status_ended_at: returnToReadyStatusHistoryEvent.statusEndedAt,
+    duration_days: returnToReadyStatusHistoryEvent.durationDays,
     details: returnToReadyStatusHistoryEvent.details,
   })
   .select()
@@ -1254,6 +1260,9 @@ return;
           priority: updatedAsset.priority || "Normal",
           technician: statusHistoryEvent.technician || "Unassigned",
           changed_at: statusHistoryEvent.recordedAt,
+          status_started_at: statusHistoryEvent.statusStartedAt,
+          status_ended_at: statusHistoryEvent.statusEndedAt,
+          duration_days: statusHistoryEvent.durationDays,
           details: statusHistoryEvent.details,
         })
         .select()
