@@ -753,6 +753,7 @@ function App() {
     () => localStorage.getItem(ACTIVE_VIEW_STORAGE_KEY) || "command"
   );
   const [fleetSearch, setFleetSearch] = useState("");
+  const [fleetStatusFilter, setFleetStatusFilter] = useState("All Statuses");
   const [importStatus, setImportStatus] = useState("");
   const csvInputRef = useRef(null);
   const vinScannerVideoRef = useRef(null);
@@ -1040,9 +1041,15 @@ useEffect(() => {
   const readyArchiveAssets = assets.filter((asset) => asset.status === "Ready");
   const normalizedFleetSearch = fleetSearch.trim().toLowerCase();
   const filteredFleetAssets = [...assets]
-    .filter((asset) =>
-      !normalizedFleetSearch || String(asset.unit || "").toLowerCase().includes(normalizedFleetSearch)
-    )
+    .filter((asset) => {
+      const matchesUnitSearch =
+        !normalizedFleetSearch ||
+        String(asset.unit || "").toLowerCase().includes(normalizedFleetSearch);
+      const matchesStatusFilter =
+        fleetStatusFilter === "All Statuses" || asset.status === fleetStatusFilter;
+
+      return matchesUnitSearch && matchesStatusFilter;
+    })
     .sort((firstAsset, secondAsset) =>
       String(firstAsset.unit || "").localeCompare(String(secondAsset.unit || ""), undefined, {
         numeric: true,
@@ -2369,6 +2376,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
             type="button"
             onClick={() => {
               setFleetSearch("");
+              setFleetStatusFilter("All Statuses");
               setActiveView("fleet");
             }}
           >
@@ -2553,7 +2561,15 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                   <h3>Search and Update Established Assets</h3>
                 </div>
 
-                <div style={{ minWidth: "280px" }}>
+                <div
+                  style={{
+                    minWidth: "280px",
+                    display: "flex",
+                    gap: "0.65rem",
+                    flexWrap: "wrap",
+                    justifyContent: "flex-end",
+                  }}
+                >
                   <input
                     type="search"
                     value={fleetSearch}
@@ -2561,13 +2577,36 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                     placeholder="Search by unit number"
                     aria-label="Search My Fleet by unit number"
                     style={{
-                      width: "100%",
+                      flex: "1 1 220px",
+                      minWidth: "220px",
                       padding: "0.7rem 0.8rem",
                       border: "1px solid #c7d0d8",
                       borderRadius: "6px",
                       font: "inherit",
                     }}
                   />
+
+                  <select
+                    value={fleetStatusFilter}
+                    onChange={(event) => setFleetStatusFilter(event.target.value)}
+                    aria-label="Filter My Fleet by status"
+                    style={{
+                      flex: "0 1 210px",
+                      minWidth: "190px",
+                      padding: "0.7rem 0.8rem",
+                      border: "1px solid #c7d0d8",
+                      borderRadius: "6px",
+                      background: "#ffffff",
+                      font: "inherit",
+                    }}
+                  >
+                    <option value="All Statuses">All Statuses</option>
+                    {STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -2596,7 +2635,11 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                       <td colSpan="9">
                         {assets.length === 0
                           ? "No assets are currently stored in My Fleet."
-                          : `No unit numbers match “${fleetSearch.trim()}”.`}
+                          : fleetSearch.trim() && fleetStatusFilter !== "All Statuses"
+                            ? `No ${fleetStatusFilter} assets match unit number “${fleetSearch.trim()}”.`
+                            : fleetSearch.trim()
+                              ? `No unit numbers match “${fleetSearch.trim()}”.`
+                              : `No assets currently have the status “${fleetStatusFilter}”.`}
                       </td>
                     </tr>
                   ) : (
