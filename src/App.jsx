@@ -1061,11 +1061,54 @@ if (error) {
 
 const savedReturnedAsset = mapSupabaseAsset(data);
 
+const { data: savedRepairHistory, error: repairHistoryError } = await supabase
+  .from("repair_history")
+  .insert({
+    organization_id: ARGOS_ORGANIZATION_ID,
+    unit: completedEvent.unit,
+    department: completedEvent.department,
+    asset: completedEvent.asset,
+    record_type: "Historical Repair Event",
+    prior_status: completedEvent.status,
+    final_status: completedEvent.finalStatus,
+    reason: completedEvent.reason,
+    priority: completedEvent.priority,
+    days_down: completedEvent.finalDaysDown,
+    technician: completedEvent.technician || "Unassigned",
+    completed: completedEvent.completedDate,
+    details: completedEvent.details,
+  })
+  .select()
+  .single();
+
+if (repairHistoryError) {
+  console.error("ARGOS cloud repair history creation failed:", repairHistoryError);
+  alert(
+    "The asset was returned to Ready, but ARGOS could not save its Repair History record to the cloud."
+  );
+  return;
+}
+
+const savedCompletedEvent = normalizeCompletedRepairEvent({
+  id: savedRepairHistory.id,
+  unit: savedRepairHistory.unit,
+  department: savedRepairHistory.department,
+  asset: savedRepairHistory.asset,
+  recordType: savedRepairHistory.record_type,
+  status: savedRepairHistory.prior_status,
+  finalStatus: savedRepairHistory.final_status,
+  reason: savedRepairHistory.reason,
+  priority: savedRepairHistory.priority,
+  finalDaysDown: savedRepairHistory.days_down,
+  technician: savedRepairHistory.technician,
+  completedDate: savedRepairHistory.completed,
+  details: savedRepairHistory.details,
+});
 setStatusHistoryEvents((currentEvents) => [
   createStatusHistoryEvent(selectedAsset, savedReturnedAsset),
   ...currentEvents,
 ]);
-setCompletedRepairEvents((currentEvents) => [completedEvent, ...currentEvents]);
+setCompletedRepairEvents((currentEvents) => [savedCompletedEvent, ...currentEvents]);
 setAssets((currentAssets) =>
   currentAssets.map((asset) => (asset.unit === originalUnit ? savedReturnedAsset : asset))
 );
