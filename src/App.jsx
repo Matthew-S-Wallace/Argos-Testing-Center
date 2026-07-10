@@ -1061,19 +1061,48 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     setActiveView(updatedAsset.status === "Ready" ? "history" : "command");
   }
 
-  function handleSaveNewAsset() {
-    const cleanedAsset = cleanAsset({
-      ...newAsset,
-      statusStartedAt: newAsset.statusStartedAt || getTodayDateString(),
-    });
+  async function handleSaveNewAsset() {
+  const cleanedAsset = cleanAsset({
+    ...newAsset,
+    statusStartedAt: newAsset.statusStartedAt || getTodayDateString(),
+  });
 
-    if (!validateAsset(cleanedAsset)) return;
+  if (!validateAsset(cleanedAsset)) return;
 
-    setAssets((currentAssets) => [...currentAssets, cleanedAsset]);
-    setSelectedAsset(cleanedAsset);
-    setNewAsset(null);
-    setActiveView(cleanedAsset.status === "Ready" ? "history" : "command");
+  const { data, error } = await supabase
+    .from("assets")
+    .insert({
+      organization_id: ARGOS_ORGANIZATION_ID,
+      unit: cleanedAsset.unit,
+      vin: cleanedAsset.vin,
+      department: cleanedAsset.department,
+      asset: cleanedAsset.asset,
+      status: cleanedAsset.status,
+      status_started_at: cleanedAsset.statusStartedAt,
+      reason: cleanedAsset.reason,
+      priority: cleanedAsset.priority,
+      down_since: cleanedAsset.downSince,
+      technician: cleanedAsset.technician,
+      rts_type: cleanedAsset.rtsType,
+      rts_date: cleanedAsset.rtsDate,
+      details: cleanedAsset.details,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("ARGOS cloud asset creation failed:", error);
+    alert("ARGOS could not save this asset to the cloud.");
+    return;
   }
+
+  const savedAsset = mapSupabaseAsset(data);
+
+  setAssets((currentAssets) => [...currentAssets, savedAsset]);
+  setSelectedAsset(savedAsset);
+  setNewAsset(null);
+  setActiveView(savedAsset.status === "Ready" ? "history" : "command");
+}
 
   function handleDownloadCSVTemplate() {
     const exampleRow = {
