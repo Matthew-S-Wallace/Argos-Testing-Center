@@ -408,6 +408,24 @@ const initialAssets = [
   },
 ];
 
+const DEMO_ASSETS = [
+  { unit: "DEMO-101", vin: "1FTFW1E50NFA10101", department: "Public Works", asset: "2022 Ford F-150", status: "Ready", statusStartedAt: getTodayDateString(), reason: "Available", priority: "Normal", downSince: "", technician: "Unassigned", rtsType: "No RTS Established", rtsDate: "", details: "Available" },
+  { unit: "DEMO-102", vin: "1FT7W2B60NEA10102", department: "Public Works", asset: "2022 Ford F-250", status: "Waiting Parts", statusStartedAt: "2026-07-02", reason: "Parts Availability", priority: "High", downSince: "2026-07-02", technician: "M. Carter", rtsType: "Estimated Date", rtsDate: "2026-07-15", details: "Alternator ordered; awaiting delivery" },
+  { unit: "DEMO-103", vin: "1GC4YSEY0NF10103", department: "Public Works", asset: "2022 Chevrolet Silverado 2500HD", status: "In Shop", statusStartedAt: "2026-07-08", reason: "Preventive Maintenance", priority: "Medium", downSince: "2026-07-08", technician: "J. Reynolds", rtsType: "Estimated Date", rtsDate: "2026-07-11", details: "Scheduled brake and fluid service" },
+  { unit: "DEMO-201", vin: "1FM5K8AB0NGA10201", department: "Police", asset: "2022 Ford Police Interceptor Utility", status: "Ready", statusStartedAt: getTodayDateString(), reason: "Available", priority: "Normal", downSince: "", technician: "Unassigned", rtsType: "No RTS Established", rtsDate: "", details: "Available" },
+  { unit: "DEMO-202", vin: "1FM5K8AB2NGA10202", department: "Police", asset: "2022 Ford Police Interceptor Utility", status: "Awaiting QC", statusStartedAt: "2026-07-09", reason: "Inspection / QC", priority: "High", downSince: "2026-07-09", technician: "S. Mitchell", rtsType: "Estimated Date", rtsDate: "2026-07-11", details: "Post-repair road test and equipment inspection" },
+  { unit: "DEMO-203", vin: "1GNSKLED0NR10203", department: "Police", asset: "2022 Chevrolet Tahoe PPV", status: "At 3rd Party Shop", statusStartedAt: "2026-06-24", reason: "Accident / Damage", priority: "Critical", downSince: "2026-06-24", technician: "Vendor Body Shop", rtsType: "Estimated Date", rtsDate: "2026-07-22", details: "Right-front collision repairs" },
+  { unit: "DEMO-301", vin: "1GNSKLED2NR10301", department: "Fire", asset: "2022 Chevrolet Tahoe Command Vehicle", status: "Ready", statusStartedAt: getTodayDateString(), reason: "Available", priority: "Normal", downSince: "", technician: "Unassigned", rtsType: "No RTS Established", rtsDate: "", details: "Available" },
+  { unit: "DEMO-302", vin: "4EN3AAA82N110302", department: "Fire", asset: "2022 Pierce Enforcer Pumper", status: "Awaiting Approval", statusStartedAt: "2026-07-03", reason: "Awaiting Approval", priority: "Critical", downSince: "2026-07-03", technician: "R. Davis", rtsType: "TBD", rtsDate: "", details: "Awaiting authorization for hydraulic repair" },
+  { unit: "DEMO-401", vin: "1LV5065E0NN10401", department: "Parks", asset: "2022 John Deere 5065E Tractor", status: "Ready", statusStartedAt: getTodayDateString(), reason: "Available", priority: "Normal", downSince: "", technician: "Unassigned", rtsType: "No RTS Established", rtsDate: "", details: "Available" },
+  { unit: "DEMO-402", vin: "1TC930MCLNT10402", department: "Parks", asset: "2022 John Deere 930M Mower", status: "Waiting Parts", statusStartedAt: "2026-07-01", reason: "Parts Availability", priority: "Medium", downSince: "2026-07-01", technician: "D. Foster", rtsType: "Estimated Date", rtsDate: "2026-07-16", details: "Deck spindle assembly on order" },
+  { unit: "DEMO-501", vin: "1FT7W2BT0NE10501", department: "Utilities", asset: "2022 Ford F-250 Utility Truck", status: "Ready", statusStartedAt: getTodayDateString(), reason: "Available", priority: "Normal", downSince: "", technician: "Unassigned", rtsType: "No RTS Established", rtsDate: "", details: "Available" },
+  { unit: "DEMO-502", vin: "3C7WRKBL2NG10502", department: "Utilities", asset: "2022 RAM 3500 Utility Truck", status: "At 3rd Party Shop", statusStartedAt: "2026-06-27", reason: "Vendor / 3rd Party Delay", priority: "High", downSince: "2026-06-27", technician: "Transmission Vendor", rtsType: "TBD", rtsDate: "", details: "Transmission rebuild awaiting vendor completion" },
+  { unit: "DEMO-601", vin: "3ALACWFC0ND10601", department: "Solid Waste", asset: "2022 Freightliner M2 Rear Loader", status: "Down", statusStartedAt: "2026-06-21", reason: "Mechanical Failure", priority: "Critical", downSince: "2026-06-21", technician: "L. Garcia", rtsType: "TBD", rtsDate: "", details: "Hydraulic leak at compactor cylinder" },
+  { unit: "DEMO-602", vin: "1FVACXDT0NH10602", department: "Solid Waste", asset: "2022 Freightliner M2 Front Loader", status: "Ready", statusStartedAt: getTodayDateString(), reason: "Available", priority: "Normal", downSince: "", technician: "Unassigned", rtsType: "No RTS Established", rtsDate: "", details: "Available" },
+  { unit: "DEMO-701", vin: "1FDEE3FS0NDC10701", department: "Transit", asset: "2022 Ford E-350 Cutaway Bus", status: "Ready for Pickup", statusStartedAt: "2026-07-07", reason: "Mechanical Failure", priority: "Medium", downSince: "2026-07-04", technician: "E. Martin", rtsType: "Estimated Date", rtsDate: "2026-07-10", details: "Wheelchair lift repair completed" },
+];
+
 function createBlankAsset() {
   return {
     unit: "",
@@ -832,6 +850,7 @@ function App() {
   const [pendingNewAssetDraft, setPendingNewAssetDraft] = useState(null);
   const [scannerRunId, setScannerRunId] = useState(0);
   const [session, setSession] = useState(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -898,6 +917,14 @@ function App() {
   useEffect(() => {
     let isMounted = true;
 
+    if (isDemoMode) {
+      setOrganizationId(null);
+      setProfile({ full_name: "ARGOS Demo Visitor", role: "demo" });
+      setOrganizationLoading(false);
+      setOrganizationError("");
+      return undefined;
+    }
+
     if (!session?.user?.id) {
       setOrganizationId(null);
       setProfile(null);
@@ -960,7 +987,7 @@ function App() {
     return () => {
       isMounted = false;
     };
-  }, [session?.user?.id]);
+  }, [session?.user?.id, isDemoMode]);
 
 useEffect(() => {
   if (!session || !organizationId) return;
@@ -1312,6 +1339,54 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
 
     const isCompletingRepairEvent = selectedAsset.status !== "Ready" && updatedAsset.status === "Ready";
 
+    if (isDemoMode) {
+      if (isCompletingRepairEvent) {
+        const shouldComplete = window.confirm(
+          `Return Unit ${selectedAsset.unit} to Ready? This demo change will move the repair event to Repair History until the demo is exited or refreshed.`
+        );
+        if (!shouldComplete) return;
+
+        const returnedAsset = {
+          ...updatedAsset,
+          status: "Ready",
+          statusStartedAt: getTodayDateString(),
+          reason: "Available",
+          priority: "Normal",
+          downSince: "",
+          rtsType: "No RTS Established",
+          rtsDate: "",
+          details: "Available",
+        };
+        const completedEvent = normalizeCompletedRepairEvent({
+          ...selectedAsset,
+          id: `demo-completed-${Date.now()}`,
+          completedDate: getTodayDateString(),
+          finalDaysDown: calculateFinalDaysDown(selectedAsset.downSince),
+          finalStatus: "Ready",
+        });
+        const historyEvent = createStatusHistoryEvent(selectedAsset, returnedAsset, statusHistoryEvents);
+
+        setCompletedRepairEvents((currentEvents) => [completedEvent, ...currentEvents]);
+        setStatusHistoryEvents((currentEvents) => [historyEvent, ...currentEvents]);
+        setAssets((currentAssets) => currentAssets.map((asset) => asset.unit === originalUnit ? returnedAsset : asset));
+        setSelectedAsset(null);
+        setEditAsset(null);
+        setActiveView("history");
+        return;
+      }
+
+      if (statusChanged) {
+        const historyEvent = createStatusHistoryEvent(selectedAsset, updatedAsset, statusHistoryEvents);
+        setStatusHistoryEvents((currentEvents) => [historyEvent, ...currentEvents]);
+      }
+
+      setAssets((currentAssets) => currentAssets.map((asset) => asset.unit === originalUnit ? updatedAsset : asset));
+      setSelectedAsset(updatedAsset);
+      setEditAsset(null);
+      setActiveView(updatedAsset.status === "Ready" ? "fleet" : "command");
+      return;
+    }
+
     if (isCompletingRepairEvent) {
       const shouldComplete = window.confirm(
         `Return Unit ${selectedAsset.unit} to Ready? This will move the active repair event to Repair History and remove the unit from the Command Center.`
@@ -1578,6 +1653,15 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
   if (!validateAsset(cleanedAsset)) return;
 
+  if (isDemoMode) {
+    const demoAsset = normalizeAsset({ ...cleanedAsset });
+    setAssets((currentAssets) => [...currentAssets, demoAsset]);
+    setSelectedAsset(demoAsset);
+    setNewAsset(null);
+    setActiveView(demoAsset.status === "Ready" ? "fleet" : "command");
+    return;
+  }
+
   const { data, error } = await supabase
     .from("assets")
     .insert({
@@ -1690,6 +1774,16 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
           );
         }
 
+        event.target.value = "";
+        return;
+      }
+
+      if (isDemoMode) {
+        setAssets((currentAssets) => [...currentAssets, ...validImportedAssets]);
+        setActiveView("command");
+        setImportStatus(
+          `Imported ${validImportedAssets.length} temporary demo asset${validImportedAssets.length === 1 ? "" : "s"}. These changes will disappear when the demo is exited or refreshed.${rejectedRows.length > 0 ? ` Rejected ${rejectedRows.length} row${rejectedRows.length === 1 ? "" : "s"}: ${rejectedRows.join(" | ")}` : ""}`
+        );
         event.target.value = "";
         return;
       }
@@ -2189,6 +2283,37 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     );
   }
 
+  function handleEnterDemo() {
+    setAuthError("");
+    setIsDemoMode(true);
+    setProfile({ full_name: "ARGOS Demo Visitor", role: "demo" });
+    setAssets(DEMO_ASSETS.map((asset) => normalizeAsset({ ...asset })));
+    setCompletedRepairEvents([]);
+    setStatusHistoryEvents([]);
+    setSelectedAsset(null);
+    setEditAsset(null);
+    setNewAsset(null);
+    setFleetSearch("");
+    setFleetStatusFilter("All Statuses");
+    setImportStatus("");
+    setActiveView("command");
+  }
+
+  function handleExitDemo() {
+    const shouldExit = window.confirm("Exit the ARGOS demo? All demo changes will be discarded.");
+    if (!shouldExit) return;
+
+    setIsDemoMode(false);
+    setProfile(null);
+    setAssets([]);
+    setCompletedRepairEvents([]);
+    setStatusHistoryEvents([]);
+    setSelectedAsset(null);
+    setEditAsset(null);
+    setNewAsset(null);
+    setActiveView("command");
+  }
+
   async function handleSignIn(event) {
     event.preventDefault();
     setAuthError("");
@@ -2284,6 +2409,11 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
   }
 
   async function handleSignOut() {
+    if (isDemoMode) {
+      handleExitDemo();
+      return;
+    }
+
     const shouldSignOut = window.confirm("Sign out of ARGOS?");
     if (!shouldSignOut) return;
 
@@ -2323,7 +2453,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     );
   }
 
-  if (!session) {
+  if (!session && !isDemoMode) {
     return (
       <main
         style={{
@@ -2444,6 +2574,19 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
               <button type="button" onClick={() => { setShowPasswordResetRequest(true); setAuthError(""); setResetRequestMessage(""); }} style={{ width: "100%", marginTop: "0.75rem", padding: "0.65rem", border: 0, background: "transparent", color: "#314b64", fontWeight: 700, cursor: "pointer" }}>
                 Forgot password?
               </button>
+
+              <div style={{ margin: "1rem 0", display: "flex", alignItems: "center", gap: "0.75rem", color: "#7a8793", fontSize: "0.8rem" }}>
+                <span style={{ flex: 1, height: "1px", background: "#d9dfe5" }}></span>
+                <span>or explore without signing in</span>
+                <span style={{ flex: 1, height: "1px", background: "#d9dfe5" }}></span>
+              </div>
+
+              <button type="button" onClick={handleEnterDemo} style={{ width: "100%", padding: "0.9rem 1rem", border: "1px solid #9a6b24", borderRadius: "9px", background: "#fffaf1", color: "#6f4b18", fontSize: "1rem", fontWeight: 800, cursor: "pointer" }}>
+                Try ARGOS Demo
+              </button>
+              <p style={{ margin: "0.65rem 0 0", color: "#6d7884", fontSize: "0.78rem", lineHeight: 1.45, textAlign: "center" }}>
+                Uses fictional fleet data. Changes are temporary and disappear when you exit or refresh.
+              </p>
             </form>
           )}
         </section>
@@ -2463,6 +2606,13 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
             <span></span>
           </div>
         </div>
+
+        {isDemoMode && (
+          <div style={{ margin: "0 1rem 1rem", padding: "0.75rem", border: "1px solid rgba(210, 160, 72, 0.55)", borderRadius: "10px", background: "rgba(210, 160, 72, 0.12)", textAlign: "center" }}>
+            <strong style={{ display: "block", color: "#f1c878", fontSize: "0.78rem", letterSpacing: "0.12em" }}>DEMO ENVIRONMENT</strong>
+            <span style={{ display: "block", marginTop: "0.3rem", color: "#cbd5df", fontSize: "0.7rem", lineHeight: 1.35 }}>Fictional data · changes are temporary</span>
+          </div>
+        )}
 
         <nav className="sidebar-nav">
           <button
@@ -2516,12 +2666,12 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
             ▥ <span>Reports</span>
           </button>
           <button className="nav-item" type="button" onClick={handleSignOut}>
-            ⇥ <span>Log Out</span>
+            ⇥ <span>{isDemoMode ? "Exit Demo" : "Log Out"}</span>
           </button>
         </nav>
 
         <div className="sidebar-footer">
-          <strong>{profile?.full_name || session.user.email}</strong>
+          <strong>{profile?.full_name || session?.user?.email || "ARGOS Demo Visitor"}</strong>
           <span>{profile?.role || "user"}</span>
           <strong>ARGOS™</strong>
           <span>Fleet Operational Awareness</span>
