@@ -143,14 +143,47 @@ function formatDate(dateString) {
   });
 }
 
+function parseStatusDateTime(value) {
+  if (!value) return null;
+
+  const stringValue = String(value);
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(stringValue)
+    ? new Date(`${stringValue}T00:00:00`)
+    : new Date(stringValue);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function calculateStatusDurationDays(startDate, endDate) {
-  if (!startDate || !endDate) return 0;
+  const start = parseStatusDateTime(startDate);
+  const end = parseStatusDateTime(endDate);
 
-  const start = new Date(`${startDate}T00:00:00`);
-  const end = new Date(`${endDate}T00:00:00`);
+  if (!start || !end) return 0;
+
   const millisecondsPerDay = 1000 * 60 * 60 * 24;
+  return Math.max(0, (end.getTime() - start.getTime()) / millisecondsPerDay);
+}
 
-  return Math.max(0, Math.floor((end.getTime() - start.getTime()) / millisecondsPerDay));
+function formatStatusDuration(durationDays) {
+  const totalMinutes = Math.max(0, Math.round(Number(durationDays || 0) * 24 * 60));
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) {
+    const parts = [`${days} day${days === 1 ? "" : "s"}`];
+    if (hours > 0) parts.push(`${hours} hour${hours === 1 ? "" : "s"}`);
+    if (minutes > 0) parts.push(`${minutes} minute${minutes === 1 ? "" : "s"}`);
+    return parts.join(" ");
+  }
+
+  if (hours > 0) {
+    const parts = [`${hours} hour${hours === 1 ? "" : "s"}`];
+    if (minutes > 0) parts.push(`${minutes} minute${minutes === 1 ? "" : "s"}`);
+    return parts.join(" ");
+  }
+
+  return `${totalMinutes} minute${totalMinutes === 1 ? "" : "s"}`;
 }
 
 function calculateDaysDown(downSince, status) {
@@ -525,7 +558,9 @@ function mapSupabaseStatusHistory(row) {
     statusStartedAt,
     statusEndedAt,
     durationDays:
-      row.duration_days ?? calculateStatusDurationDays(statusStartedAt, statusEndedAt),
+      row.duration_minutes != null
+        ? Number(row.duration_minutes) / (24 * 60)
+        : row.duration_days ?? calculateStatusDurationDays(statusStartedAt, statusEndedAt),
     recordedAt: changedAt,
   };
 }
@@ -541,9 +576,24 @@ function loadStatusHistoryEvents() {
   }
 }
 
-function createStatusHistoryEvent(previousAsset, updatedAsset) {
-  const statusEndedAt = getTodayDateString();
-  const statusStartedAt = previousAsset.statusStartedAt || previousAsset.downSince || getTodayDateString();
+function createStatusHistoryEvent(previousAsset, updatedAsset, statusHistoryEvents = []) {
+  const recordedAt = new Date().toISOString();
+  const latestTransitionIntoCurrentStatus = statusHistoryEvents
+    .filter(
+      (event) =>
+        event.unit === previousAsset.unit &&
+        event.newStatus === previousAsset.status &&
+        event.recordedAt
+    )
+    .sort((firstEvent, secondEvent) =>
+      String(secondEvent.recordedAt).localeCompare(String(firstEvent.recordedAt))
+    )[0];
+  const statusStartedAt =
+    latestTransitionIntoCurrentStatus?.recordedAt ||
+    previousAsset.statusStartedAt ||
+    previousAsset.downSince ||
+    getTodayDateString();
+  const statusEndedAt = recordedAt;
 
   return {
     id: `${previousAsset.unit}-${previousAsset.status}-${updatedAsset.status}-${Date.now()}`,
@@ -559,7 +609,7 @@ function createStatusHistoryEvent(previousAsset, updatedAsset) {
     statusStartedAt,
     statusEndedAt,
     durationDays: calculateStatusDurationDays(statusStartedAt, statusEndedAt),
-    recordedAt: new Date().toISOString(),
+    recordedAt,
   };
 }
 
@@ -710,8 +760,10 @@ function buildStatusDurationAnalytics(assets, statusHistoryEvents) {
       currentUnits,
       completedStatusEvents,
       averageDuration:
-        completedStatusEvents > 0 ? (totalDuration / completedStatusEvents).toFixed(1) : "0.0",
-      longestDuration,
+        completedStatusEvents > 0
+          ? formatStatusDuration(totalDuration / completedStatusEvents)
+          : "0 minutes",
+      longestDuration: formatStatusDuration(longestDuration),
       totalDuration,
       percentageOfRecordedDowntime:
         totalRecordedDuration > 0 ? ((totalDuration / totalRecordedDuration) * 100).toFixed(1) : "0.0",
@@ -721,12 +773,14 @@ function buildStatusDurationAnalytics(assets, statusHistoryEvents) {
   const trackedStatusTransitions = normalizedHistoryEvents.length;
   const averageRecordedStatusDuration =
     trackedStatusTransitions > 0
-      ? (totalRecordedDuration / trackedStatusTransitions).toFixed(1)
-      : "0.0";
+      ? formatStatusDuration(totalRecordedDuration / trackedStatusTransitions)
+      : "0 minutes";
   const longestRecordedStatusDuration =
     normalizedHistoryEvents.length > 0
-      ? Math.max(...normalizedHistoryEvents.map((event) => event.durationDays))
-      : 0;
+      ? formatStatusDuration(
+          Math.max(...normalizedHistoryEvents.map((event) => event.durationDays))
+        )
+      : "0 minutes";
   const currentLargestBottleneck = [...rows].sort((a, b) => b.currentUnits - a.currentUnits)[0];
 
   return {
@@ -1340,7 +1394,8 @@ const savedCompletedEvent = normalizeCompletedRepairEvent({
 });
 const returnToReadyStatusHistoryEvent = createStatusHistoryEvent(
   selectedAsset,
-  savedReturnedAsset
+  savedReturnedAsset,
+  statusHistoryEvents
 );
 
 const { data: savedReturnStatusHistory, error: returnStatusHistoryError } = await supabase
@@ -1356,9 +1411,13 @@ const { data: savedReturnStatusHistory, error: returnStatusHistoryError } = awai
     priority: selectedAsset.priority || "Normal",
     technician: returnToReadyStatusHistoryEvent.technician || "Unassigned",
     changed_at: returnToReadyStatusHistoryEvent.recordedAt,
-    status_started_at: returnToReadyStatusHistoryEvent.statusStartedAt,
-    status_ended_at: returnToReadyStatusHistoryEvent.statusEndedAt,
-    duration_days: returnToReadyStatusHistoryEvent.durationDays,
+    status_started_at: String(returnToReadyStatusHistoryEvent.statusStartedAt).slice(0, 10),
+    status_ended_at: String(returnToReadyStatusHistoryEvent.statusEndedAt).slice(0, 10),
+    duration_days: Math.floor(returnToReadyStatusHistoryEvent.durationDays),
+    duration_minutes: Math.max(
+      0,
+      Math.round(returnToReadyStatusHistoryEvent.durationDays * 24 * 60)
+    ),
     details: returnToReadyStatusHistoryEvent.details,
   })
   .select()
@@ -1394,7 +1453,11 @@ return;
     }
 
     if (statusChanged) {
-      const statusHistoryEvent = createStatusHistoryEvent(selectedAsset, updatedAsset);
+      const statusHistoryEvent = createStatusHistoryEvent(
+        selectedAsset,
+        updatedAsset,
+        statusHistoryEvents
+      );
 
       const { data: savedStatusHistory, error: statusHistoryError } = await supabase
         .from("status_history")
@@ -1409,9 +1472,13 @@ return;
           priority: updatedAsset.priority || "Normal",
           technician: statusHistoryEvent.technician || "Unassigned",
           changed_at: statusHistoryEvent.recordedAt,
-          status_started_at: statusHistoryEvent.statusStartedAt,
-          status_ended_at: statusHistoryEvent.statusEndedAt,
-          duration_days: statusHistoryEvent.durationDays,
+          status_started_at: String(statusHistoryEvent.statusStartedAt).slice(0, 10),
+          status_ended_at: String(statusHistoryEvent.statusEndedAt).slice(0, 10),
+          duration_days: Math.floor(statusHistoryEvent.durationDays),
+          duration_minutes: Math.max(
+            0,
+            Math.round(statusHistoryEvent.durationDays * 24 * 60)
+          ),
           details: statusHistoryEvent.details,
         })
         .select()
