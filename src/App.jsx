@@ -8,7 +8,6 @@ const STORAGE_KEY = "argosFleetAssets";
 const COMPLETED_STORAGE_KEY = "argosCompletedRepairEvents";
 const STATUS_HISTORY_STORAGE_KEY = "argosStatusHistoryEvents";
 const ACTIVE_VIEW_STORAGE_KEY = "argosActiveView";
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "";
 
 function getOrganizationStorageKey(baseKey, organizationId) {
   return organizationId ? `${baseKey}:${organizationId}` : null;
@@ -826,8 +825,6 @@ function App() {
   const vinScannerVideoRef = useRef(null);
   const vinScannerControlsRef = useRef(null);
   const vinScanLockedRef = useRef(false);
-  const turnstileContainerRef = useRef(null);
-  const turnstileWidgetIdRef = useRef(null);
   const [showVinScanner, setShowVinScanner] = useState(false);
   const [vinScanStatus, setVinScanStatus] = useState("");
   const [lastScannedVin, setLastScannedVin] = useState("");
@@ -840,10 +837,6 @@ function App() {
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [isDemoSigningIn, setIsDemoSigningIn] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState("");
-  const [turnstileReady, setTurnstileReady] = useState(false);
-  const [turnstileStatus, setTurnstileStatus] = useState("Loading security check…");
   const [showPasswordResetRequest, setShowPasswordResetRequest] = useState(false);
   const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
   const [resetRequestMessage, setResetRequestMessage] = useState("");
@@ -856,125 +849,6 @@ function App() {
   const [profile, setProfile] = useState(null);
   const [organizationLoading, setOrganizationLoading] = useState(false);
   const [organizationError, setOrganizationError] = useState("");
-
-  useEffect(() => {
-    if (session || showPasswordResetRequest) {
-      setTurnstileToken("");
-      setTurnstileReady(false);
-      setTurnstileStatus("Loading security check…");
-      return undefined;
-    }
-
-    if (!TURNSTILE_SITE_KEY) {
-      setTurnstileToken("");
-      setTurnstileReady(false);
-      setTurnstileStatus("Demo security is not configured.");
-      return undefined;
-    }
-
-    let isCancelled = false;
-    let loadTimeoutId;
-
-    function renderTurnstileWidget() {
-      if (isCancelled || !window.turnstile || !turnstileContainerRef.current) return;
-
-      if (turnstileWidgetIdRef.current !== null) {
-        window.turnstile.remove(turnstileWidgetIdRef.current);
-        turnstileWidgetIdRef.current = null;
-      }
-
-      setTurnstileStatus("Complete the security check to open the demo.");
-
-      try {
-        turnstileWidgetIdRef.current = window.turnstile.render(
-          turnstileContainerRef.current,
-          {
-            sitekey: TURNSTILE_SITE_KEY,
-            theme: "light",
-            size: "normal",
-            appearance: "always",
-            execution: "render",
-            callback: (token) => {
-              setTurnstileToken(token);
-              setTurnstileReady(true);
-              setTurnstileStatus("Security check complete.");
-              setAuthError("");
-            },
-            "expired-callback": () => {
-              setTurnstileToken("");
-              setTurnstileReady(false);
-              setTurnstileStatus("Security check expired. Complete it again.");
-            },
-            "timeout-callback": () => {
-              setTurnstileToken("");
-              setTurnstileReady(false);
-              setTurnstileStatus("Security check timed out. Refresh the page and try again.");
-            },
-            "error-callback": (errorCode) => {
-              console.error("ARGOS Turnstile error:", errorCode);
-              setTurnstileToken("");
-              setTurnstileReady(false);
-              setTurnstileStatus(
-                `Security check could not load${errorCode ? ` (${errorCode})` : ""}.`
-              );
-            },
-          }
-        );
-      } catch (error) {
-        console.error("ARGOS Turnstile render failed:", error);
-        setTurnstileToken("");
-        setTurnstileReady(false);
-        setTurnstileStatus("Security check could not render. Refresh the page and try again.");
-      }
-    }
-
-    const scriptUrl =
-      "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-    let script = document.querySelector(`script[src="${scriptUrl}"]`);
-
-    if (window.turnstile) {
-      renderTurnstileWidget();
-    } else {
-      if (!script) {
-        script = document.createElement("script");
-        script.src = scriptUrl;
-        script.async = true;
-        script.defer = true;
-        document.head.appendChild(script);
-      }
-
-      script.addEventListener("load", renderTurnstileWidget, { once: true });
-      script.addEventListener(
-        "error",
-        () => {
-          if (!isCancelled) {
-            setTurnstileStatus(
-              "Security check script was blocked. Disable content blocking for localhost and refresh."
-            );
-          }
-        },
-        { once: true }
-      );
-
-      loadTimeoutId = window.setTimeout(() => {
-        if (!isCancelled && !window.turnstile) {
-          setTurnstileStatus(
-            "Security check did not load. Disable content blocking for localhost and refresh."
-          );
-        }
-      }, 6000);
-    }
-
-    return () => {
-      isCancelled = true;
-      if (loadTimeoutId) window.clearTimeout(loadTimeoutId);
-      if (script) script.removeEventListener("load", renderTurnstileWidget);
-      if (window.turnstile && turnstileWidgetIdRef.current !== null) {
-        window.turnstile.remove(turnstileWidgetIdRef.current);
-        turnstileWidgetIdRef.current = null;
-      }
-    };
-  }, [session, showPasswordResetRequest]);
 
   useEffect(() => {
     let isMounted = true;
@@ -2345,42 +2219,6 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
   }
 
 
-  async function handleDemoSignIn() {
-    setAuthError("");
-
-    if (!TURNSTILE_SITE_KEY) {
-      setAuthError("The ARGOS demo is not configured yet. Add the Turnstile site key and redeploy.");
-      return;
-    }
-
-    if (!turnstileToken) {
-      setAuthError("Complete the security check before opening the ARGOS demo.");
-      return;
-    }
-
-    setIsDemoSigningIn(true);
-
-    const { error } = await supabase.auth.signInAnonymously({
-      options: {
-        captchaToken: turnstileToken,
-      },
-    });
-
-    if (error) {
-      console.error("ARGOS anonymous demo login failed:", error);
-      setAuthError(error.message || "ARGOS could not open the public demo.");
-      setTurnstileToken("");
-      setTurnstileReady(false);
-      if (window.turnstile && turnstileWidgetIdRef.current !== null) {
-        window.turnstile.reset(turnstileWidgetIdRef.current);
-      }
-      setIsDemoSigningIn(false);
-      return;
-    }
-
-    setIsDemoSigningIn(false);
-  }
-
   async function handleRequestPasswordReset(event) {
     event.preventDefault();
     setAuthError("");
@@ -2599,60 +2437,9 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 </p>
               )}
 
-              <button type="submit" disabled={isSigningIn || isDemoSigningIn} style={{ width: "100%", padding: "0.9rem 1rem", border: 0, borderRadius: "9px", background: isSigningIn ? "#637080" : "#0b1d2e", color: "#ffffff", fontSize: "1rem", fontWeight: 800, cursor: isSigningIn ? "not-allowed" : "pointer" }}>
+              <button type="submit" disabled={isSigningIn} style={{ width: "100%", padding: "0.9rem 1rem", border: 0, borderRadius: "9px", background: isSigningIn ? "#637080" : "#0b1d2e", color: "#ffffff", fontSize: "1rem", fontWeight: 800, cursor: isSigningIn ? "not-allowed" : "pointer" }}>
                 {isSigningIn ? "Signing in…" : "Sign In"}
               </button>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", margin: "1.15rem 0", color: "#7a8794", fontSize: "0.78rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                <span style={{ flex: 1, height: "1px", background: "#d8dee5" }}></span>
-                Or explore
-                <span style={{ flex: 1, height: "1px", background: "#d8dee5" }}></span>
-              </div>
-
-              <div
-                ref={turnstileContainerRef}
-                style={{
-                  minHeight: "70px",
-                  marginBottom: "0.45rem",
-                  display: "flex",
-                  justifyContent: "center",
-                }}
-              ></div>
-              <p
-                style={{
-                  margin: "0 0 0.8rem",
-                  color: turnstileReady ? "#2f6f44" : "#6b7785",
-                  fontSize: "0.78rem",
-                  lineHeight: 1.4,
-                  textAlign: "center",
-                }}
-              >
-                {turnstileStatus}
-              </p>
-
-              <button
-                type="button"
-                onClick={handleDemoSignIn}
-                disabled={isDemoSigningIn || isSigningIn || !turnstileReady}
-                style={{
-                  width: "100%",
-                  padding: "0.9rem 1rem",
-                  border: "1px solid #9a6b24",
-                  borderRadius: "9px",
-                  background: isDemoSigningIn || !turnstileReady ? "#ece6dc" : "#f7efe1",
-                  color: "#6f4a16",
-                  fontSize: "1rem",
-                  fontWeight: 800,
-                  cursor: isDemoSigningIn ? "wait" : "pointer",
-                  opacity: isDemoSigningIn || !turnstileReady ? 0.72 : 1,
-                }}
-              >
-                {isDemoSigningIn ? "Opening Demo…" : "Try ARGOS Demo"}
-              </button>
-
-              <p style={{ margin: "0.65rem 0 0", color: "#6b7785", fontSize: "0.78rem", lineHeight: 1.45, textAlign: "center" }}>
-                Opens a temporary session using fictional fleet data. Demo changes may be reset.
-              </p>
 
               <button type="button" onClick={() => { setShowPasswordResetRequest(true); setAuthError(""); setResetRequestMessage(""); }} style={{ width: "100%", marginTop: "0.75rem", padding: "0.65rem", border: 0, background: "transparent", color: "#314b64", fontWeight: 700, cursor: "pointer" }}>
                 Forgot password?
@@ -2670,11 +2457,6 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         <div className="argos-logo">
           <h1>ARGOS</h1>
           <p>Fleet Operational Awareness</p>
-          {profile?.role === "demo" && (
-            <div style={{ marginTop: "0.8rem", padding: "0.45rem 0.65rem", border: "1px solid rgba(207, 164, 88, 0.75)", borderRadius: "7px", color: "#f0c979", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "0.12em", textAlign: "center" }}>
-              DEMO ENVIRONMENT
-            </div>
-          )}
           <div className="logo-rule">
             <span></span>
             <strong>✦</strong>
