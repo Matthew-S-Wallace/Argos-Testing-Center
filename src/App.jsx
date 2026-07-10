@@ -1400,7 +1400,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
     const reader = new FileReader();
 
-    reader.onload = (readerEvent) => {
+    reader.onload = async (readerEvent) => {
       const rows = parseCSVText(String(readerEvent.target?.result || ""));
       const existingUnits = new Set(assets.map((asset) => asset.unit.toLowerCase()));
       const existingVins = new Set(
@@ -1436,30 +1436,80 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         validImportedAssets.push(importedAsset);
       });
 
-      if (validImportedAssets.length > 0) {
-        setAssets((currentAssets) => [...currentAssets, ...validImportedAssets]);
-        setActiveView("command");
+      if (validImportedAssets.length === 0) {
+        if (rejectedRows.length === 0) {
+          setImportStatus("No asset rows were found in that CSV file.");
+        } else {
+          setImportStatus(
+            `Imported 0 assets. Rejected ${rejectedRows.length} row${
+              rejectedRows.length === 1 ? "" : "s"
+            }: ${rejectedRows.join(" | ")}`
+          );
+        }
+
+        event.target.value = "";
+        return;
       }
 
-      if (validImportedAssets.length === 0 && rejectedRows.length === 0) {
-        setImportStatus("No asset rows were found in that CSV file.");
-      } else if (rejectedRows.length > 0) {
+      const cloudRows = validImportedAssets.map((asset) => ({
+        organization_id: ARGOS_ORGANIZATION_ID,
+        unit: asset.unit,
+        vin: asset.vin,
+        department: asset.department,
+        asset: asset.asset,
+        status: asset.status,
+        status_started_at: asset.statusStartedAt,
+        reason: asset.reason,
+        priority: asset.priority,
+        down_since: asset.downSince,
+        technician: asset.technician,
+        rts_type: asset.rtsType,
+        rts_date: asset.rtsDate,
+        details: asset.details,
+      }));
+
+      const { data, error } = await supabase
+        .from("assets")
+        .insert(cloudRows)
+        .select();
+
+      if (error) {
+        console.error("ARGOS cloud CSV import failed:", error);
+        setImportStatus("ARGOS could not save the valid CSV assets to the cloud.");
+        event.target.value = "";
+        return;
+      }
+
+      const savedImportedAssets = (data || []).map(mapSupabaseAsset);
+
+      setAssets((currentAssets) => [...currentAssets, ...savedImportedAssets]);
+      setActiveView("command");
+
+      if (rejectedRows.length > 0) {
         setImportStatus(
-          `Imported ${validImportedAssets.length} asset${validImportedAssets.length === 1 ? "" : "s"}. Rejected ${rejectedRows.length} row${rejectedRows.length === 1 ? "" : "s"}: ${rejectedRows.join(" | ")}`
+          `Imported ${savedImportedAssets.length} asset${
+            savedImportedAssets.length === 1 ? "" : "s"
+          }. Rejected ${rejectedRows.length} row${
+            rejectedRows.length === 1 ? "" : "s"
+          }: ${rejectedRows.join(" | ")}`
         );
       } else {
         setImportStatus(
-          `Imported ${validImportedAssets.length} asset${validImportedAssets.length === 1 ? "" : "s"} successfully.`
+          `Imported ${savedImportedAssets.length} asset${
+            savedImportedAssets.length === 1 ? "" : "s"
+          } successfully.`
         );
       }
+
+      event.target.value = "";
     };
 
     reader.onerror = () => {
       setImportStatus("ARGOS could not read that CSV file. Please try again.");
+      event.target.value = "";
     };
 
     reader.readAsText(file);
-    event.target.value = "";
   }
 
   function exportCSVReport(filename, columns, rows, emptyMessage, successMessage) {
