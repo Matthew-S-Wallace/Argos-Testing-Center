@@ -752,6 +752,7 @@ function App() {
   const [activeView, setActiveView] = useState(
     () => localStorage.getItem(ACTIVE_VIEW_STORAGE_KEY) || "command"
   );
+  const [fleetSearch, setFleetSearch] = useState("");
   const [importStatus, setImportStatus] = useState("");
   const csvInputRef = useRef(null);
   const vinScannerVideoRef = useRef(null);
@@ -1037,6 +1038,17 @@ useEffect(() => {
 
   const activeBoardAssets = assets.filter((asset) => asset.status !== "Ready");
   const readyArchiveAssets = assets.filter((asset) => asset.status === "Ready");
+  const normalizedFleetSearch = fleetSearch.trim().toLowerCase();
+  const filteredFleetAssets = [...assets]
+    .filter((asset) =>
+      !normalizedFleetSearch || String(asset.unit || "").toLowerCase().includes(normalizedFleetSearch)
+    )
+    .sort((firstAsset, secondAsset) =>
+      String(firstAsset.unit || "").localeCompare(String(secondAsset.unit || ""), undefined, {
+        numeric: true,
+        sensitivity: "base",
+      })
+    );
 
 const validCompletedRepairEvents = completedRepairEvents.filter(
   (event) => event.status && event.status !== "Ready" && (event.finalStatus || "Ready") === "Ready"
@@ -2352,6 +2364,17 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
             ⌂ <span>Command Center</span>
           </button>
 
+          <button
+            className={`nav-item ${activeView === "fleet" ? "active" : ""}`}
+            type="button"
+            onClick={() => {
+              setFleetSearch("");
+              setActiveView("fleet");
+            }}
+          >
+            ◫ <span>My Fleet</span>
+          </button>
+
           <button className="nav-item" type="button" onClick={() => setShowDailySummary(true)}>
             ✦ <span>Daily Summary</span>
           </button>
@@ -2375,7 +2398,6 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
           >
             👥 <span>Technicians</span>
           </button>
-          <a className="nav-item">♢ <span>Alerts</span></a>
           <button
             className={`nav-item ${activeView === "reports" ? "active" : ""}`}
             type="button"
@@ -2383,7 +2405,6 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
           >
             ▥ <span>Reports</span>
           </button>
-          <a className="nav-item">⚙ <span>Settings</span></a>
           <button className="nav-item" type="button" onClick={handleSignOut}>
             ⇥ <span>Log Out</span>
           </button>
@@ -2501,6 +2522,103 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                         <td>{calculateDaysDown(asset.downSince, asset.status)}</td>
                         <td>{asset.technician}</td>
                         <td>{formatRTS(asset)}</td>
+                        <td>{asset.details}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </section>
+          </>
+        )}
+
+        {activeView === "fleet" && (
+          <>
+            <header className="dashboard-header">
+              <div>
+                <p className="eyebrow">Asset Roster</p>
+                <h2>My Fleet</h2>
+              </div>
+
+              <div className="refresh-box">
+                <span>Total Assets</span>
+                <strong>{assets.length}</strong>
+              </div>
+            </header>
+
+            <section className="status-board">
+              <div className="status-board-header">
+                <div>
+                  <p className="eyebrow">◫ Fleet Asset Directory</p>
+                  <h3>Search and Update Established Assets</h3>
+                </div>
+
+                <div style={{ minWidth: "280px" }}>
+                  <input
+                    type="search"
+                    value={fleetSearch}
+                    onChange={(event) => setFleetSearch(event.target.value)}
+                    placeholder="Search by unit number"
+                    aria-label="Search My Fleet by unit number"
+                    style={{
+                      width: "100%",
+                      padding: "0.7rem 0.8rem",
+                      border: "1px solid #c7d0d8",
+                      borderRadius: "6px",
+                      font: "inherit",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <p className="eyebrow">
+                Select any asset to update its status. Ready assets moved to a down status will appear on the Command Center automatically.
+              </p>
+
+              <table>
+                <thead>
+                  <tr>
+                    <th>Unit</th>
+                    <th>Department</th>
+                    <th>Asset</th>
+                    <th>VIN</th>
+                    <th>Status</th>
+                    <th>Reason</th>
+                    <th>Priority</th>
+                    <th>Technician</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filteredFleetAssets.length === 0 ? (
+                    <tr>
+                      <td colSpan="9">
+                        {assets.length === 0
+                          ? "No assets are currently stored in My Fleet."
+                          : `No unit numbers match “${fleetSearch.trim()}”.`}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredFleetAssets.map((asset) => (
+                      <tr
+                        key={asset.unit}
+                        onClick={() => handleSelectAsset(asset)}
+                        className={selectedAsset?.unit === asset.unit ? "selected-row" : ""}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <td className="unit">{asset.unit}</td>
+                        <td>{asset.department}</td>
+                        <td>{asset.asset}</td>
+                        <td>{asset.vin || "—"}</td>
+                        <td>
+                          <span className={`status-pill ${getStatusClass(asset.status)}`}>
+                            {asset.status}
+                          </span>
+                        </td>
+                        <td>{asset.reason}</td>
+                        <td className={asset.priority.toLowerCase()}>{asset.priority}</td>
+                        <td>{asset.technician}</td>
                         <td>{asset.details}</td>
                       </tr>
                     ))
