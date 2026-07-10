@@ -764,7 +764,50 @@ function App() {
   const [manualVinEntry, setManualVinEntry] = useState("");
   const [pendingNewAssetDraft, setPendingNewAssetDraft] = useState(null);
   const [scannerRunId, setScannerRunId] = useState(0);
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [isSigningIn, setIsSigningIn] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function initializeAuthentication() {
+      const { data, error } = await supabase.auth.getSession();
+
+      if (!isMounted) return;
+
+      if (error) {
+        console.error("ARGOS authentication session check failed:", error);
+        setAuthError("ARGOS could not verify the current login session.");
+      }
+
+      setSession(data?.session || null);
+      setAuthLoading(false);
+    }
+
+    initializeAuthentication();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!isMounted) return;
+      setSession(nextSession);
+      setAuthLoading(false);
+      setAuthError("");
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
 useEffect(() => {
+  if (!session) return;
+
   async function loadCloudAssets() {
     const { data, error } = await supabase
       .from("assets")
@@ -783,9 +826,11 @@ useEffect(() => {
   }
 
   loadCloudAssets();
-}, []);
+}, [session]);
 
 useEffect(() => {
+  if (!session) return;
+
   async function loadCloudRepairHistory() {
     const { data, error } = await supabase
       .from("repair_history")
@@ -804,9 +849,11 @@ useEffect(() => {
   }
 
   loadCloudRepairHistory();
-}, []);
+}, [session]);
 
 useEffect(() => {
+  if (!session) return;
+
   async function loadCloudStatusHistory() {
     const { data, error } = await supabase
       .from("status_history")
@@ -825,7 +872,7 @@ useEffect(() => {
   }
 
   loadCloudStatusHistory();
-}, []);
+}, [session]);
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
   }, [assets]);
@@ -1832,6 +1879,187 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     );
   }
 
+  async function handleSignIn(event) {
+    event.preventDefault();
+    setAuthError("");
+
+    const email = authEmail.trim();
+
+    if (!email || !authPassword) {
+      setAuthError("Enter both the email address and password.");
+      return;
+    }
+
+    setIsSigningIn(true);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password: authPassword,
+    });
+
+    if (error) {
+      console.error("ARGOS login failed:", error);
+      setAuthError(error.message || "ARGOS could not sign in with those credentials.");
+      setIsSigningIn(false);
+      return;
+    }
+
+    setAuthPassword("");
+    setIsSigningIn(false);
+  }
+
+  async function handleSignOut() {
+    const shouldSignOut = window.confirm("Sign out of ARGOS?");
+    if (!shouldSignOut) return;
+
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.error("ARGOS logout failed:", error);
+      alert("ARGOS could not sign out. Please try again.");
+    }
+  }
+
+  if (authLoading) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          background: "#07121f",
+          color: "#ffffff",
+          fontFamily: "Inter, system-ui, sans-serif",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <h1 style={{ marginBottom: "0.4rem", letterSpacing: "0.12em" }}>ARGOS</h1>
+          <p style={{ margin: 0, opacity: 0.75 }}>Verifying secure session…</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (!session) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          padding: "1.5rem",
+          background: "linear-gradient(145deg, #06111d 0%, #0d2033 100%)",
+          fontFamily: "Inter, system-ui, sans-serif",
+        }}
+      >
+        <section
+          style={{
+            width: "min(430px, 100%)",
+            padding: "2.25rem",
+            borderRadius: "18px",
+            background: "#ffffff",
+            boxShadow: "0 24px 70px rgba(0, 0, 0, 0.35)",
+          }}
+        >
+          <div style={{ textAlign: "center", marginBottom: "1.75rem" }}>
+            <p
+              style={{
+                margin: "0 0 0.45rem",
+                color: "#9a6b24",
+                fontSize: "0.75rem",
+                fontWeight: 800,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+              }}
+            >
+              Secure Fleet Access
+            </p>
+            <h1 style={{ margin: 0, color: "#07121f", letterSpacing: "0.1em" }}>ARGOS</h1>
+            <p style={{ margin: "0.5rem 0 0", color: "#5f6b78" }}>
+              Fleet Operational Awareness
+            </p>
+          </div>
+
+          <form onSubmit={handleSignIn}>
+            <label style={{ display: "block", marginBottom: "1rem", color: "#263443", fontWeight: 700 }}>
+              Email address
+              <input
+                type="email"
+                value={authEmail}
+                onChange={(event) => setAuthEmail(event.target.value)}
+                autoComplete="email"
+                required
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  marginTop: "0.45rem",
+                  padding: "0.85rem 0.95rem",
+                  border: "1px solid #c9d1da",
+                  borderRadius: "9px",
+                  fontSize: "1rem",
+                }}
+              />
+            </label>
+
+            <label style={{ display: "block", marginBottom: "1rem", color: "#263443", fontWeight: 700 }}>
+              Password
+              <input
+                type="password"
+                value={authPassword}
+                onChange={(event) => setAuthPassword(event.target.value)}
+                autoComplete="current-password"
+                required
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  marginTop: "0.45rem",
+                  padding: "0.85rem 0.95rem",
+                  border: "1px solid #c9d1da",
+                  borderRadius: "9px",
+                  fontSize: "1rem",
+                }}
+              />
+            </label>
+
+            {authError && (
+              <p
+                role="alert"
+                style={{
+                  margin: "0 0 1rem",
+                  padding: "0.75rem",
+                  borderRadius: "8px",
+                  background: "#fff1f1",
+                  color: "#9b1c1c",
+                  fontSize: "0.9rem",
+                }}
+              >
+                {authError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isSigningIn}
+              style={{
+                width: "100%",
+                padding: "0.9rem 1rem",
+                border: 0,
+                borderRadius: "9px",
+                background: isSigningIn ? "#637080" : "#0b1d2e",
+                color: "#ffffff",
+                fontSize: "1rem",
+                fontWeight: 800,
+                cursor: isSigningIn ? "not-allowed" : "pointer",
+              }}
+            >
+              {isSigningIn ? "Signing in…" : "Sign In"}
+            </button>
+          </form>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="argos-shell">
       <aside className="argos-sidebar">
@@ -1886,6 +2114,9 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
             ▥ <span>Reports</span>
           </button>
           <a className="nav-item">⚙ <span>Settings</span></a>
+          <button className="nav-item" type="button" onClick={handleSignOut}>
+            ⇥ <span>Log Out</span>
+          </button>
         </nav>
 
         <div className="sidebar-footer">
