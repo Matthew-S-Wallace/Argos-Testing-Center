@@ -505,6 +505,28 @@ function loadCompletedRepairEvents() {
   }
 }
 
+function mapSupabaseStatusHistory(row) {
+  const changedAt = row.changed_at || new Date().toISOString();
+  const changedDate = changedAt.slice(0, 10);
+
+  return {
+    id: row.id,
+    unit: row.unit || "",
+    vin: "",
+    department: row.department || "",
+    asset: row.asset || "",
+    previousStatus: row.from_status || "Unknown",
+    newStatus: row.to_status || "Unknown",
+    reason: row.reason || "Other",
+    details: row.details || "Details pending",
+    technician: row.technician || "Unassigned",
+    statusStartedAt: changedDate,
+    statusEndedAt: changedDate,
+    durationDays: 0,
+    recordedAt: changedAt,
+  };
+}
+
 function loadStatusHistoryEvents() {
   const savedEvents = localStorage.getItem(STATUS_HISTORY_STORAGE_KEY);
   if (!savedEvents) return [];
@@ -776,6 +798,27 @@ useEffect(() => {
   }
 
   loadCloudRepairHistory();
+}, []);
+
+useEffect(() => {
+  async function loadCloudStatusHistory() {
+    const { data, error } = await supabase
+      .from("status_history")
+      .select("*")
+      .eq("organization_id", ARGOS_ORGANIZATION_ID)
+      .order("changed_at", { ascending: false });
+
+    if (error) {
+      console.error("ARGOS cloud status history load failed:", error);
+      return;
+    }
+
+    if (data && data.length > 0) {
+      setStatusHistoryEvents(data.map(mapSupabaseStatusHistory));
+    }
+  }
+
+  loadCloudStatusHistory();
 }, []);
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
