@@ -476,6 +476,24 @@ function loadSavedAssets() {
   }
 }
 
+function mapSupabaseRepairHistory(row) {
+  return normalizeCompletedRepairEvent({
+    id: row.id,
+    unit: row.unit || "",
+    department: row.department || "",
+    asset: row.asset || "",
+    recordType: row.record_type || "Historical Repair Event",
+    status: row.prior_status || "Unknown",
+    finalStatus: row.final_status || "Ready",
+    reason: row.reason || "Other",
+    priority: row.priority || "Normal",
+    finalDaysDown: row.days_down ?? 0,
+    technician: row.technician || "Unassigned",
+    completedDate: row.completed || "",
+    details: row.details || "Details pending",
+  });
+}
+
 function loadCompletedRepairEvents() {
   const savedEvents = localStorage.getItem(COMPLETED_STORAGE_KEY);
   if (!savedEvents) return [];
@@ -737,6 +755,27 @@ useEffect(() => {
   }
 
   loadCloudAssets();
+}, []);
+
+useEffect(() => {
+  async function loadCloudRepairHistory() {
+    const { data, error } = await supabase
+      .from("repair_history")
+      .select("*")
+      .eq("organization_id", ARGOS_ORGANIZATION_ID)
+      .order("completed", { ascending: false });
+
+    if (error) {
+      console.error("ARGOS cloud repair history load failed:", error);
+      return;
+    }
+
+    if (data && data.length > 0) {
+      setCompletedRepairEvents(data.map(mapSupabaseRepairHistory));
+    }
+  }
+
+  loadCloudRepairHistory();
 }, []);
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
