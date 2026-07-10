@@ -769,6 +769,14 @@ function App() {
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [showPasswordResetRequest, setShowPasswordResetRequest] = useState(false);
+  const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
+  const [resetRequestMessage, setResetRequestMessage] = useState("");
+  const [passwordRecoveryMode, setPasswordRecoveryMode] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [passwordUpdateError, setPasswordUpdateError] = useState("");
   const [organizationId, setOrganizationId] = useState(null);
   const [profile, setProfile] = useState(null);
   const [organizationLoading, setOrganizationLoading] = useState(false);
@@ -795,11 +803,22 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!isMounted) return;
       setSession(nextSession);
       setAuthLoading(false);
       setAuthError("");
+
+      if (event === "PASSWORD_RECOVERY") {
+        setPasswordRecoveryMode(true);
+        setPasswordUpdateError("");
+      }
+
+      if (event === "SIGNED_OUT") {
+        setPasswordRecoveryMode(false);
+        setNewPassword("");
+        setConfirmNewPassword("");
+      }
     });
 
     return () => {
@@ -1936,6 +1955,77 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     );
   }
 
+  if (session && passwordRecoveryMode) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          padding: "1.5rem",
+          background: "linear-gradient(145deg, #06111d 0%, #0d2033 100%)",
+          fontFamily: "Inter, system-ui, sans-serif",
+        }}
+      >
+        <section
+          style={{
+            width: "min(430px, 100%)",
+            padding: "2.25rem",
+            borderRadius: "18px",
+            background: "#ffffff",
+            boxShadow: "0 24px 70px rgba(0, 0, 0, 0.35)",
+          }}
+        >
+          <div style={{ textAlign: "center", marginBottom: "1.75rem" }}>
+            <p style={{ margin: "0 0 0.45rem", color: "#9a6b24", fontWeight: 800 }}>
+              Secure Account Recovery
+            </p>
+            <h1 style={{ margin: 0, color: "#07121f", letterSpacing: "0.1em" }}>ARGOS</h1>
+            <p style={{ margin: "0.5rem 0 0", color: "#5f6b78" }}>Create a new password</p>
+          </div>
+
+          <form onSubmit={handleUpdatePassword}>
+            <label style={{ display: "block", marginBottom: "1rem", color: "#263443", fontWeight: 700 }}>
+              New password
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                autoComplete="new-password"
+                required
+                minLength={8}
+                style={{ width: "100%", boxSizing: "border-box", marginTop: "0.45rem", padding: "0.85rem 0.95rem", border: "1px solid #c9d1da", borderRadius: "9px", fontSize: "1rem" }}
+              />
+            </label>
+
+            <label style={{ display: "block", marginBottom: "1rem", color: "#263443", fontWeight: 700 }}>
+              Confirm new password
+              <input
+                type="password"
+                value={confirmNewPassword}
+                onChange={(event) => setConfirmNewPassword(event.target.value)}
+                autoComplete="new-password"
+                required
+                minLength={8}
+                style={{ width: "100%", boxSizing: "border-box", marginTop: "0.45rem", padding: "0.85rem 0.95rem", border: "1px solid #c9d1da", borderRadius: "9px", fontSize: "1rem" }}
+              />
+            </label>
+
+            {passwordUpdateError && (
+              <p role="alert" style={{ margin: "0 0 1rem", padding: "0.75rem", borderRadius: "8px", background: "#fff1f1", color: "#9b1c1c", fontSize: "0.9rem" }}>
+                {passwordUpdateError}
+              </p>
+            )}
+
+            <button type="submit" disabled={isUpdatingPassword} style={{ width: "100%", padding: "0.9rem 1rem", border: 0, borderRadius: "9px", background: isUpdatingPassword ? "#637080" : "#0b1d2e", color: "#ffffff", fontSize: "1rem", fontWeight: 800, cursor: isUpdatingPassword ? "not-allowed" : "pointer" }}>
+              {isUpdatingPassword ? "Updating password…" : "Update Password"}
+            </button>
+          </form>
+        </section>
+      </main>
+    );
+  }
+
   if (session && organizationLoading) {
     return (
       <main
@@ -2015,6 +2105,71 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     setIsSigningIn(false);
   }
 
+
+  async function handleRequestPasswordReset(event) {
+    event.preventDefault();
+    setAuthError("");
+    setResetRequestMessage("");
+
+    const email = authEmail.trim();
+
+    if (!email) {
+      setAuthError("Enter the email address associated with your ARGOS account.");
+      return;
+    }
+
+    setIsSendingResetEmail(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+
+    if (error) {
+      console.error("ARGOS password reset email failed:", error);
+      setAuthError(error.message || "ARGOS could not send the password reset email.");
+      setIsSendingResetEmail(false);
+      return;
+    }
+
+    setResetRequestMessage(
+      "Password reset instructions were sent. Check your email and follow the secure link to return to ARGOS."
+    );
+    setIsSendingResetEmail(false);
+  }
+
+  async function handleUpdatePassword(event) {
+    event.preventDefault();
+    setPasswordUpdateError("");
+
+    if (newPassword.length < 8) {
+      setPasswordUpdateError("Use a password containing at least 8 characters.");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordUpdateError("The new passwords do not match.");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+    if (error) {
+      console.error("ARGOS password update failed:", error);
+      setPasswordUpdateError(error.message || "ARGOS could not update the password.");
+      setIsUpdatingPassword(false);
+      return;
+    }
+
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setPasswordRecoveryMode(false);
+    setIsUpdatingPassword(false);
+    window.history.replaceState({}, document.title, window.location.pathname);
+    alert("Your ARGOS password has been updated successfully.");
+  }
+
   async function handleSignOut() {
     const shouldSignOut = window.confirm("Sign out of ARGOS?");
     if (!shouldSignOut) return;
@@ -2087,81 +2242,89 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
             </p>
           </div>
 
-          <form onSubmit={handleSignIn}>
-            <label style={{ display: "block", marginBottom: "1rem", color: "#263443", fontWeight: 700 }}>
-              Email address
-              <input
-                type="email"
-                value={authEmail}
-                onChange={(event) => setAuthEmail(event.target.value)}
-                autoComplete="email"
-                required
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  marginTop: "0.45rem",
-                  padding: "0.85rem 0.95rem",
-                  border: "1px solid #c9d1da",
-                  borderRadius: "9px",
-                  fontSize: "1rem",
-                }}
-              />
-            </label>
+          {showPasswordResetRequest ? (
+            <form onSubmit={handleRequestPasswordReset}>
+              <label style={{ display: "block", marginBottom: "1rem", color: "#263443", fontWeight: 700 }}>
+                Email address
+                <input
+                  type="email"
+                  value={authEmail}
+                  onChange={(event) => setAuthEmail(event.target.value)}
+                  autoComplete="email"
+                  required
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    marginTop: "0.45rem",
+                    padding: "0.85rem 0.95rem",
+                    border: "1px solid #c9d1da",
+                    borderRadius: "9px",
+                    fontSize: "1rem",
+                  }}
+                />
+              </label>
 
-            <label style={{ display: "block", marginBottom: "1rem", color: "#263443", fontWeight: 700 }}>
-              Password
-              <input
-                type="password"
-                value={authPassword}
-                onChange={(event) => setAuthPassword(event.target.value)}
-                autoComplete="current-password"
-                required
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  marginTop: "0.45rem",
-                  padding: "0.85rem 0.95rem",
-                  border: "1px solid #c9d1da",
-                  borderRadius: "9px",
-                  fontSize: "1rem",
-                }}
-              />
-            </label>
+              {authError && (
+                <p role="alert" style={{ margin: "0 0 1rem", padding: "0.75rem", borderRadius: "8px", background: "#fff1f1", color: "#9b1c1c", fontSize: "0.9rem" }}>
+                  {authError}
+                </p>
+              )}
 
-            {authError && (
-              <p
-                role="alert"
-                style={{
-                  margin: "0 0 1rem",
-                  padding: "0.75rem",
-                  borderRadius: "8px",
-                  background: "#fff1f1",
-                  color: "#9b1c1c",
-                  fontSize: "0.9rem",
-                }}
-              >
-                {authError}
-              </p>
-            )}
+              {resetRequestMessage && (
+                <p role="status" style={{ margin: "0 0 1rem", padding: "0.75rem", borderRadius: "8px", background: "#edf8f0", color: "#21643a", fontSize: "0.9rem" }}>
+                  {resetRequestMessage}
+                </p>
+              )}
 
-            <button
-              type="submit"
-              disabled={isSigningIn}
-              style={{
-                width: "100%",
-                padding: "0.9rem 1rem",
-                border: 0,
-                borderRadius: "9px",
-                background: isSigningIn ? "#637080" : "#0b1d2e",
-                color: "#ffffff",
-                fontSize: "1rem",
-                fontWeight: 800,
-                cursor: isSigningIn ? "not-allowed" : "pointer",
-              }}
-            >
-              {isSigningIn ? "Signing in…" : "Sign In"}
-            </button>
-          </form>
+              <button type="submit" disabled={isSendingResetEmail} style={{ width: "100%", padding: "0.9rem 1rem", border: 0, borderRadius: "9px", background: isSendingResetEmail ? "#637080" : "#0b1d2e", color: "#ffffff", fontSize: "1rem", fontWeight: 800, cursor: isSendingResetEmail ? "not-allowed" : "pointer" }}>
+                {isSendingResetEmail ? "Sending reset email…" : "Send Password Reset Email"}
+              </button>
+
+              <button type="button" onClick={() => { setShowPasswordResetRequest(false); setAuthError(""); setResetRequestMessage(""); }} style={{ width: "100%", marginTop: "0.75rem", padding: "0.65rem", border: 0, background: "transparent", color: "#314b64", fontWeight: 700, cursor: "pointer" }}>
+                Back to Sign In
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSignIn}>
+              <label style={{ display: "block", marginBottom: "1rem", color: "#263443", fontWeight: 700 }}>
+                Email address
+                <input
+                  type="email"
+                  value={authEmail}
+                  onChange={(event) => setAuthEmail(event.target.value)}
+                  autoComplete="email"
+                  required
+                  style={{ width: "100%", boxSizing: "border-box", marginTop: "0.45rem", padding: "0.85rem 0.95rem", border: "1px solid #c9d1da", borderRadius: "9px", fontSize: "1rem" }}
+                />
+              </label>
+
+              <label style={{ display: "block", marginBottom: "1rem", color: "#263443", fontWeight: 700 }}>
+                Password
+                <input
+                  type="password"
+                  value={authPassword}
+                  onChange={(event) => setAuthPassword(event.target.value)}
+                  autoComplete="current-password"
+                  required
+                  style={{ width: "100%", boxSizing: "border-box", marginTop: "0.45rem", padding: "0.85rem 0.95rem", border: "1px solid #c9d1da", borderRadius: "9px", fontSize: "1rem" }}
+                />
+              </label>
+
+              {authError && (
+                <p role="alert" style={{ margin: "0 0 1rem", padding: "0.75rem", borderRadius: "8px", background: "#fff1f1", color: "#9b1c1c", fontSize: "0.9rem" }}>
+                  {authError}
+                </p>
+              )}
+
+              <button type="submit" disabled={isSigningIn} style={{ width: "100%", padding: "0.9rem 1rem", border: 0, borderRadius: "9px", background: isSigningIn ? "#637080" : "#0b1d2e", color: "#ffffff", fontSize: "1rem", fontWeight: 800, cursor: isSigningIn ? "not-allowed" : "pointer" }}>
+                {isSigningIn ? "Signing in…" : "Sign In"}
+              </button>
+
+              <button type="button" onClick={() => { setShowPasswordResetRequest(true); setAuthError(""); setResetRequestMessage(""); }} style={{ width: "100%", marginTop: "0.75rem", padding: "0.65rem", border: 0, background: "transparent", color: "#314b64", fontWeight: 700, cursor: "pointer" }}>
+                Forgot password?
+              </button>
+            </form>
+          )}
         </section>
       </main>
     );
