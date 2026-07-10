@@ -8,7 +8,6 @@ const STORAGE_KEY = "argosFleetAssets";
 const COMPLETED_STORAGE_KEY = "argosCompletedRepairEvents";
 const STATUS_HISTORY_STORAGE_KEY = "argosStatusHistoryEvents";
 const ACTIVE_VIEW_STORAGE_KEY = "argosActiveView";
-const ARGOS_ORGANIZATION_ID = "3b2125f4-0bbd-4482-adb7-402abb5384cd";
 const STATUS_OPTIONS = [
   "Ready",
   "Down",
@@ -770,6 +769,10 @@ function App() {
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [organizationId, setOrganizationId] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [organizationLoading, setOrganizationLoading] = useState(false);
+  const [organizationError, setOrganizationError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -805,14 +808,68 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!session?.user?.id) {
+      setOrganizationId(null);
+      setProfile(null);
+      setOrganizationLoading(false);
+      setOrganizationError("");
+      return undefined;
+    }
+
+    async function resolveOrganizationContext() {
+      setOrganizationLoading(true);
+      setOrganizationError("");
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, organization_id, full_name, role")
+        .eq("id", session.user.id)
+        .single();
+
+      if (!isMounted) return;
+
+      if (error) {
+        console.error("ARGOS profile lookup failed:", error);
+        setOrganizationId(null);
+        setProfile(null);
+        setOrganizationError(
+          "ARGOS could not resolve this user's organization profile. Confirm the user has a profiles row."
+        );
+        setOrganizationLoading(false);
+        return;
+      }
+
+      if (!data?.organization_id) {
+        setOrganizationId(null);
+        setProfile(data || null);
+        setOrganizationError("This ARGOS user is not assigned to an organization.");
+        setOrganizationLoading(false);
+        return;
+      }
+
+      setProfile(data);
+      setOrganizationId(data.organization_id);
+      setOrganizationLoading(false);
+    }
+
+    resolveOrganizationContext();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.user?.id]);
+
 useEffect(() => {
-  if (!session) return;
+  if (!session || !organizationId) return;
 
   async function loadCloudAssets() {
     const { data, error } = await supabase
       .from("assets")
       .select("*")
-      .eq("organization_id", ARGOS_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -826,16 +883,16 @@ useEffect(() => {
   }
 
   loadCloudAssets();
-}, [session]);
+}, [session, organizationId]);
 
 useEffect(() => {
-  if (!session) return;
+  if (!session || !organizationId) return;
 
   async function loadCloudRepairHistory() {
     const { data, error } = await supabase
       .from("repair_history")
       .select("*")
-      .eq("organization_id", ARGOS_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .order("completed", { ascending: false });
 
     if (error) {
@@ -849,16 +906,16 @@ useEffect(() => {
   }
 
   loadCloudRepairHistory();
-}, [session]);
+}, [session, organizationId]);
 
 useEffect(() => {
-  if (!session) return;
+  if (!session || !organizationId) return;
 
   async function loadCloudStatusHistory() {
     const { data, error } = await supabase
       .from("status_history")
       .select("*")
-      .eq("organization_id", ARGOS_ORGANIZATION_ID)
+      .eq("organization_id", organizationId)
       .order("changed_at", { ascending: false });
 
     if (error) {
@@ -872,7 +929,7 @@ useEffect(() => {
   }
 
   loadCloudStatusHistory();
-}, [session]);
+}, [session, organizationId]);
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
   }, [assets]);
@@ -1187,7 +1244,7 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     details: returnedAsset.details,
     updated_at: new Date().toISOString(),
   })
-  .eq("organization_id", ARGOS_ORGANIZATION_ID)
+  .eq("organization_id", organizationId)
   .eq("unit", originalUnit)
   .select()
   .single();
@@ -1203,7 +1260,7 @@ const savedReturnedAsset = mapSupabaseAsset(data);
 const { data: savedRepairHistory, error: repairHistoryError } = await supabase
   .from("repair_history")
   .insert({
-    organization_id: ARGOS_ORGANIZATION_ID,
+    organization_id: organizationId,
     unit: completedEvent.unit,
     department: completedEvent.department,
     asset: completedEvent.asset,
@@ -1251,7 +1308,7 @@ const returnToReadyStatusHistoryEvent = createStatusHistoryEvent(
 const { data: savedReturnStatusHistory, error: returnStatusHistoryError } = await supabase
   .from("status_history")
   .insert({
-    organization_id: ARGOS_ORGANIZATION_ID,
+    organization_id: organizationId,
     unit: returnToReadyStatusHistoryEvent.unit,
     department: returnToReadyStatusHistoryEvent.department,
     asset: returnToReadyStatusHistoryEvent.asset,
@@ -1304,7 +1361,7 @@ return;
       const { data: savedStatusHistory, error: statusHistoryError } = await supabase
         .from("status_history")
         .insert({
-          organization_id: ARGOS_ORGANIZATION_ID,
+          organization_id: organizationId,
           unit: statusHistoryEvent.unit,
           department: statusHistoryEvent.department,
           asset: statusHistoryEvent.asset,
@@ -1359,7 +1416,7 @@ return;
     details: updatedAsset.details,
     updated_at: new Date().toISOString(),
   })
-  .eq("organization_id", ARGOS_ORGANIZATION_ID)
+  .eq("organization_id", organizationId)
   .eq("unit", originalUnit)
   .select()
   .single();
@@ -1392,7 +1449,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
   const { data, error } = await supabase
     .from("assets")
     .insert({
-      organization_id: ARGOS_ORGANIZATION_ID,
+      organization_id: organizationId,
       unit: cleanedAsset.unit,
       vin: cleanedAsset.vin,
       department: cleanedAsset.department,
@@ -1506,7 +1563,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
       }
 
       const cloudRows = validImportedAssets.map((asset) => ({
-        organization_id: ARGOS_ORGANIZATION_ID,
+        organization_id: organizationId,
         unit: asset.unit,
         vin: asset.vin,
         department: asset.department,
@@ -1879,6 +1936,56 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     );
   }
 
+  if (session && organizationLoading) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          background: "#07121f",
+          color: "#ffffff",
+          fontFamily: "Inter, system-ui, sans-serif",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <h1 style={{ marginBottom: "0.4rem", letterSpacing: "0.12em" }}>ARGOS</h1>
+          <p style={{ margin: 0, opacity: 0.75 }}>Loading organization profile…</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (session && organizationError) {
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          padding: "1.5rem",
+          background: "linear-gradient(145deg, #06111d 0%, #0d2033 100%)",
+          fontFamily: "Inter, system-ui, sans-serif",
+        }}
+      >
+        <section
+          style={{
+            width: "min(520px, 100%)",
+            padding: "2.25rem",
+            borderRadius: "18px",
+            background: "#ffffff",
+            boxShadow: "0 24px 70px rgba(0, 0, 0, 0.35)",
+            textAlign: "center",
+          }}
+        >
+          <h1 style={{ marginTop: 0, color: "#07121f", letterSpacing: "0.1em" }}>ARGOS</h1>
+          <p style={{ color: "#8f2f2f", fontWeight: 700 }}>{organizationError}</p>
+          <button type="button" onClick={handleSignOut}>Log Out</button>
+        </section>
+      </main>
+    );
+  }
+
   async function handleSignIn(event) {
     event.preventDefault();
     setAuthError("");
@@ -2120,6 +2227,8 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         </nav>
 
         <div className="sidebar-footer">
+          <strong>{profile?.full_name || session.user.email}</strong>
+          <span>{profile?.role || "user"}</span>
           <strong>ARGOS™</strong>
           <span>Fleet Operational Awareness</span>
         </div>
