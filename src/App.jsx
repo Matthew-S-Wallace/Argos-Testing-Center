@@ -703,8 +703,8 @@ function buildTechnicianAnalytics(assets, completedRepairRecords) {
       completedRepairs: completedRepairs.length,
       averageRepairDuration:
         completedRepairs.length > 0
-          ? (totalCompletedDuration / completedRepairs.length).toFixed(1)
-          : "0.0",
+          ? formatStatusDuration(totalCompletedDuration / completedRepairs.length)
+          : "0 minutes",
     };
   });
 
