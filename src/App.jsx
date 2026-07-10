@@ -7,6 +7,7 @@ import "./App.css";
 const STORAGE_KEY = "argosFleetAssets";
 const COMPLETED_STORAGE_KEY = "argosCompletedRepairEvents";
 const STATUS_HISTORY_STORAGE_KEY = "argosStatusHistoryEvents";
+const ACTIVE_VIEW_STORAGE_KEY = "argosActiveView";
 const ARGOS_ORGANIZATION_ID = "3b2125f4-0bbd-4482-adb7-402abb5384cd";
 const STATUS_OPTIONS = [
   "Ready",
@@ -749,7 +750,9 @@ function App() {
   const [editAsset, setEditAsset] = useState(null);
   const [newAsset, setNewAsset] = useState(null);
   const [showDailySummary, setShowDailySummary] = useState(false);
-  const [activeView, setActiveView] = useState("command");
+  const [activeView, setActiveView] = useState(
+    () => localStorage.getItem(ACTIVE_VIEW_STORAGE_KEY) || "command"
+  );
   const [importStatus, setImportStatus] = useState("");
   const csvInputRef = useRef(null);
   const vinScannerVideoRef = useRef(null);
@@ -834,6 +837,10 @@ useEffect(() => {
   useEffect(() => {
     localStorage.setItem(STATUS_HISTORY_STORAGE_KEY, JSON.stringify(statusHistoryEvents));
   }, [statusHistoryEvents]);
+
+  useEffect(() => {
+    localStorage.setItem(ACTIVE_VIEW_STORAGE_KEY, activeView);
+  }, [activeView]);
 
   useEffect(() => {
     if (!pendingNewAssetDraft || showVinScanner) return;
