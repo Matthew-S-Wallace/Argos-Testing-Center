@@ -983,7 +983,7 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     return true;
   }
 
-  function handleSave() {
+  async function handleSave() {
     const originalUnit = selectedAsset.unit;
     const originalVin = selectedAsset.vin || "";
     const statusChanged = selectedAsset.status !== editAsset.status;
@@ -1056,9 +1056,44 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
       currentAssets.map((asset) => (asset.unit === originalUnit ? updatedAsset : asset))
     );
 
-    setSelectedAsset(updatedAsset);
-    setEditAsset(null);
-    setActiveView(updatedAsset.status === "Ready" ? "history" : "command");
+  const { data, error } = await supabase
+  .from("assets")
+  .update({
+    unit: updatedAsset.unit,
+    vin: updatedAsset.vin,
+    department: updatedAsset.department,
+    asset: updatedAsset.asset,
+    status: updatedAsset.status,
+    status_started_at: updatedAsset.statusStartedAt,
+    reason: updatedAsset.reason,
+    priority: updatedAsset.priority,
+    down_since: updatedAsset.downSince,
+    technician: updatedAsset.technician,
+    rts_type: updatedAsset.rtsType,
+    rts_date: updatedAsset.rtsDate,
+    details: updatedAsset.details,
+    updated_at: new Date().toISOString(),
+  })
+  .eq("organization_id", ARGOS_ORGANIZATION_ID)
+  .eq("unit", originalUnit)
+  .select()
+  .single();
+
+if (error) {
+  console.error("ARGOS cloud asset update failed:", error);
+  alert("ARGOS could not save this asset update to the cloud.");
+  return;
+}
+
+const savedAsset = mapSupabaseAsset(data);
+
+setAssets((currentAssets) =>
+  currentAssets.map((asset) => (asset.unit === originalUnit ? savedAsset : asset))
+);
+
+setSelectedAsset(savedAsset);
+setEditAsset(null);
+setActiveView(savedAsset.status === "Ready" ? "history" : "command");
   }
 
   async function handleSaveNewAsset() {
