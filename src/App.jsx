@@ -8,6 +8,11 @@ const STORAGE_KEY = "argosFleetAssets";
 const COMPLETED_STORAGE_KEY = "argosCompletedRepairEvents";
 const STATUS_HISTORY_STORAGE_KEY = "argosStatusHistoryEvents";
 const ACTIVE_VIEW_STORAGE_KEY = "argosActiveView";
+
+function getOrganizationStorageKey(baseKey, organizationId) {
+  return organizationId ? `${baseKey}:${organizationId}` : null;
+}
+
 const STATUS_OPTIONS = [
   "Ready",
   "Down",
@@ -498,14 +503,17 @@ function mapSupabaseAsset(row) {
     details: row.details || "Available",
   });
 }
-function loadSavedAssets() {
-  const savedAssets = localStorage.getItem(STORAGE_KEY);
-  if (!savedAssets) return initialAssets;
+function loadSavedAssets(organizationId) {
+  const storageKey = getOrganizationStorageKey(STORAGE_KEY, organizationId);
+  if (!storageKey) return [];
+
+  const savedAssets = localStorage.getItem(storageKey);
+  if (!savedAssets) return [];
 
   try {
     return JSON.parse(savedAssets).map(normalizeAsset);
   } catch {
-    return initialAssets;
+    return [];
   }
 }
 
@@ -527,8 +535,11 @@ function mapSupabaseRepairHistory(row) {
   });
 }
 
-function loadCompletedRepairEvents() {
-  const savedEvents = localStorage.getItem(COMPLETED_STORAGE_KEY);
+function loadCompletedRepairEvents(organizationId) {
+  const storageKey = getOrganizationStorageKey(COMPLETED_STORAGE_KEY, organizationId);
+  if (!storageKey) return [];
+
+  const savedEvents = localStorage.getItem(storageKey);
   if (!savedEvents) return [];
 
   try {
@@ -565,8 +576,11 @@ function mapSupabaseStatusHistory(row) {
   };
 }
 
-function loadStatusHistoryEvents() {
-  const savedEvents = localStorage.getItem(STATUS_HISTORY_STORAGE_KEY);
+function loadStatusHistoryEvents(organizationId) {
+  const storageKey = getOrganizationStorageKey(STATUS_HISTORY_STORAGE_KEY, organizationId);
+  if (!storageKey) return [];
+
+  const savedEvents = localStorage.getItem(storageKey);
   if (!savedEvents) return [];
 
   try {
@@ -796,16 +810,14 @@ function buildStatusDurationAnalytics(assets, statusHistoryEvents) {
 }
 
 function App() {
-  const [assets, setAssets] = useState(loadSavedAssets);
-  const [completedRepairEvents, setCompletedRepairEvents] = useState(loadCompletedRepairEvents);
-  const [statusHistoryEvents, setStatusHistoryEvents] = useState(loadStatusHistoryEvents);
+  const [assets, setAssets] = useState([]);
+  const [completedRepairEvents, setCompletedRepairEvents] = useState([]);
+  const [statusHistoryEvents, setStatusHistoryEvents] = useState([]);
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [editAsset, setEditAsset] = useState(null);
   const [newAsset, setNewAsset] = useState(null);
   const [showDailySummary, setShowDailySummary] = useState(false);
-  const [activeView, setActiveView] = useState(
-    () => localStorage.getItem(ACTIVE_VIEW_STORAGE_KEY) || "command"
-  );
+  const [activeView, setActiveView] = useState("command");
   const [fleetSearch, setFleetSearch] = useState("");
   const [fleetStatusFilter, setFleetStatusFilter] = useState("All Statuses");
   const [importStatus, setImportStatus] = useState("");
@@ -889,6 +901,10 @@ function App() {
     if (!session?.user?.id) {
       setOrganizationId(null);
       setProfile(null);
+      setAssets([]);
+      setCompletedRepairEvents([]);
+      setStatusHistoryEvents([]);
+      setActiveView("command");
       setOrganizationLoading(false);
       setOrganizationError("");
       return undefined;
@@ -925,8 +941,17 @@ function App() {
         return;
       }
 
+      const resolvedOrganizationId = data.organization_id;
       setProfile(data);
-      setOrganizationId(data.organization_id);
+      setOrganizationId(resolvedOrganizationId);
+      setAssets(loadSavedAssets(resolvedOrganizationId));
+      setCompletedRepairEvents(loadCompletedRepairEvents(resolvedOrganizationId));
+      setStatusHistoryEvents(loadStatusHistoryEvents(resolvedOrganizationId));
+      setActiveView(
+        localStorage.getItem(
+          getOrganizationStorageKey(ACTIVE_VIEW_STORAGE_KEY, resolvedOrganizationId)
+        ) || "command"
+      );
       setOrganizationLoading(false);
     }
 
@@ -952,9 +977,7 @@ useEffect(() => {
       return;
     }
 
-    if (data && data.length > 0) {
-      setAssets(data.map(mapSupabaseAsset));
-    }
+    setAssets((data || []).map(mapSupabaseAsset));
   }
 
   loadCloudAssets();
@@ -975,9 +998,7 @@ useEffect(() => {
       return;
     }
 
-    if (data && data.length > 0) {
-      setCompletedRepairEvents(data.map(mapSupabaseRepairHistory));
-    }
+    setCompletedRepairEvents((data || []).map(mapSupabaseRepairHistory));
   }
 
   loadCloudRepairHistory();
@@ -998,28 +1019,34 @@ useEffect(() => {
       return;
     }
 
-    if (data && data.length > 0) {
-      setStatusHistoryEvents(data.map(mapSupabaseStatusHistory));
-    }
+    setStatusHistoryEvents((data || []).map(mapSupabaseStatusHistory));
   }
 
   loadCloudStatusHistory();
 }, [session, organizationId]);
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
-  }, [assets]);
+    const storageKey = getOrganizationStorageKey(STORAGE_KEY, organizationId);
+    if (!storageKey) return;
+    localStorage.setItem(storageKey, JSON.stringify(assets));
+  }, [assets, organizationId]);
 
   useEffect(() => {
-    localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify(completedRepairEvents));
-  }, [completedRepairEvents]);
+    const storageKey = getOrganizationStorageKey(COMPLETED_STORAGE_KEY, organizationId);
+    if (!storageKey) return;
+    localStorage.setItem(storageKey, JSON.stringify(completedRepairEvents));
+  }, [completedRepairEvents, organizationId]);
 
   useEffect(() => {
-    localStorage.setItem(STATUS_HISTORY_STORAGE_KEY, JSON.stringify(statusHistoryEvents));
-  }, [statusHistoryEvents]);
+    const storageKey = getOrganizationStorageKey(STATUS_HISTORY_STORAGE_KEY, organizationId);
+    if (!storageKey) return;
+    localStorage.setItem(storageKey, JSON.stringify(statusHistoryEvents));
+  }, [statusHistoryEvents, organizationId]);
 
   useEffect(() => {
-    localStorage.setItem(ACTIVE_VIEW_STORAGE_KEY, activeView);
-  }, [activeView]);
+    const storageKey = getOrganizationStorageKey(ACTIVE_VIEW_STORAGE_KEY, organizationId);
+    if (!storageKey) return;
+    localStorage.setItem(storageKey, activeView);
+  }, [activeView, organizationId]);
 
   useEffect(() => {
     if (!pendingNewAssetDraft || showVinScanner) return;
@@ -2259,6 +2286,14 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
   async function handleSignOut() {
     const shouldSignOut = window.confirm("Sign out of ARGOS?");
     if (!shouldSignOut) return;
+
+    setAssets([]);
+    setCompletedRepairEvents([]);
+    setStatusHistoryEvents([]);
+    setSelectedAsset(null);
+    setEditAsset(null);
+    setNewAsset(null);
+    setActiveView("command");
 
     const { error } = await supabase.auth.signOut();
 
