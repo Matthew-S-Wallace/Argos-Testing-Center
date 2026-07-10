@@ -1030,19 +1030,50 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
         details: "Available",
       };
 
-      setStatusHistoryEvents((currentEvents) => [
-        createStatusHistoryEvent(selectedAsset, returnedAsset),
-        ...currentEvents,
-      ]);
-      setCompletedRepairEvents((currentEvents) => [completedEvent, ...currentEvents]);
-      setAssets((currentAssets) =>
-        currentAssets.map((asset) => (asset.unit === originalUnit ? returnedAsset : asset))
-      );
+      const { data, error } = await supabase
+  .from("assets")
+  .update({
+    unit: returnedAsset.unit,
+    vin: returnedAsset.vin,
+    department: returnedAsset.department,
+    asset: returnedAsset.asset,
+    status: returnedAsset.status,
+    status_started_at: returnedAsset.statusStartedAt,
+    reason: returnedAsset.reason,
+    priority: returnedAsset.priority,
+    down_since: returnedAsset.downSince,
+    technician: returnedAsset.technician,
+    rts_type: returnedAsset.rtsType,
+    rts_date: returnedAsset.rtsDate,
+    details: returnedAsset.details,
+    updated_at: new Date().toISOString(),
+  })
+  .eq("organization_id", ARGOS_ORGANIZATION_ID)
+  .eq("unit", originalUnit)
+  .select()
+  .single();
 
-      setSelectedAsset(null);
-      setEditAsset(null);
-      setActiveView("history");
-      return;
+if (error) {
+  console.error("ARGOS cloud return-to-ready update failed:", error);
+  alert("ARGOS could not return this asset to Ready in the cloud.");
+  return;
+}
+
+const savedReturnedAsset = mapSupabaseAsset(data);
+
+setStatusHistoryEvents((currentEvents) => [
+  createStatusHistoryEvent(selectedAsset, savedReturnedAsset),
+  ...currentEvents,
+]);
+setCompletedRepairEvents((currentEvents) => [completedEvent, ...currentEvents]);
+setAssets((currentAssets) =>
+  currentAssets.map((asset) => (asset.unit === originalUnit ? savedReturnedAsset : asset))
+);
+
+setSelectedAsset(null);
+setEditAsset(null);
+setActiveView("history");
+return;
     }
 
     if (statusChanged) {
