@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { supabase } from "./supabaseClient";
+import AdministrationModule from "./components/Administration/ARGOS_Administration_Module_Component";
 import "./App.css";
 
 
@@ -869,6 +870,9 @@ function App() {
   const [profile, setProfile] = useState(null);
   const [organizationLoading, setOrganizationLoading] = useState(false);
   const [organizationError, setOrganizationError] = useState("");
+  const [organizationProfile, setOrganizationProfile] = useState(null);
+  const [organizationProfileLoading, setOrganizationProfileLoading] = useState(false);
+  const [organizationProfileError, setOrganizationProfileError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -989,6 +993,70 @@ function App() {
       isMounted = false;
     };
   }, [session?.user?.id, isDemoMode]);
+
+useEffect(() => {
+  let isMounted = true;
+
+  if (isDemoMode) {
+    setOrganizationProfile({
+      name: "Argos Public Demo",
+      fleet_name: "ARGOS Demonstration Fleet",
+      primary_contact_name: "Demo Administrator",
+      contact_email: "",
+      contact_phone: "",
+      address_line_1: "",
+      address_line_2: "",
+      city: "",
+      state: "",
+      postal_code: "",
+      time_zone: "America/New_York",
+    });
+    setOrganizationProfileLoading(false);
+    setOrganizationProfileError("");
+    return undefined;
+  }
+
+  if (!session || !organizationId) {
+    setOrganizationProfile(null);
+    setOrganizationProfileLoading(false);
+    setOrganizationProfileError("");
+    return undefined;
+  }
+
+  async function loadOrganizationProfile() {
+    setOrganizationProfileLoading(true);
+    setOrganizationProfileError("");
+
+    const { data, error } = await supabase
+      .from("organizations")
+      .select(
+        "id, name, fleet_name, primary_contact_name, contact_email, contact_phone, address_line_1, address_line_2, city, state, postal_code, time_zone, updated_at"
+      )
+      .eq("id", organizationId)
+      .single();
+
+    if (!isMounted) return;
+
+    if (error) {
+      console.error("ARGOS organization profile load failed:", error);
+      setOrganizationProfile(null);
+      setOrganizationProfileError(
+        "ARGOS could not load the organization profile. Confirm the new organization columns exist and the current user can read this organization."
+      );
+      setOrganizationProfileLoading(false);
+      return;
+    }
+
+    setOrganizationProfile(data);
+    setOrganizationProfileLoading(false);
+  }
+
+  loadOrganizationProfile();
+
+  return () => {
+    isMounted = false;
+  };
+}, [session, organizationId, isDemoMode]);
 
 useEffect(() => {
   if (!session || !organizationId) return;
@@ -3102,104 +3170,14 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
 
         {activeView === "administration" && (
-          <>
-            <header className="dashboard-header">
-              <div>
-                <p className="eyebrow">System Administration</p>
-                <h2>Administration</h2>
-              </div>
-
-              <div className="refresh-box">
-                <span>Configuration Areas</span>
-                <strong>17</strong>
-              </div>
-            </header>
-
-            <section className="administration-intro">
-              <div>
-                <p className="eyebrow">Version 1.0 Foundation</p>
-                <h3>Central Configuration</h3>
-                <p>
-                  Select an Administration area to view its dedicated workspace. Each future
-                  configuration feature will plug into this framework without changing ARGOS operational screens.
-                </p>
-              </div>
-              <span className="administration-sprint-badge">Sprint 001B</span>
-            </section>
-
-            <section className="administration-workspace">
-              <aside className="administration-menu" aria-label="Administration sections">
-                {[
-                  {
-                    label: "Organization",
-                    items: ["Organization Profile", "Users", "Roles", "Departments", "Technicians"],
-                  },
-                  {
-                    label: "Fleet Configuration",
-                    items: [
-                      "Asset Types",
-                      "Status Configuration",
-                      "Reason Configuration",
-                      "APWA Mapping",
-                      "VMRS Configuration",
-                    ],
-                  },
-                  {
-                    label: "Data Management",
-                    items: ["CSV Import", "CSV Export", "Import History", "Archived Assets"],
-                  },
-                  {
-                    label: "System",
-                    items: ["Audit Log", "Release Notes", "Help & Support"],
-                  },
-                ].map((group) => (
-                  <div className="administration-menu-group" key={group.label}>
-                    <p>{group.label}</p>
-                    {group.items.map((item) => (
-                      <button
-                        className={`administration-menu-item ${
-                          activeAdministrationSection === item ? "active" : ""
-                        }`}
-                        type="button"
-                        key={item}
-                        onClick={() => setActiveAdministrationSection(item)}
-                      >
-                        <span>{item}</span>
-                        <small>Planned</small>
-                      </button>
-                    ))}
-                  </div>
-                ))}
-              </aside>
-
-              <article className="administration-content">
-                <div className="administration-content-header">
-                  <div>
-                    <p className="eyebrow">Administration Workspace</p>
-                    <h3>{activeAdministrationSection}</h3>
-                  </div>
-                  <span className="administration-status">Framework Ready</span>
-                </div>
-
-                <div className="administration-content-body">
-                  <div className="administration-placeholder-icon">⚙</div>
-                  <h4>{activeAdministrationSection}</h4>
-                  <p>
-                    This workspace is reserved for the {activeAdministrationSection} configuration
-                    feature. Its controls, Supabase data connection, validation, and permissions will
-                    be added during the assigned Version 1.0 sprint.
-                  </p>
-                  <div className="administration-foundation-note">
-                    <strong>Administration framework active</strong>
-                    <span>
-                      Navigation and content routing are ready. No operational data or existing ARGOS
-                      functionality has been changed.
-                    </span>
-                  </div>
-                </div>
-              </article>
-            </section>
-          </>
+          <AdministrationModule
+            activeSection={activeAdministrationSection}
+            onSelectSection={setActiveAdministrationSection}
+            isDemoMode={isDemoMode}
+            organizationProfile={organizationProfile}
+            organizationProfileLoading={organizationProfileLoading}
+            organizationProfileError={organizationProfileError}
+          />
         )}
 
         {activeView === "reports" && (
