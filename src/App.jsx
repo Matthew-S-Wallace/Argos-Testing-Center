@@ -2665,6 +2665,14 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
           >
             ▥ <span>Reports</span>
           </button>
+          <button
+            className={`nav-item ${activeView === "administration" ? "active" : ""}`}
+            type="button"
+            onClick={() => setActiveView("administration")}
+          >
+            ⚙ <span>Administration</span>
+          </button>
+
           <button className="nav-item" type="button" onClick={handleSignOut}>
             ⇥ <span>{isDemoMode ? "Exit Demo" : "Log Out"}</span>
           </button>
@@ -3087,6 +3095,106 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                   )}
                 </tbody>
               </table>
+            </section>
+          </>
+        )}
+
+
+        {activeView === "administration" && (
+          <>
+            <header className="dashboard-header">
+              <div>
+                <p className="eyebrow">System Administration</p>
+                <h2>Administration</h2>
+              </div>
+
+              <div className="refresh-box">
+                <span>Configuration Areas</span>
+                <strong>16</strong>
+              </div>
+            </header>
+
+            <section className="administration-intro">
+              <div>
+                <p className="eyebrow">Version 1.0 Foundation</p>
+                <h3>Central Configuration</h3>
+                <p>
+                  Manage non-operational ARGOS configuration from one dedicated workspace. Sprint 001
+                  establishes the Administration structure; individual functions will be activated in
+                  their planned engineering sprints.
+                </p>
+              </div>
+              <span className="administration-sprint-badge">Sprint 001</span>
+            </section>
+
+            <section className="administration-grid">
+              <article className="administration-group">
+                <div className="administration-group-header">
+                  <span className="administration-icon">◎</span>
+                  <div>
+                    <p className="eyebrow">Organization</p>
+                    <h3>People & Structure</h3>
+                  </div>
+                </div>
+                <div className="administration-links">
+                  {["Organization Profile", "Users", "Roles", "Departments", "Technicians"].map((item) => (
+                    <button className="administration-link" type="button" disabled key={item}>
+                      <span>{item}</span><small>Planned</small>
+                    </button>
+                  ))}
+                </div>
+              </article>
+
+              <article className="administration-group">
+                <div className="administration-group-header">
+                  <span className="administration-icon">◇</span>
+                  <div>
+                    <p className="eyebrow">Fleet Configuration</p>
+                    <h3>Operational Standards</h3>
+                  </div>
+                </div>
+                <div className="administration-links">
+                  {["Asset Types", "Status Configuration", "Reason Configuration", "APWA Mapping", "VMRS Configuration"].map((item) => (
+                    <button className="administration-link" type="button" disabled key={item}>
+                      <span>{item}</span><small>Planned</small>
+                    </button>
+                  ))}
+                </div>
+              </article>
+
+              <article className="administration-group">
+                <div className="administration-group-header">
+                  <span className="administration-icon">⇄</span>
+                  <div>
+                    <p className="eyebrow">Data Management</p>
+                    <h3>Imports & Records</h3>
+                  </div>
+                </div>
+                <div className="administration-links">
+                  {["CSV Import", "CSV Export", "Import History", "Archived Assets"].map((item) => (
+                    <button className="administration-link" type="button" disabled key={item}>
+                      <span>{item}</span><small>Planned</small>
+                    </button>
+                  ))}
+                </div>
+              </article>
+
+              <article className="administration-group">
+                <div className="administration-group-header">
+                  <span className="administration-icon">⚙</span>
+                  <div>
+                    <p className="eyebrow">System</p>
+                    <h3>Governance & Support</h3>
+                  </div>
+                </div>
+                <div className="administration-links">
+                  {["Audit Log", "Release Notes", "Help & Support"].map((item) => (
+                    <button className="administration-link" type="button" disabled key={item}>
+                      <span>{item}</span><small>Planned</small>
+                    </button>
+                  ))}
+                </div>
+              </article>
             </section>
           </>
         )}

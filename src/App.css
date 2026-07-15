@@ -632,3 +632,154 @@ tbody tr:last-child td {
   text-align: left;
   padding: 14px 16px;
 }
+/* Sprint 001 — Administration Module Shell */
+
+.administration-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 28px;
+  margin-bottom: 24px;
+  padding: 26px 28px;
+  border: 1px solid #d8d8d2;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(7, 26, 51, 0.08);
+}
+
+.administration-intro h3,
+.administration-group h3 {
+  margin: 0;
+  color: #071a33;
+  font-weight: 500;
+}
+
+.administration-intro h3 {
+  font-size: 30px;
+}
+
+.administration-intro p:not(.eyebrow) {
+  max-width: 780px;
+  margin: 10px 0 0;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.administration-sprint-badge {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border: 1px solid rgba(154, 102, 20, 0.35);
+  border-radius: 999px;
+  background: #fff8e8;
+  color: #82550f;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.administration-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.administration-group {
+  overflow: hidden;
+  border: 1px solid #d8d8d2;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(7, 26, 51, 0.08);
+}
+
+.administration-group-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 23px 24px;
+  border-bottom: 1px solid #e5e5df;
+  background: #fbfbf8;
+}
+
+.administration-group-header .eyebrow {
+  margin-bottom: 5px;
+  font-size: 12px;
+}
+
+.administration-group h3 {
+  font-size: 25px;
+}
+
+.administration-icon {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #061b36;
+  color: #d8a93b;
+  font-size: 22px;
+  box-shadow: 0 8px 18px rgba(7, 26, 51, 0.18);
+}
+
+.administration-links {
+  display: grid;
+  padding: 10px 14px 14px;
+}
+
+button.administration-link {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 10px;
+  border: 0;
+  border-bottom: 1px solid #ecece7;
+  border-radius: 0;
+  background: transparent;
+  color: #071a33;
+  box-shadow: none;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  opacity: 1;
+}
+
+button.administration-link:last-child {
+  border-bottom: 0;
+}
+
+button.administration-link:disabled {
+  cursor: default;
+}
+
+.administration-link small {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #f0f1f2;
+  color: #6a7480;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 900px) {
+  .administration-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .administration-intro {
+    flex-direction: column;
+  }
+}
