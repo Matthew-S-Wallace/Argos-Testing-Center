@@ -836,6 +836,7 @@ function App() {
   const [newAsset, setNewAsset] = useState(null);
   const [showDailySummary, setShowDailySummary] = useState(false);
   const [activeView, setActiveView] = useState("command");
+  const [activeAdministrationSection, setActiveAdministrationSection] = useState("Organization Profile");
   const [fleetSearch, setFleetSearch] = useState("");
   const [fleetStatusFilter, setFleetStatusFilter] = useState("All Statuses");
   const [importStatus, setImportStatus] = useState("");
@@ -3110,7 +3111,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
               <div className="refresh-box">
                 <span>Configuration Areas</span>
-                <strong>16</strong>
+                <strong>17</strong>
               </div>
             </header>
 
@@ -3119,80 +3120,82 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 <p className="eyebrow">Version 1.0 Foundation</p>
                 <h3>Central Configuration</h3>
                 <p>
-                  Manage non-operational ARGOS configuration from one dedicated workspace. Sprint 001
-                  establishes the Administration structure; individual functions will be activated in
-                  their planned engineering sprints.
+                  Select an Administration area to view its dedicated workspace. Each future
+                  configuration feature will plug into this framework without changing ARGOS operational screens.
                 </p>
               </div>
-              <span className="administration-sprint-badge">Sprint 001</span>
+              <span className="administration-sprint-badge">Sprint 001B</span>
             </section>
 
-            <section className="administration-grid">
-              <article className="administration-group">
-                <div className="administration-group-header">
-                  <span className="administration-icon">◎</span>
-                  <div>
-                    <p className="eyebrow">Organization</p>
-                    <h3>People & Structure</h3>
+            <section className="administration-workspace">
+              <aside className="administration-menu" aria-label="Administration sections">
+                {[
+                  {
+                    label: "Organization",
+                    items: ["Organization Profile", "Users", "Roles", "Departments", "Technicians"],
+                  },
+                  {
+                    label: "Fleet Configuration",
+                    items: [
+                      "Asset Types",
+                      "Status Configuration",
+                      "Reason Configuration",
+                      "APWA Mapping",
+                      "VMRS Configuration",
+                    ],
+                  },
+                  {
+                    label: "Data Management",
+                    items: ["CSV Import", "CSV Export", "Import History", "Archived Assets"],
+                  },
+                  {
+                    label: "System",
+                    items: ["Audit Log", "Release Notes", "Help & Support"],
+                  },
+                ].map((group) => (
+                  <div className="administration-menu-group" key={group.label}>
+                    <p>{group.label}</p>
+                    {group.items.map((item) => (
+                      <button
+                        className={`administration-menu-item ${
+                          activeAdministrationSection === item ? "active" : ""
+                        }`}
+                        type="button"
+                        key={item}
+                        onClick={() => setActiveAdministrationSection(item)}
+                      >
+                        <span>{item}</span>
+                        <small>Planned</small>
+                      </button>
+                    ))}
                   </div>
-                </div>
-                <div className="administration-links">
-                  {["Organization Profile", "Users", "Roles", "Departments", "Technicians"].map((item) => (
-                    <button className="administration-link" type="button" disabled key={item}>
-                      <span>{item}</span><small>Planned</small>
-                    </button>
-                  ))}
-                </div>
-              </article>
+                ))}
+              </aside>
 
-              <article className="administration-group">
-                <div className="administration-group-header">
-                  <span className="administration-icon">◇</span>
+              <article className="administration-content">
+                <div className="administration-content-header">
                   <div>
-                    <p className="eyebrow">Fleet Configuration</p>
-                    <h3>Operational Standards</h3>
+                    <p className="eyebrow">Administration Workspace</p>
+                    <h3>{activeAdministrationSection}</h3>
                   </div>
+                  <span className="administration-status">Framework Ready</span>
                 </div>
-                <div className="administration-links">
-                  {["Asset Types", "Status Configuration", "Reason Configuration", "APWA Mapping", "VMRS Configuration"].map((item) => (
-                    <button className="administration-link" type="button" disabled key={item}>
-                      <span>{item}</span><small>Planned</small>
-                    </button>
-                  ))}
-                </div>
-              </article>
 
-              <article className="administration-group">
-                <div className="administration-group-header">
-                  <span className="administration-icon">⇄</span>
-                  <div>
-                    <p className="eyebrow">Data Management</p>
-                    <h3>Imports & Records</h3>
+                <div className="administration-content-body">
+                  <div className="administration-placeholder-icon">⚙</div>
+                  <h4>{activeAdministrationSection}</h4>
+                  <p>
+                    This workspace is reserved for the {activeAdministrationSection} configuration
+                    feature. Its controls, Supabase data connection, validation, and permissions will
+                    be added during the assigned Version 1.0 sprint.
+                  </p>
+                  <div className="administration-foundation-note">
+                    <strong>Administration framework active</strong>
+                    <span>
+                      Navigation and content routing are ready. No operational data or existing ARGOS
+                      functionality has been changed.
+                    </span>
                   </div>
-                </div>
-                <div className="administration-links">
-                  {["CSV Import", "CSV Export", "Import History", "Archived Assets"].map((item) => (
-                    <button className="administration-link" type="button" disabled key={item}>
-                      <span>{item}</span><small>Planned</small>
-                    </button>
-                  ))}
-                </div>
-              </article>
-
-              <article className="administration-group">
-                <div className="administration-group-header">
-                  <span className="administration-icon">⚙</span>
-                  <div>
-                    <p className="eyebrow">System</p>
-                    <h3>Governance & Support</h3>
-                  </div>
-                </div>
-                <div className="administration-links">
-                  {["Audit Log", "Release Notes", "Help & Support"].map((item) => (
-                    <button className="administration-link" type="button" disabled key={item}>
-                      <span>{item}</span><small>Planned</small>
-                    </button>
-                  ))}
                 </div>
               </article>
             </section>
