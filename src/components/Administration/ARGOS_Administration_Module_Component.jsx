@@ -1,3 +1,5 @@
+import ARGOSUsersAdministrationModule from "./ARGOS_Users_Administration_Module";
+
 const ADMINISTRATION_GROUPS = [
   {
     label: "Organization",
@@ -121,6 +123,19 @@ export default function AdministrationModule({
   organizationProfileError,
 }) {
   const isOrganizationProfile = activeSection === "Organization Profile";
+  const isUsersSection = activeSection === "Users";
+  const isLiveAdministrationSection = isOrganizationProfile || isUsersSection;
+
+  function getSectionLabel(item) {
+    if (item === "Organization Profile" || item === "Users") return "Active";
+    return "Planned";
+  }
+
+  function getWorkspaceStatus() {
+    if (isOrganizationProfile) return "Live Profile";
+    if (isUsersSection) return "Live Users";
+    return "Framework Ready";
+  }
 
   return (
     <>
@@ -146,7 +161,7 @@ export default function AdministrationModule({
             screens.
           </p>
         </div>
-        <span className="administration-sprint-badge">Sprint 001C</span>
+        <span className="administration-sprint-badge">Sprint 001E</span>
       </section>
 
       <section className="administration-workspace">
@@ -162,7 +177,7 @@ export default function AdministrationModule({
                   onClick={() => onSelectSection(item)}
                 >
                   <span>{item}</span>
-                  <small>{item === "Organization Profile" ? "Active" : "Planned"}</small>
+                  <small>{getSectionLabel(item)}</small>
                 </button>
               ))}
             </div>
@@ -175,9 +190,7 @@ export default function AdministrationModule({
               <p className="eyebrow">Administration Workspace</p>
               <h3>{activeSection}</h3>
             </div>
-            <span className="administration-status">
-              {isOrganizationProfile ? "Live Profile" : "Framework Ready"}
-            </span>
+            <span className="administration-status">{getWorkspaceStatus()}</span>
           </div>
 
           {isOrganizationProfile ? (
@@ -187,6 +200,8 @@ export default function AdministrationModule({
               organizationProfileLoading={organizationProfileLoading}
               organizationProfileError={organizationProfileError}
             />
+          ) : isUsersSection ? (
+            <ARGOSUsersAdministrationModule isDemoMode={isDemoMode} />
           ) : (
             <PlannedAdministrationWorkspace section={activeSection} />
           )}
