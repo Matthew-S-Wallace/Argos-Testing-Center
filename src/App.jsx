@@ -16,18 +16,16 @@ function getOrganizationStorageKey(baseKey, organizationId) {
   return organizationId ? `${baseKey}:${organizationId}` : null;
 }
 
-const STATUS_OPTIONS = [
-  "Ready",
-  "Down",
-  "In Shop",
-  "At 3rd Party Shop",
-  "Waiting Parts",
-  "Awaiting Approval",
-  "Awaiting QC",
-  "Ready for Pickup",
+const FALLBACK_STATUS_CONFIGURATIONS = [
+  { status_name: "Ready", status_code: "READY", display_order: 10, status_color: "#146C2E", counts_as_available: true, requires_down_date: false, is_active: true },
+  { status_name: "Down", status_code: "DOWN", display_order: 20, status_color: "#A61B1B", counts_as_available: false, requires_down_date: true, is_active: true },
+  { status_name: "In Shop", status_code: "IN_SHOP", display_order: 30, status_color: "#245B8A", counts_as_available: false, requires_down_date: true, is_active: true },
+  { status_name: "At 3rd Party Shop", status_code: "THIRD_PARTY", display_order: 40, status_color: "#6C4A8B", counts_as_available: false, requires_down_date: true, is_active: true },
+  { status_name: "Waiting Parts", status_code: "WAITING_PARTS", display_order: 50, status_color: "#A96300", counts_as_available: false, requires_down_date: true, is_active: true },
+  { status_name: "Awaiting Approval", status_code: "AWAITING_APPROVAL", display_order: 60, status_color: "#82550F", counts_as_available: false, requires_down_date: true, is_active: true },
+  { status_name: "Awaiting QC", status_code: "AWAITING_QC", display_order: 70, status_color: "#5B4B9A", counts_as_available: false, requires_down_date: true, is_active: true },
+  { status_name: "Ready for Pickup", status_code: "READY_PICKUP", display_order: 80, status_color: "#8A6A14", counts_as_available: false, requires_down_date: true, is_active: true },
 ];
-
-const STATUS_DURATION_STATUS_OPTIONS = STATUS_OPTIONS.filter((status) => status !== "Ready");
 
 const REASON_OPTIONS = [
   "Available",
@@ -564,8 +562,8 @@ function normalizeCompletedRepairEvent(event) {
   };
 }
 
-function normalizeImportedAsset(row) {
-  const importedStatus = findOptionMatch(row.status, STATUS_OPTIONS) || "Ready";
+function normalizeImportedAsset(row, statusOptions = FALLBACK_STATUS_CONFIGURATIONS.map((status) => status.status_name)) {
+  const importedStatus = findOptionMatch(row.status, statusOptions) || "Ready";
   const isReadyStatus = importedStatus === "Ready";
   const priority = findOptionMatch(row.priority, PRIORITY_OPTIONS) || "Normal";
   const reason = isReadyStatus ? "Available" : findOptionMatch(row.reason, REASON_OPTIONS) || "Other";
@@ -861,11 +859,12 @@ function buildTechnicianAnalytics(assets, completedRepairRecords) {
 }
 
 
-function buildStatusDurationAnalytics(assets, statusHistoryEvents) {
+function buildStatusDurationAnalytics(assets, statusHistoryEvents, statusOptions) {
+  const statusDurationOptions = statusOptions.filter((status) => status !== "Ready");
   const activeAssets = assets.filter((asset) => asset.status !== "Ready");
 
   const normalizedHistoryEvents = statusHistoryEvents
-    .filter((event) => STATUS_DURATION_STATUS_OPTIONS.includes(event.previousStatus))
+    .filter((event) => statusDurationOptions.includes(event.previousStatus))
     .map((event) => ({
       ...event,
       durationDays: Number(event.durationDays ?? 0),
@@ -876,7 +875,7 @@ function buildStatusDurationAnalytics(assets, statusHistoryEvents) {
     0
   );
 
-  const rows = STATUS_DURATION_STATUS_OPTIONS.map((status) => {
+  const rows = statusDurationOptions.map((status) => {
     const currentUnits = activeAssets.filter((asset) => asset.status === status).length;
     const completedEvents = normalizedHistoryEvents.filter(
       (event) => event.previousStatus === status
@@ -978,6 +977,9 @@ function App() {
   const [assetTypes, setAssetTypes] = useState([]);
   const [assetTypesLoading, setAssetTypesLoading] = useState(false);
   const [assetTypesError, setAssetTypesError] = useState("");
+  const [statusConfigurations, setStatusConfigurations] = useState(FALLBACK_STATUS_CONFIGURATIONS);
+  const [statusConfigurationsLoading, setStatusConfigurationsLoading] = useState(false);
+  const [statusConfigurationsError, setStatusConfigurationsError] = useState("");
   const [departmentsLoading, setDepartmentsLoading] = useState(false);
   const [departmentsError, setDepartmentsError] = useState("");
   const [technicianIdentityConfirmation, setTechnicianIdentityConfirmation] = useState(null);
@@ -1284,6 +1286,24 @@ useEffect(() => {
 }, [session, organizationId, isDemoMode]);
 
 useEffect(() => {
+  let isMounted = true;
+  if (isDemoMode) { setStatusConfigurations(FALLBACK_STATUS_CONFIGURATIONS); return undefined; }
+  if (!session || !organizationId) { setStatusConfigurations(FALLBACK_STATUS_CONFIGURATIONS); return undefined; }
+  async function loadOrganizationStatusConfigurations() {
+    setStatusConfigurationsLoading(true); setStatusConfigurationsError("");
+    const { data, error } = await supabase.from("status_configurations")
+      .select("id, status_name, status_code, display_order, status_color, counts_as_available, requires_down_date, is_active")
+      .eq("organization_id", organizationId).eq("is_active", true)
+      .order("display_order", { ascending: true }).order("status_name", { ascending: true });
+    if (!isMounted) return;
+    if (error) { console.error("ARGOS Status Configuration load failed:", error); setStatusConfigurations(FALLBACK_STATUS_CONFIGURATIONS); setStatusConfigurationsError("ARGOS could not load active Status Configuration. Standard statuses are being used."); setStatusConfigurationsLoading(false); return; }
+    setStatusConfigurations(data && data.length ? data : FALLBACK_STATUS_CONFIGURATIONS); setStatusConfigurationsLoading(false);
+  }
+  loadOrganizationStatusConfigurations();
+  return () => { isMounted = false; };
+}, [session, organizationId, isDemoMode]);
+
+useEffect(() => {
   if (!session || !organizationId) return;
 
   async function loadCloudAssets() {
@@ -1439,6 +1459,7 @@ useEffect(() => {
     };
   }, [showVinScanner, scannerRunId, assets]);
 
+  const statusOptions = statusConfigurations.map((status) => status.status_name);
   const activeBoardAssets = assets.filter((asset) => asset.status !== "Ready");
   const readyArchiveAssets = assets.filter((asset) => asset.status === "Ready");
   const normalizedFleetSearch = fleetSearch.trim().toLowerCase();
@@ -1509,7 +1530,7 @@ const technicianSuggestions = Array.from(
   const dailySummary = buildDailySummary(assets);
   const technicianAnalytics = buildTechnicianAnalytics(assets, completedRepairRecords);
 
-  const statusDurationAnalytics = buildStatusDurationAnalytics(assets, statusHistoryEvents);
+  const statusDurationAnalytics = buildStatusDurationAnalytics(assets, statusHistoryEvents, statusOptions);
 
   function handleSelectAsset(asset) {
     const liveAsset = assets.find((currentAsset) => currentAsset.unit === asset.unit) || asset;
@@ -2195,7 +2216,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
       const rejectedRows = [];
 
       rows.forEach((row, index) => {
-        const importedAsset = normalizeImportedAsset(row);
+        const importedAsset = normalizeImportedAsset(row, statusOptions);
         const resolvedDepartment = resolveDepartmentValue(importedAsset.department);
         const rowNumber = index + 2;
         const rowErrors = [];
@@ -2615,7 +2636,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         <label>
           Status
           <select name="status" value={asset.status} onChange={onStatusChange}>
-            {STATUS_OPTIONS.map((status) => (
+            {statusOptions.map((status) => (
               <option key={status}>{status}</option>
             ))}
           </select>
@@ -3415,7 +3436,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                     }}
                   >
                     <option value="All Statuses">All Statuses</option>
-                    {STATUS_OPTIONS.map((status) => (
+                    {statusOptions.map((status) => (
                       <option key={status} value={status}>
                         {status}
                       </option>

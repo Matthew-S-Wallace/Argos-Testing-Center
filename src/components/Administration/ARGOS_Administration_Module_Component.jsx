@@ -1,6 +1,7 @@
 import ARGOSUsersAdministrationModule from "./ARGOS_Users_Administration_Module";
 import ARGOSDepartmentsAdministrationModule from "./ARGOS_Departments_Administration_Module";
 import ARGOSAssetTypesAdministrationModule from "./ARGOS_Asset_Types_Administration_Module";
+import ARGOSStatusConfigurationAdministrationModule from "./ARGOS_Status_Configuration_Administration_Module";
 
 const ADMINISTRATION_GROUPS = [
   {
@@ -128,13 +129,15 @@ export default function AdministrationModule({
   const isUsersSection = activeSection === "Users";
   const isDepartmentsSection = activeSection === "Departments";
   const isAssetTypesSection = activeSection === "Asset Types";
+  const isStatusConfigurationSection = activeSection === "Status Configuration";
 
   function getSectionLabel(item) {
     if (
       item === "Organization Profile" ||
       item === "Users" ||
       item === "Departments" ||
-      item === "Asset Types"
+      item === "Asset Types" ||
+      item === "Status Configuration"
     ) {
       return "Active";
     }
@@ -147,6 +150,7 @@ export default function AdministrationModule({
     if (isUsersSection) return "Live Users";
     if (isDepartmentsSection) return "Live Departments";
     if (isAssetTypesSection) return "Live Asset Types";
+    if (isStatusConfigurationSection) return "Live Status Configuration";
     return "Framework Ready";
   }
 
@@ -174,7 +178,7 @@ export default function AdministrationModule({
             screens.
           </p>
         </div>
-        <span className="administration-sprint-badge">Sprint 001K</span>
+        <span className="administration-sprint-badge">Sprint 001L</span>
       </section>
 
       <section className="administration-workspace">
@@ -219,6 +223,8 @@ export default function AdministrationModule({
             <ARGOSDepartmentsAdministrationModule isDemoMode={isDemoMode} />
           ) : isAssetTypesSection ? (
             <ARGOSAssetTypesAdministrationModule isDemoMode={isDemoMode} />
+          ) : isStatusConfigurationSection ? (
+            <ARGOSStatusConfigurationAdministrationModule isDemoMode={isDemoMode} />
           ) : (
             <PlannedAdministrationWorkspace section={activeSection} />
           )}
