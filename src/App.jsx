@@ -409,6 +409,32 @@ const initialAssets = [
   },
 ];
 
+const DEMO_DEPARTMENTS = [
+  { id: "demo-public-works", department_name: "Public Works", department_code: "PW", is_active: true },
+  { id: "demo-police", department_name: "Police", department_code: "POL", is_active: true },
+  { id: "demo-fire", department_name: "Fire", department_code: "FIRE", is_active: true },
+  { id: "demo-parks", department_name: "Parks", department_code: "PARKS", is_active: true },
+  { id: "demo-utilities", department_name: "Utilities", department_code: "UTIL", is_active: true },
+  { id: "demo-solid-waste", department_name: "Solid Waste", department_code: "SW", is_active: true },
+  { id: "demo-transit", department_name: "Transit", department_code: "TRANSIT", is_active: true },
+];
+
+function normalizeDepartmentLookupValue(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function findDepartmentByName(departments, departmentName) {
+  const normalizedName = normalizeDepartmentLookupValue(departmentName);
+
+  return departments.find(
+    (department) =>
+      normalizeDepartmentLookupValue(department.department_name) === normalizedName
+  );
+}
+
 const DEMO_ASSETS = [
   { unit: "DEMO-101", vin: "1FTFW1E50NFA10101", department: "Public Works", asset: "2022 Ford F-150", status: "Ready", statusStartedAt: getTodayDateString(), reason: "Available", priority: "Normal", downSince: "", technician: "Unassigned", rtsType: "No RTS Established", rtsDate: "", details: "Available" },
   { unit: "DEMO-102", vin: "1FT7W2B60NEA10102", department: "Public Works", asset: "2022 Ford F-250", status: "Waiting Parts", statusStartedAt: "2026-07-02", reason: "Parts Availability", priority: "High", downSince: "2026-07-02", technician: "M. Carter", rtsType: "Estimated Date", rtsDate: "2026-07-15", details: "Alternator ordered; awaiting delivery" },
@@ -431,6 +457,7 @@ function createBlankAsset() {
   return {
     unit: "",
     vin: "",
+    departmentId: "",
     department: "",
     asset: "",
     status: "Ready",
@@ -455,6 +482,7 @@ function normalizeAsset(asset) {
 
   return {
     vin: "",
+    departmentId: asset.departmentId || "",
     ...asset,
     status: normalizedStatus,
     reason: isReadyStatus ? "Available" : asset.reason || asset.issue || "Other",
@@ -492,6 +520,7 @@ function normalizeImportedAsset(row) {
   return {
     unit: String(row.unit || "").trim(),
     vin: String(row.vin || "").trim().toUpperCase(),
+    departmentId: "",
     department: String(row.department || "").trim(),
     asset: String(row.asset || "").trim(),
     status: importedStatus,
@@ -509,6 +538,7 @@ function mapSupabaseAsset(row) {
   return normalizeAsset({
     unit: row.unit || "",
     vin: row.vin || "",
+    departmentId: row.department_id || "",
     department: row.department || "",
     asset: row.asset || "",
     status: row.status || "Ready",
@@ -873,6 +903,10 @@ function App() {
   const [organizationProfile, setOrganizationProfile] = useState(null);
   const [organizationProfileLoading, setOrganizationProfileLoading] = useState(false);
   const [organizationProfileError, setOrganizationProfileError] = useState("");
+  const [departments, setDepartments] = useState([]);
+  const [departmentAliases, setDepartmentAliases] = useState([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(false);
+  const [departmentsError, setDepartmentsError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -1052,6 +1086,74 @@ useEffect(() => {
   }
 
   loadOrganizationProfile();
+
+  return () => {
+    isMounted = false;
+  };
+}, [session, organizationId, isDemoMode]);
+
+useEffect(() => {
+  let isMounted = true;
+
+  if (isDemoMode) {
+    setDepartments(DEMO_DEPARTMENTS);
+    setDepartmentAliases([]);
+    setDepartmentsLoading(false);
+    setDepartmentsError("");
+    return undefined;
+  }
+
+  if (!session || !organizationId) {
+    setDepartments([]);
+    setDepartmentAliases([]);
+    setDepartmentsLoading(false);
+    setDepartmentsError("");
+    return undefined;
+  }
+
+  async function loadOrganizationDepartments() {
+    setDepartmentsLoading(true);
+    setDepartmentsError("");
+
+    const [
+      { data: departmentRows, error: departmentLoadError },
+      { data: aliasRows, error: aliasLoadError },
+    ] = await Promise.all([
+      supabase
+        .from("departments")
+        .select("id, department_name, department_code, is_active")
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .order("department_name", { ascending: true }),
+      supabase
+        .from("department_aliases")
+        .select("id, department_id, alias_name")
+        .eq("organization_id", organizationId),
+    ]);
+
+    if (!isMounted) return;
+
+    if (departmentLoadError) {
+      console.error("ARGOS departments load failed:", departmentLoadError);
+      setDepartments([]);
+      setDepartmentAliases([]);
+      setDepartmentsError(
+        "ARGOS could not load active departments for asset management."
+      );
+      setDepartmentsLoading(false);
+      return;
+    }
+
+    if (aliasLoadError) {
+      console.error("ARGOS department aliases load failed:", aliasLoadError);
+    }
+
+    setDepartments(departmentRows || []);
+    setDepartmentAliases(aliasRows || []);
+    setDepartmentsLoading(false);
+  }
+
+  loadOrganizationDepartments();
 
   return () => {
     isMounted = false;
@@ -1289,7 +1391,8 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
       ...assetFields,
       unit: assetFields.unit.trim(),
       vin: assetFields.vin.trim().toUpperCase(),
-      department: assetFields.department.trim(),
+      departmentId: assetFields.departmentId || "",
+      department: String(assetFields.department || "").trim(),
       asset: assetFields.asset.trim(),
       technician:
         assetFields.technician && assetFields.technician.trim() && assetFields.technician !== "—"
@@ -1312,6 +1415,60 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
   function handleNewAssetChange(event) {
     const { name, value } = event.target;
     setNewAsset((currentAsset) => ({ ...currentAsset, [name]: value }));
+  }
+
+  function applyDepartmentSelection(currentAsset, departmentId) {
+    const selectedDepartment = departments.find(
+      (department) => department.id === departmentId
+    );
+
+    return {
+      ...currentAsset,
+      departmentId: selectedDepartment?.id || "",
+      department: selectedDepartment?.department_name || "",
+    };
+  }
+
+  function handleDepartmentChange(event) {
+    setEditAsset((currentAsset) =>
+      applyDepartmentSelection(currentAsset, event.target.value)
+    );
+  }
+
+  function handleNewAssetDepartmentChange(event) {
+    setNewAsset((currentAsset) =>
+      applyDepartmentSelection(currentAsset, event.target.value)
+    );
+  }
+
+  function resolveDepartmentValue(value) {
+    const normalizedValue = normalizeDepartmentLookupValue(value);
+
+    if (!normalizedValue) return null;
+
+    const canonicalMatch = departments.find((department) => {
+      const normalizedName = normalizeDepartmentLookupValue(
+        department.department_name
+      );
+      const normalizedCode = normalizeDepartmentLookupValue(
+        department.department_code
+      );
+
+      return normalizedName === normalizedValue || normalizedCode === normalizedValue;
+    });
+
+    if (canonicalMatch) return canonicalMatch;
+
+    const aliasMatch = departmentAliases.find(
+      (alias) =>
+        normalizeDepartmentLookupValue(alias.alias_name) === normalizedValue
+    );
+
+    if (!aliasMatch) return null;
+
+    return departments.find(
+      (department) => department.id === aliasMatch.department_id
+    ) || null;
   }
 
   function applyStatusChange(currentAsset, newStatus) {
@@ -1362,7 +1519,12 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
   }
 
   function validateAsset(updatedAsset, originalUnit = "", originalVin = "") {
-    if (!updatedAsset.unit || !updatedAsset.department || !updatedAsset.asset) {
+    if (
+      !updatedAsset.unit ||
+      !updatedAsset.departmentId ||
+      !updatedAsset.department ||
+      !updatedAsset.asset
+    ) {
       alert("Unit, Department, and Asset are required.");
       return false;
     }
@@ -1495,6 +1657,7 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     unit: returnedAsset.unit,
     vin: returnedAsset.vin,
     department: returnedAsset.department,
+    department_id: returnedAsset.departmentId,
     asset: returnedAsset.asset,
     status: returnedAsset.status,
     status_started_at: returnedAsset.statusStartedAt,
@@ -1680,6 +1843,7 @@ return;
     unit: updatedAsset.unit,
     vin: updatedAsset.vin,
     department: updatedAsset.department,
+    department_id: updatedAsset.departmentId,
     asset: updatedAsset.asset,
     status: updatedAsset.status,
     status_started_at: updatedAsset.statusStartedAt,
@@ -1738,6 +1902,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
       unit: cleanedAsset.unit,
       vin: cleanedAsset.vin,
       department: cleanedAsset.department,
+      department_id: cleanedAsset.departmentId,
       asset: cleanedAsset.asset,
       status: cleanedAsset.status,
       status_started_at: cleanedAsset.statusStartedAt,
@@ -1809,13 +1974,20 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
       rows.forEach((row, index) => {
         const importedAsset = normalizeImportedAsset(row);
+        const resolvedDepartment = resolveDepartmentValue(importedAsset.department);
         const rowNumber = index + 2;
         const rowErrors = [];
         const unitKey = importedAsset.unit.toLowerCase();
         const vinKey = importedAsset.vin.toLowerCase();
 
         if (!importedAsset.unit) rowErrors.push("missing Unit");
-        if (!importedAsset.department) rowErrors.push("missing Department");
+        if (!importedAsset.department) {
+          rowErrors.push("missing Department");
+        } else if (!resolvedDepartment) {
+          rowErrors.push(
+            `Department "${importedAsset.department}" is not configured as an active department, code, or alias`
+          );
+        }
         if (!importedAsset.asset) rowErrors.push("missing Asset");
         if (unitKey && existingUnits.has(unitKey)) rowErrors.push("duplicate Unit already exists");
         if (unitKey && importedUnits.has(unitKey)) rowErrors.push("duplicate Unit inside CSV");
@@ -1829,7 +2001,11 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
         importedUnits.add(unitKey);
         if (vinKey) importedVins.add(vinKey);
-        validImportedAssets.push(importedAsset);
+        validImportedAssets.push({
+          ...importedAsset,
+          departmentId: resolvedDepartment.id,
+          department: resolvedDepartment.department_name,
+        });
       });
 
       if (validImportedAssets.length === 0) {
@@ -1862,6 +2038,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         unit: asset.unit,
         vin: asset.vin,
         department: asset.department,
+        department_id: asset.departmentId,
         asset: asset.asset,
         status: asset.status,
         status_started_at: asset.statusStartedAt,
@@ -2132,7 +2309,13 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     handleVinScanResult(manualVinEntry, "manual");
   }
 
-  function renderAssetForm(asset, onChange, onStatusChange, onRTSTypeChange) {
+  function renderAssetForm(
+    asset,
+    onChange,
+    onDepartmentChange,
+    onStatusChange,
+    onRTSTypeChange
+  ) {
     return (
       <div className="update-form">
         <label>
@@ -2147,7 +2330,31 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
         <label>
           Department
-          <input type="text" name="department" value={asset.department} onChange={onChange} />
+          <select
+            name="departmentId"
+            value={asset.departmentId || ""}
+            onChange={onDepartmentChange}
+            disabled={departmentsLoading || departments.length === 0}
+          >
+            <option value="">
+              {departmentsLoading
+                ? "Loading departments…"
+                : departments.length === 0
+                  ? "No active departments configured"
+                  : "Select Department"}
+            </option>
+            {departments.map((department) => (
+              <option key={department.id} value={department.id}>
+                {department.department_name}
+                {department.department_code
+                  ? ` (${department.department_code})`
+                  : ""}
+              </option>
+            ))}
+          </select>
+          {departmentsError && (
+            <span className="department-field-error">{departmentsError}</span>
+          )}
         </label>
 
         <label>
@@ -2356,7 +2563,21 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     setAuthError("");
     setIsDemoMode(true);
     setProfile({ full_name: "ARGOS Demo Visitor", role: "demo" });
-    setAssets(DEMO_ASSETS.map((asset) => normalizeAsset({ ...asset })));
+    setDepartments(DEMO_DEPARTMENTS);
+    setDepartmentAliases([]);
+    setAssets(
+      DEMO_ASSETS.map((asset) => {
+        const matchedDepartment = findDepartmentByName(
+          DEMO_DEPARTMENTS,
+          asset.department
+        );
+
+        return normalizeAsset({
+          ...asset,
+          departmentId: matchedDepartment?.id || "",
+        });
+      })
+    );
     setCompletedRepairEvents([]);
     setStatusHistoryEvents([]);
     setSelectedAsset(null);
@@ -2374,6 +2595,8 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
     setIsDemoMode(false);
     setProfile(null);
+    setDepartments([]);
+    setDepartmentAliases([]);
     setAssets([]);
     setCompletedRepairEvents([]);
     setStatusHistoryEvents([]);
@@ -3483,6 +3706,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
               {renderAssetForm(
                 newAsset,
                 handleNewAssetChange,
+                handleNewAssetDepartmentChange,
                 handleNewAssetStatusChange,
                 handleNewAssetRTSTypeChange
               )}
@@ -3524,7 +3748,13 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 </button>
               </div>
 
-              {renderAssetForm(editAsset, handleChange, handleStatusChange, handleRTSTypeChange)}
+              {renderAssetForm(
+                editAsset,
+                handleChange,
+                handleDepartmentChange,
+                handleStatusChange,
+                handleRTSTypeChange
+              )}
 
               <div className="update-actions">
                 <button
