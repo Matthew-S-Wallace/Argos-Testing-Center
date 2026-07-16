@@ -1,4 +1,5 @@
 import ARGOSUsersAdministrationModule from "./ARGOS_Users_Administration_Module";
+import ARGOSDepartmentsAdministrationModule from "./ARGOS_Departments_Administration_Module";
 
 const ADMINISTRATION_GROUPS = [
   {
@@ -124,16 +125,24 @@ export default function AdministrationModule({
 }) {
   const isOrganizationProfile = activeSection === "Organization Profile";
   const isUsersSection = activeSection === "Users";
-  const isLiveAdministrationSection = isOrganizationProfile || isUsersSection;
+  const isDepartmentsSection = activeSection === "Departments";
 
   function getSectionLabel(item) {
-    if (item === "Organization Profile" || item === "Users") return "Active";
+    if (
+      item === "Organization Profile" ||
+      item === "Users" ||
+      item === "Departments"
+    ) {
+      return "Active";
+    }
+
     return "Planned";
   }
 
   function getWorkspaceStatus() {
     if (isOrganizationProfile) return "Live Profile";
     if (isUsersSection) return "Live Users";
+    if (isDepartmentsSection) return "Live Departments";
     return "Framework Ready";
   }
 
@@ -161,7 +170,7 @@ export default function AdministrationModule({
             screens.
           </p>
         </div>
-        <span className="administration-sprint-badge">Sprint 001E</span>
+        <span className="administration-sprint-badge">Sprint 001F</span>
       </section>
 
       <section className="administration-workspace">
@@ -202,6 +211,8 @@ export default function AdministrationModule({
             />
           ) : isUsersSection ? (
             <ARGOSUsersAdministrationModule isDemoMode={isDemoMode} />
+          ) : isDepartmentsSection ? (
+            <ARGOSDepartmentsAdministrationModule isDemoMode={isDemoMode} />
           ) : (
             <PlannedAdministrationWorkspace section={activeSection} />
           )}
