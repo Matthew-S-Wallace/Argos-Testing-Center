@@ -1,0 +1,115 @@
+/* Sprint 001J.1 — Shared Identity Confirmation Modal */
+
+.argos-identity-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(4, 21, 42, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.argos-identity-modal {
+  width: min(560px, 100%);
+  padding: 28px;
+  border: 1px solid rgba(216, 169, 59, 0.32);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.36);
+}
+
+.argos-identity-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e5e5df;
+}
+
+.argos-identity-modal-header h3 {
+  margin: 0;
+  color: #071a33;
+  font-size: 30px;
+  font-weight: 500;
+}
+
+button.argos-identity-modal-close {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.argos-identity-modal-intro {
+  margin: 20px 0;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.argos-identity-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.argos-identity-comparison > div {
+  padding: 18px;
+  border: 1px solid #d8d8d2;
+  border-radius: 10px;
+  background: #fbfbf8;
+}
+
+.argos-identity-comparison span,
+.argos-identity-comparison strong {
+  display: block;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-identity-comparison span {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-identity-comparison strong {
+  margin-top: 8px;
+  color: #071a33;
+  font-size: 18px;
+}
+
+.argos-identity-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e5df;
+}
+
+@media (max-width: 600px) {
+  .argos-identity-modal {
+    padding: 22px;
+  }
+
+  .argos-identity-comparison {
+    grid-template-columns: 1fr;
+  }
+
+  .argos-identity-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .argos-identity-modal-actions button {
+    width: 100%;
+  }
+}

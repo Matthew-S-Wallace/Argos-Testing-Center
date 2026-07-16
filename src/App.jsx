@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { supabase } from "./supabaseClient";
 import AdministrationModule from "./components/Administration/ARGOS_Administration_Module_Component";
+import ARGOSIdentityConfirmationModal from "./components/Shared/ARGOS_Identity_Confirmation_Modal";
+import { resolveIdentity } from "./utils/ARGOS_IdentityResolver";
 import "./App.css";
 
 
@@ -435,6 +437,27 @@ function findDepartmentByName(departments, departmentName) {
   );
 }
 
+function normalizeTechnicianDisplayName(value) {
+  const cleanedValue = String(value || "")
+    .trim()
+    .replace(/\s+/g, " ");
+
+  if (
+    !cleanedValue ||
+    cleanedValue === "—" ||
+    cleanedValue === "‚Äî" ||
+    cleanedValue.toLowerCase() === "unassigned"
+  ) {
+    return "Unassigned";
+  }
+
+  return cleanedValue;
+}
+
+function normalizeTechnicianKey(value) {
+  return normalizeTechnicianDisplayName(value).toLowerCase();
+}
+
 const DEMO_ASSETS = [
   { unit: "DEMO-101", vin: "1FTFW1E50NFA10101", department: "Public Works", asset: "2022 Ford F-150", status: "Ready", statusStartedAt: getTodayDateString(), reason: "Available", priority: "Normal", downSince: "", technician: "Unassigned", rtsType: "No RTS Established", rtsDate: "", details: "Available" },
   { unit: "DEMO-102", vin: "1FT7W2B60NEA10102", department: "Public Works", asset: "2022 Ford F-250", status: "Waiting Parts", statusStartedAt: "2026-07-02", reason: "Parts Availability", priority: "High", downSince: "2026-07-02", technician: "M. Carter", rtsType: "Estimated Date", rtsDate: "2026-07-15", details: "Alternator ordered; awaiting delivery" },
@@ -475,10 +498,7 @@ function createBlankAsset() {
 function normalizeAsset(asset) {
   const normalizedStatus = asset.status === "Completed" ? "Ready" : asset.status || "Ready";
   const isReadyStatus = normalizedStatus === "Ready";
-  const technician =
-    asset.technician && asset.technician !== "—" && asset.technician !== "‚Äî"
-      ? asset.technician
-      : "Unassigned";
+  const technician = normalizeTechnicianDisplayName(asset.technician);
 
   return {
     vin: "",
@@ -500,10 +520,7 @@ function normalizeCompletedRepairEvent(event) {
     ...event,
     finalStatus: event.finalStatus || "Ready",
     recordType: "Historical Repair Event",
-    technician:
-      event.technician && event.technician !== "—" && event.technician !== "‚Äî"
-        ? event.technician
-        : "Unassigned",
+    technician: normalizeTechnicianDisplayName(event.technician),
   };
 }
 
@@ -528,7 +545,7 @@ function normalizeImportedAsset(row) {
     reason,
     priority,
     downSince,
-    technician: String(row.technician || "").trim() || "Unassigned",
+    technician: normalizeTechnicianDisplayName(row.technician),
     rtsType,
     rtsDate: !isReadyStatus && rtsType === "Estimated Date" ? String(row.rtsDate || "").trim() : "",
     details: String(row.details || "").trim() || (isReadyStatus ? "Available" : "Details pending"),
@@ -724,31 +741,37 @@ function buildTechnicianAnalytics(assets, completedRepairRecords) {
     .map((asset) => ({
       ...asset,
       daysDown: calculateDaysDown(asset.downSince, asset.status),
-      technician:
-        asset.technician && asset.technician !== "—" && asset.technician !== "‚Äî"
-          ? asset.technician
-          : "Unassigned",
+      technician: normalizeTechnicianDisplayName(asset.technician),
+      technicianKey: normalizeTechnicianKey(asset.technician),
     }));
 
   const completedRecords = completedRepairRecords.map((record) => ({
     ...record,
-    technician:
-      record.technician && record.technician !== "—" && record.technician !== "‚Äî"
-        ? record.technician
-        : "Unassigned",
+    technician: normalizeTechnicianDisplayName(record.technician),
+    technicianKey: normalizeTechnicianKey(record.technician),
     repairDuration: Number(record.daysDownDisplay ?? record.finalDaysDown ?? 0),
   }));
 
-  const technicianNames = Array.from(
-    new Set([
-      ...activeAssets.map((asset) => asset.technician),
-      ...completedRecords.map((record) => record.technician),
-    ])
-  ).sort((a, b) => a.localeCompare(b));
+  const displayNamesByKey = new Map();
 
-  const rows = technicianNames.map((technician) => {
-    const assignedAssets = activeAssets.filter((asset) => asset.technician === technician);
-    const completedRepairs = completedRecords.filter((record) => record.technician === technician);
+  [...activeAssets, ...completedRecords].forEach((record) => {
+    if (!displayNamesByKey.has(record.technicianKey)) {
+      displayNamesByKey.set(record.technicianKey, record.technician);
+    }
+  });
+
+  const technicianKeys = Array.from(displayNamesByKey.keys()).sort((firstKey, secondKey) =>
+    displayNamesByKey.get(firstKey).localeCompare(displayNamesByKey.get(secondKey))
+  );
+
+  const rows = technicianKeys.map((technicianKey) => {
+    const technician = displayNamesByKey.get(technicianKey);
+    const assignedAssets = activeAssets.filter(
+      (asset) => asset.technicianKey === technicianKey
+    );
+    const completedRepairs = completedRecords.filter(
+      (record) => record.technicianKey === technicianKey
+    );
     const totalActiveDaysDown = assignedAssets.reduce((sum, asset) => sum + asset.daysDown, 0);
     const totalCompletedDuration = completedRepairs.reduce(
       (sum, record) => sum + record.repairDuration,
@@ -758,6 +781,7 @@ function buildTechnicianAnalytics(assets, completedRepairRecords) {
 
     return {
       technician,
+      technicianKey,
       activeUnits: assignedAssets.length,
       averageActiveDaysDown:
         assignedAssets.length > 0 ? (totalActiveDaysDown / assignedAssets.length).toFixed(1) : "0.0",
@@ -772,12 +796,14 @@ function buildTechnicianAnalytics(assets, completedRepairRecords) {
   });
 
   const activeTechnicians = rows.filter(
-    (row) => row.technician !== "Unassigned" && row.activeUnits > 0
+    (row) => row.technicianKey !== "unassigned" && row.activeUnits > 0
   ).length;
   const assignedActiveRepairs = activeAssets.filter(
-    (asset) => asset.technician !== "Unassigned"
+    (asset) => asset.technicianKey !== "unassigned"
   ).length;
-  const unassignedRepairs = activeAssets.filter((asset) => asset.technician === "Unassigned").length;
+  const unassignedRepairs = activeAssets.filter(
+    (asset) => asset.technicianKey === "unassigned"
+  ).length;
   const totalActiveDaysDown = activeAssets.reduce((sum, asset) => sum + asset.daysDown, 0);
 
   return {
@@ -907,6 +933,7 @@ function App() {
   const [departmentAliases, setDepartmentAliases] = useState([]);
   const [departmentsLoading, setDepartmentsLoading] = useState(false);
   const [departmentsError, setDepartmentsError] = useState("");
+  const [technicianIdentityConfirmation, setTechnicianIdentityConfirmation] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -1366,6 +1393,17 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
   daysDownDisplay: event.finalDaysDown ?? calculateFinalDaysDown(event.downSince),
 }));
 
+const technicianSuggestions = Array.from(
+  new Map(
+    [...assets, ...completedRepairRecords]
+      .map((record) => normalizeTechnicianDisplayName(record.technician))
+      .filter((technician) => technician !== "Unassigned")
+      .map((technician) => [normalizeTechnicianKey(technician), technician])
+  ).values()
+).sort((firstTechnician, secondTechnician) =>
+  firstTechnician.localeCompare(secondTechnician)
+);
+
   const totalAssets = assets.length;
   const readyAssets = readyArchiveAssets.length;
   const unavailableAssets = activeBoardAssets.length;
@@ -1394,10 +1432,7 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
       departmentId: assetFields.departmentId || "",
       department: String(assetFields.department || "").trim(),
       asset: assetFields.asset.trim(),
-      technician:
-        assetFields.technician && assetFields.technician.trim() && assetFields.technician !== "—"
-          ? assetFields.technician.trim()
-          : "Unassigned",
+      technician: normalizeTechnicianDisplayName(assetFields.technician),
       reason: isReadyStatus ? "Available" : assetFields.reason || "Other",
       priority: isReadyStatus ? assetFields.priority || "Normal" : assetFields.priority,
       downSince: isReadyStatus ? "" : assetFields.downSince || getTodayDateString(),
@@ -1556,13 +1591,76 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     return true;
   }
 
-  async function handleSave() {
+  function requestTechnicianResolution(enteredTechnician, saveType) {
+    const resolution = resolveIdentity(enteredTechnician, technicianSuggestions);
+
+    if (resolution.status === "exact") {
+      if (saveType === "edit") {
+        completeSave(resolution.match);
+      } else {
+        completeSaveNewAsset(resolution.match);
+      }
+      return;
+    }
+
+    if (resolution.status === "similar") {
+      setTechnicianIdentityConfirmation({
+        enteredValue: resolution.enteredValue,
+        existingValue: resolution.match,
+        saveType,
+      });
+      return;
+    }
+
+    if (saveType === "edit") {
+      completeSave(resolution.enteredValue);
+    } else {
+      completeSaveNewAsset(resolution.enteredValue);
+    }
+  }
+
+  function handleSave() {
+    requestTechnicianResolution(editAsset?.technician, "edit");
+  }
+
+  function handleSaveNewAsset() {
+    requestTechnicianResolution(newAsset?.technician, "new");
+  }
+
+  function handleUseExistingTechnician() {
+    const confirmation = technicianIdentityConfirmation;
+    if (!confirmation) return;
+
+    setTechnicianIdentityConfirmation(null);
+
+    if (confirmation.saveType === "edit") {
+      completeSave(confirmation.existingValue);
+    } else {
+      completeSaveNewAsset(confirmation.existingValue);
+    }
+  }
+
+  function handleKeepNewTechnician() {
+    const confirmation = technicianIdentityConfirmation;
+    if (!confirmation) return;
+
+    setTechnicianIdentityConfirmation(null);
+
+    if (confirmation.saveType === "edit") {
+      completeSave(confirmation.enteredValue);
+    } else {
+      completeSaveNewAsset(confirmation.enteredValue);
+    }
+  }
+
+  async function completeSave(technicianOverride = null) {
     const originalUnit = selectedAsset.unit;
     const originalVin = selectedAsset.vin || "";
     const statusChanged = selectedAsset.status !== editAsset.status;
 
     const updatedAsset = cleanAsset({
       ...editAsset,
+      technician: technicianOverride ?? editAsset.technician,
       statusStartedAt: statusChanged ? getTodayDateString() : editAsset.statusStartedAt,
     });
 
@@ -1878,9 +1976,10 @@ setEditAsset(null);
 setActiveView(savedAsset.status === "Ready" ? "history" : "command");
   }
 
-  async function handleSaveNewAsset() {
+  async function completeSaveNewAsset(technicianOverride = null) {
   const cleanedAsset = cleanAsset({
     ...newAsset,
+    technician: technicianOverride ?? newAsset.technician,
     statusStartedAt: newAsset.statusStartedAt || getTodayDateString(),
   });
 
@@ -2409,7 +2508,19 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
         <label>
           Technician / Responsible Party
-          <input type="text" name="technician" value={asset.technician} onChange={onChange} />
+          <input
+            type="text"
+            name="technician"
+            value={asset.technician}
+            onChange={onChange}
+            list="argos-technician-suggestions"
+            autoComplete="off"
+          />
+          <datalist id="argos-technician-suggestions">
+            {technicianSuggestions.map((technician) => (
+              <option value={technician} key={normalizeTechnicianKey(technician)} />
+            ))}
+          </datalist>
         </label>
 
         {asset.status !== "Ready" && (
@@ -3676,6 +3787,17 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
               </div>
             </section>
           </div>
+        )}
+
+        {technicianIdentityConfirmation && (
+          <ARGOSIdentityConfirmationModal
+            identityLabel="technician"
+            enteredValue={technicianIdentityConfirmation.enteredValue}
+            existingValue={technicianIdentityConfirmation.existingValue}
+            onUseExisting={handleUseExistingTechnician}
+            onKeepNew={handleKeepNewTechnician}
+            onCancel={() => setTechnicianIdentityConfirmation(null)}
+          />
         )}
 
         {newAsset && (
