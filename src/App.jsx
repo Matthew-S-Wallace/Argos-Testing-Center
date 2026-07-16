@@ -421,6 +421,24 @@ const DEMO_DEPARTMENTS = [
   { id: "demo-transit", department_name: "Transit", department_code: "TRANSIT", is_active: true },
 ];
 
+const DEMO_ASSET_TYPES = [
+  { id: "demo-sedan", asset_type_name: "Sedan", asset_type_code: "SEDAN", is_active: true },
+  { id: "demo-suv", asset_type_name: "SUV", asset_type_code: "SUV", is_active: true },
+  { id: "demo-pickup", asset_type_name: "Pickup Truck", asset_type_code: "PICKUP", is_active: true },
+  { id: "demo-service", asset_type_name: "Service / Utility Truck", asset_type_code: "SERVICE", is_active: true },
+  { id: "demo-van", asset_type_name: "Van", asset_type_code: "VAN", is_active: true },
+  { id: "demo-bus", asset_type_name: "Bus / Transit Vehicle", asset_type_code: "BUS", is_active: true },
+  { id: "demo-fire", asset_type_name: "Fire Apparatus", asset_type_code: "FIRE", is_active: true },
+  { id: "demo-refuse", asset_type_name: "Refuse Vehicle", asset_type_code: "REFUSE", is_active: true },
+  { id: "demo-heavy", asset_type_name: "Heavy Truck", asset_type_code: "HEAVY", is_active: true },
+  { id: "demo-trailer", asset_type_name: "Trailer", asset_type_code: "TRAILER", is_active: true },
+  { id: "demo-construction", asset_type_name: "Construction Equipment", asset_type_code: "CONST", is_active: true },
+  { id: "demo-grounds", asset_type_name: "Grounds Equipment", asset_type_code: "GROUNDS", is_active: true },
+  { id: "demo-ag", asset_type_name: "Agricultural Equipment", asset_type_code: "AG", is_active: true },
+  { id: "demo-other", asset_type_name: "Other", asset_type_code: "OTHER", is_active: true },
+];
+
+
 function normalizeDepartmentLookupValue(value) {
   return String(value || "")
     .trim()
@@ -476,12 +494,32 @@ const DEMO_ASSETS = [
   { unit: "DEMO-701", vin: "1FDEE3FS0NDC10701", department: "Transit", asset: "2022 Ford E-350 Cutaway Bus", status: "Ready for Pickup", statusStartedAt: "2026-07-07", reason: "Mechanical Failure", priority: "Medium", downSince: "2026-07-04", technician: "E. Martin", rtsType: "Estimated Date", rtsDate: "2026-07-10", details: "Wheelchair lift repair completed" },
 ];
 
+function inferDemoAssetTypeId(assetDescription) {
+  const description = String(assetDescription || "").toLowerCase();
+  if (/(police interceptor|tahoe|explorer|suv)/.test(description)) return "demo-suv";
+  if (/(f-150|f-250|f-350|silverado|ram 1500|ram 2500|ram 3500|pickup)/.test(description)) return "demo-pickup";
+  if (/(service truck|utility truck)/.test(description)) return "demo-service";
+  if (/(transit connect|van|sprinter|promaster)/.test(description)) return "demo-van";
+  if (/(bus|cutaway|shuttle)/.test(description)) return "demo-bus";
+  if (/(pumper|engine|ladder|quint|ambulance|rescue)/.test(description)) return "demo-fire";
+  if (/(rear loader|front loader|side loader|refuse|packer)/.test(description)) return "demo-refuse";
+  if (/(freightliner|international|mack|dump truck)/.test(description)) return "demo-heavy";
+  if (/trailer/.test(description)) return "demo-trailer";
+  if (/(excavator|backhoe|loader|dozer|grader|skid steer)/.test(description)) return "demo-construction";
+  if (/(mower|zero turn)/.test(description)) return "demo-grounds";
+  if (/tractor/.test(description)) return "demo-ag";
+  if (/(sedan|charger|impala|malibu|taurus)/.test(description)) return "demo-sedan";
+  return "demo-other";
+}
+
 function createBlankAsset() {
   return {
     unit: "",
     vin: "",
     departmentId: "",
     department: "",
+    assetTypeId: "",
+    assetTypeName: "",
     asset: "",
     status: "Ready",
     statusStartedAt: getTodayDateString(),
@@ -503,6 +541,8 @@ function normalizeAsset(asset) {
   return {
     vin: "",
     departmentId: asset.departmentId || "",
+    assetTypeId: asset.assetTypeId || inferDemoAssetTypeId(asset.asset),
+    assetTypeName: asset.assetTypeName || "",
     ...asset,
     status: normalizedStatus,
     reason: isReadyStatus ? "Available" : asset.reason || asset.issue || "Other",
@@ -539,6 +579,8 @@ function normalizeImportedAsset(row) {
     vin: String(row.vin || "").trim().toUpperCase(),
     departmentId: "",
     department: String(row.department || "").trim(),
+    assetTypeId: "",
+    assetTypeName: String(row.assetType || "").trim(),
     asset: String(row.asset || "").trim(),
     status: importedStatus,
     statusStartedAt: isReadyStatus ? getTodayDateString() : downSince,
@@ -557,6 +599,8 @@ function mapSupabaseAsset(row) {
     vin: row.vin || "",
     departmentId: row.department_id || "",
     department: row.department || "",
+    assetTypeId: row.asset_type_id || "",
+    assetTypeName: row.asset_types?.asset_type_name || "",
     asset: row.asset || "",
     status: row.status || "Ready",
     statusStartedAt: row.status_started_at || row.down_since || getTodayDateString(),
@@ -931,6 +975,9 @@ function App() {
   const [organizationProfileError, setOrganizationProfileError] = useState("");
   const [departments, setDepartments] = useState([]);
   const [departmentAliases, setDepartmentAliases] = useState([]);
+  const [assetTypes, setAssetTypes] = useState([]);
+  const [assetTypesLoading, setAssetTypesLoading] = useState(false);
+  const [assetTypesError, setAssetTypesError] = useState("");
   const [departmentsLoading, setDepartmentsLoading] = useState(false);
   const [departmentsError, setDepartmentsError] = useState("");
   const [technicianIdentityConfirmation, setTechnicianIdentityConfirmation] = useState(null);
@@ -1188,12 +1235,61 @@ useEffect(() => {
 }, [session, organizationId, isDemoMode]);
 
 useEffect(() => {
+  let isMounted = true;
+
+  if (isDemoMode) {
+    setAssetTypes(DEMO_ASSET_TYPES);
+    setAssetTypesLoading(false);
+    setAssetTypesError("");
+    return undefined;
+  }
+
+  if (!session || !organizationId) {
+    setAssetTypes([]);
+    setAssetTypesLoading(false);
+    setAssetTypesError("");
+    return undefined;
+  }
+
+  async function loadOrganizationAssetTypes() {
+    setAssetTypesLoading(true);
+    setAssetTypesError("");
+
+    const { data, error } = await supabase
+      .from("asset_types")
+      .select("id, asset_type_name, asset_type_code, is_active")
+      .eq("organization_id", organizationId)
+      .eq("is_active", true)
+      .order("asset_type_name", { ascending: true });
+
+    if (!isMounted) return;
+
+    if (error) {
+      console.error("ARGOS Asset Types load failed:", error);
+      setAssetTypes([]);
+      setAssetTypesError("ARGOS could not load active Asset Types for asset management.");
+      setAssetTypesLoading(false);
+      return;
+    }
+
+    setAssetTypes(data || []);
+    setAssetTypesLoading(false);
+  }
+
+  loadOrganizationAssetTypes();
+
+  return () => {
+    isMounted = false;
+  };
+}, [session, organizationId, isDemoMode]);
+
+useEffect(() => {
   if (!session || !organizationId) return;
 
   async function loadCloudAssets() {
     const { data, error } = await supabase
       .from("assets")
-      .select("*")
+      .select("*, asset_types(asset_type_name)")
       .eq("organization_id", organizationId)
       .order("created_at", { ascending: true });
 
@@ -1431,6 +1527,8 @@ const technicianSuggestions = Array.from(
       vin: assetFields.vin.trim().toUpperCase(),
       departmentId: assetFields.departmentId || "",
       department: String(assetFields.department || "").trim(),
+      assetTypeId: assetFields.assetTypeId || "",
+      assetTypeName: String(assetFields.assetTypeName || "").trim(),
       asset: assetFields.asset.trim(),
       technician: normalizeTechnicianDisplayName(assetFields.technician),
       reason: isReadyStatus ? "Available" : assetFields.reason || "Other",
@@ -1473,6 +1571,27 @@ const technicianSuggestions = Array.from(
   function handleNewAssetDepartmentChange(event) {
     setNewAsset((currentAsset) =>
       applyDepartmentSelection(currentAsset, event.target.value)
+    );
+  }
+
+  function applyAssetTypeSelection(currentAsset, assetTypeId) {
+    const selectedAssetType = assetTypes.find((assetType) => assetType.id === assetTypeId);
+    return {
+      ...currentAsset,
+      assetTypeId: selectedAssetType?.id || "",
+      assetTypeName: selectedAssetType?.asset_type_name || "",
+    };
+  }
+
+  function handleAssetTypeChange(event) {
+    setEditAsset((currentAsset) =>
+      applyAssetTypeSelection(currentAsset, event.target.value)
+    );
+  }
+
+  function handleNewAssetTypeChange(event) {
+    setNewAsset((currentAsset) =>
+      applyAssetTypeSelection(currentAsset, event.target.value)
     );
   }
 
@@ -1558,9 +1677,10 @@ const technicianSuggestions = Array.from(
       !updatedAsset.unit ||
       !updatedAsset.departmentId ||
       !updatedAsset.department ||
+      !updatedAsset.assetTypeId ||
       !updatedAsset.asset
     ) {
-      alert("Unit, Department, and Asset are required.");
+      alert("Unit, Department, Asset Type, and Asset Description are required.");
       return false;
     }
 
@@ -1756,6 +1876,7 @@ const technicianSuggestions = Array.from(
     vin: returnedAsset.vin,
     department: returnedAsset.department,
     department_id: returnedAsset.departmentId,
+    asset_type_id: returnedAsset.assetTypeId,
     asset: returnedAsset.asset,
     status: returnedAsset.status,
     status_started_at: returnedAsset.statusStartedAt,
@@ -1942,6 +2063,7 @@ return;
     vin: updatedAsset.vin,
     department: updatedAsset.department,
     department_id: updatedAsset.departmentId,
+    asset_type_id: updatedAsset.assetTypeId,
     asset: updatedAsset.asset,
     status: updatedAsset.status,
     status_started_at: updatedAsset.statusStartedAt,
@@ -2002,6 +2124,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
       vin: cleanedAsset.vin,
       department: cleanedAsset.department,
       department_id: cleanedAsset.departmentId,
+      asset_type_id: cleanedAsset.assetTypeId,
       asset: cleanedAsset.asset,
       status: cleanedAsset.status,
       status_started_at: cleanedAsset.statusStartedAt,
@@ -2412,6 +2535,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     asset,
     onChange,
     onDepartmentChange,
+    onAssetTypeChange,
     onStatusChange,
     onRTSTypeChange
   ) {
@@ -2457,7 +2581,34 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         </label>
 
         <label>
-          Asset
+          Asset Type
+          <select
+            name="assetTypeId"
+            value={asset.assetTypeId || ""}
+            onChange={onAssetTypeChange}
+            disabled={assetTypesLoading || assetTypes.length === 0}
+          >
+            <option value="">
+              {assetTypesLoading
+                ? "Loading Asset Types…"
+                : assetTypes.length === 0
+                  ? "No active Asset Types configured"
+                  : "Select Asset Type"}
+            </option>
+            {assetTypes.map((assetType) => (
+              <option key={assetType.id} value={assetType.id}>
+                {assetType.asset_type_name}
+                {assetType.asset_type_code ? ` (${assetType.asset_type_code})` : ""}
+              </option>
+            ))}
+          </select>
+          {assetTypesError && (
+            <span className="department-field-error">{assetTypesError}</span>
+          )}
+        </label>
+
+        <label>
+          Asset Description
           <input type="text" name="asset" value={asset.asset} onChange={onChange} />
         </label>
 
@@ -3829,6 +3980,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 newAsset,
                 handleNewAssetChange,
                 handleNewAssetDepartmentChange,
+                handleNewAssetTypeChange,
                 handleNewAssetStatusChange,
                 handleNewAssetRTSTypeChange
               )}
@@ -3874,6 +4026,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 editAsset,
                 handleChange,
                 handleDepartmentChange,
+                handleAssetTypeChange,
                 handleStatusChange,
                 handleRTSTypeChange
               )}
