@@ -223,3 +223,148 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Sprint 001N.3 — Controlled user editing additions */
+
+.argos-users-message {
+  margin: 0 0 18px;
+  padding: 13px 15px;
+  border-radius: 8px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+}
+
+.argos-users-message.success {
+  border: 1px solid rgba(20, 108, 46, 0.25);
+  background: #f0faf3;
+  color: #146c2e;
+}
+
+.argos-users-table {
+  min-width: 1440px;
+}
+
+.argos-users-table tbody tr {
+  cursor: pointer;
+}
+
+.argos-users-table tbody tr.selected {
+  background: #fbf7ec;
+}
+
+.argos-users-editor {
+  margin-top: 22px;
+  padding: 22px;
+  border: 1px solid #d8d8d2;
+  border-radius: 12px;
+  background: #fbfbf8;
+}
+
+.argos-users-editor-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.argos-users-editor-heading h5 {
+  margin: 0;
+  color: #071a33;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.argos-users-editor-heading > span {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #edf2f8;
+  color: #245b8a;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.argos-users-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.argos-users-editor-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.argos-users-editor-grid label > span {
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.argos-users-editor-grid input,
+.argos-users-editor-grid select {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #cfd5dc;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #071a33;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+}
+
+.argos-users-editor-grid select:disabled {
+  background: #eef1f4;
+  color: #667085;
+}
+
+.argos-users-editor-note {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #e1d4b2;
+  border-radius: 8px;
+  background: #fffaf0;
+  color: #82550f;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12px;
+}
+
+.argos-users-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.argos-users-editor-actions button.secondary {
+  border: 1px solid #cfd5dc;
+  background: #ffffff;
+  color: #344054;
+}
+
+@media (max-width: 760px) {
+  .argos-users-editor-heading {
+    flex-direction: column;
+  }
+
+  .argos-users-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .argos-users-editor-actions {
+    flex-direction: column-reverse;
+  }
+
+  .argos-users-editor-actions button {
+    width: 100%;
+  }
+}

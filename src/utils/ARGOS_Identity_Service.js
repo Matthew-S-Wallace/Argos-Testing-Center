@@ -1,12 +1,17 @@
-// ARGOS™ Sprint 001N.2
-// Central identity operations for the profiles table.
+// ARGOS™ Sprint 001N.3
+// Controlled identity service using secure Supabase RPC functions.
 //
-// Application validation does not replace Supabase RLS.
-// Administrator-only update policies must be installed before
-// these functions are connected to live UI controls.
+// This file intentionally performs its own role normalization so that
+// the identity service does not depend on another utility module.
 
 import { supabase } from "../supabaseClient";
-import { normalizeArgosRole } from "./ARGOS_Roles";
+
+const VALID_ARGOS_ROLES = [
+  "admin",
+  "manager",
+  "user",
+  "technician",
+];
 
 function requireProfileId(profileId) {
   if (!profileId) {
@@ -14,129 +19,62 @@ function requireProfileId(profileId) {
   }
 }
 
+function normalizeRole(role) {
+  const normalizedRole = String(role || "")
+    .trim()
+    .toLowerCase();
+
+  if (normalizedRole === "administrator") {
+    return "admin";
+  }
+
+  return VALID_ARGOS_ROLES.includes(normalizedRole)
+    ? normalizedRole
+    : "";
+}
+
 function cleanOptionalText(value) {
   const cleanedValue = String(value || "").trim();
   return cleanedValue || null;
 }
 
-function buildProfileUpdatePayload(updates) {
-  const payload = {};
-
-  if ("full_name" in updates) {
-    payload.full_name = cleanOptionalText(updates.full_name);
-  }
-
-  if ("role" in updates) {
-    const normalizedRole = normalizeArgosRole(updates.role);
-
-    if (!normalizedRole) {
-      throw new Error("A valid ARGOS role is required.");
-    }
-
-    payload.role = normalizedRole;
-  }
-
-  if ("department_id" in updates) {
-    payload.department_id = updates.department_id || null;
-  }
-
-  if ("job_title" in updates) {
-    payload.job_title = cleanOptionalText(updates.job_title);
-  }
-
-  if ("phone" in updates) {
-    payload.phone = cleanOptionalText(updates.phone);
-  }
-
-  return payload;
-}
-
 export async function updateArgosUserProfile(profileId, updates) {
   requireProfileId(profileId);
 
-  const payload = buildProfileUpdatePayload(updates);
+  const normalizedRole = normalizeRole(updates?.role);
+  const fullName = String(updates?.full_name || "").trim();
 
-  if (Object.keys(payload).length === 0) {
-    throw new Error("No valid profile changes were supplied.");
+  if (!fullName) {
+    throw new Error("Full name is required.");
   }
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .update(payload)
-    .eq("id", profileId)
-    .select(
-      `
-        id,
-        organization_id,
-        full_name,
-        role,
-        is_active,
-        department_id,
-        job_title,
-        phone,
-        last_login,
-        created_at,
-        updated_at
-      `
-    )
-    .single();
+  if (!normalizedRole) {
+    throw new Error("A valid ARGOS role is required.");
+  }
+
+  const { data, error } = await supabase.rpc(
+    "argos_update_user_profile",
+    {
+      target_profile_id: profileId,
+      new_full_name: fullName,
+      new_role: normalizedRole,
+      new_department_id: updates?.department_id || null,
+      new_job_title: cleanOptionalText(updates?.job_title),
+      new_phone: cleanOptionalText(updates?.phone),
+    }
+  );
 
   if (error) {
-    console.error("ARGOS profile update failed:", error);
-    throw new Error("ARGOS could not update this user profile.");
+    console.error(
+      "ARGOS controlled profile update failed:",
+      error
+    );
+
+    throw new Error(
+      error.message ||
+        "ARGOS could not update this user profile."
+    );
   }
 
-  return data;
-}
-
-export async function suspendArgosUser(profileId) {
-  requireProfileId(profileId);
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .update({ is_active: false })
-    .eq("id", profileId)
-    .select("id, organization_id, full_name, role, is_active, updated_at")
-    .single();
-
-  if (error) {
-    console.error("ARGOS user suspension failed:", error);
-    throw new Error("ARGOS could not suspend this user.");
-  }
-
-  return data;
-}
-
-export async function restoreArgosUser(profileId) {
-  requireProfileId(profileId);
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .update({ is_active: true })
-    .eq("id", profileId)
-    .select("id, organization_id, full_name, role, is_active, updated_at")
-    .single();
-
-  if (error) {
-    console.error("ARGOS user restoration failed:", error);
-    throw new Error("ARGOS could not restore this user.");
-  }
-
-  return data;
-}
-
-export async function recordArgosLastLogin(profileId) {
-  requireProfileId(profileId);
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ last_login: new Date().toISOString() })
-    .eq("id", profileId);
-
-  if (error) {
-    console.error("ARGOS last-login update failed:", error);
-    return false;
-  }
-
-  return true;
+  return Array.isArray(data) ? data[0] : data;
 }

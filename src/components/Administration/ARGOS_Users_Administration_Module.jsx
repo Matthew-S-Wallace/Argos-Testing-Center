@@ -1,6 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
+import { updateArgosUserProfile } from "../../utils/ARGOS_Identity_Service";
 import "./ARGOS_Users_Administration_Module.css";
+
+const ARGOS_ROLE_OPTIONS = [
+  { value: "admin", label: "Administrator" },
+  { value: "manager", label: "Manager" },
+  { value: "user", label: "User" },
+  { value: "technician", label: "Technician" },
+];
+
+function normalizeRoleValue(role) {
+  const normalizedRole = String(role || "").trim().toLowerCase();
+
+  if (normalizedRole === "administrator") return "admin";
+  if (["admin", "manager", "user", "technician"].includes(normalizedRole)) {
+    return normalizedRole;
+  }
+
+  return "user";
+}
 
 const DEMO_USERS = [
   {
@@ -8,6 +27,8 @@ const DEMO_USERS = [
     fullName: "Demo Administrator",
     email: "demo@argos.local",
     role: "Administrator",
+    roleValue: "admin",
+    departmentId: "",
     department: "Fleet Administration",
     jobTitle: "System Administrator",
     phone: "Not configured",
@@ -20,6 +41,8 @@ const DEMO_USERS = [
     fullName: "Operations Manager",
     email: "Not available",
     role: "Manager",
+    roleValue: "manager",
+    departmentId: "demo-public-works",
     department: "Public Works",
     jobTitle: "Fleet Operations Manager",
     phone: "Not configured",
@@ -32,6 +55,8 @@ const DEMO_USERS = [
     fullName: "Fleet Technician",
     email: "Not available",
     role: "Technician",
+    roleValue: "technician",
+    departmentId: "",
     department: "Fleet Maintenance",
     jobTitle: "Automotive Technician",
     phone: "Not configured",
@@ -103,14 +128,27 @@ function UsersState({ children, error = false }) {
 
 export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
   const [users, setUsers] = useState(isDemoMode ? DEMO_USERS : []);
+  const [departments, setDepartments] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [editDraft, setEditDraft] = useState(null);
   const [isLoading, setIsLoading] = useState(!isDemoMode);
+  const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
 
     if (isDemoMode) {
       setUsers(DEMO_USERS);
+      setDepartments([
+        { id: "demo-public-works", department_name: "Public Works" },
+        { id: "demo-police", department_name: "Police" },
+        { id: "demo-fire", department_name: "Fire" },
+      ]);
+      setCurrentUser({ id: "demo-admin", role: "admin", is_active: true });
+      setSelectedUserId("demo-admin");
       setIsLoading(false);
       setErrorMessage("");
       return undefined;
@@ -136,7 +174,7 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
 
       const { data: currentProfile, error: currentProfileError } = await supabase
         .from("profiles")
-        .select("id, organization_id")
+        .select("id, organization_id, full_name, role, is_active")
         .eq("id", authenticatedUser.id)
         .single();
 
@@ -150,26 +188,37 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
         return;
       }
 
-      const { data: organizationProfiles, error: organizationProfilesError } = await supabase
-        .from("profiles")
-        .select(
-          `
-            id,
-            full_name,
-            role,
-            is_active,
-            department_id,
-            job_title,
-            phone,
-            last_login,
-            created_at,
-            departments (
-              department_name
-            )
-          `
-        )
-        .eq("organization_id", currentProfile.organization_id)
-        .order("full_name", { ascending: true });
+      const [
+        { data: organizationProfiles, error: organizationProfilesError },
+        { data: organizationDepartments, error: organizationDepartmentsError },
+      ] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select(
+            `
+              id,
+              full_name,
+              role,
+              is_active,
+              department_id,
+              job_title,
+              phone,
+              last_login,
+              created_at,
+              departments (
+                department_name
+              )
+            `
+          )
+          .eq("organization_id", currentProfile.organization_id)
+          .order("full_name", { ascending: true }),
+        supabase
+          .from("departments")
+          .select("id, department_name")
+          .eq("organization_id", currentProfile.organization_id)
+          .eq("is_active", true)
+          .order("department_name", { ascending: true }),
+      ]);
 
       if (!isMounted) return;
 
@@ -186,6 +235,13 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
         return;
       }
 
+      if (organizationDepartmentsError) {
+        console.error(
+          "ARGOS organization departments lookup failed:",
+          organizationDepartmentsError
+        );
+      }
+
       const normalizedUsers = (organizationProfiles || []).map((profile) => ({
         id: profile.id,
         fullName: profile.full_name || "Unnamed User",
@@ -194,6 +250,8 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
             ? authenticatedUser.email || "Not available"
             : "Protected by Supabase Auth",
         role: formatRole(profile.role),
+        roleValue: normalizeRoleValue(profile.role),
+        departmentId: profile.department_id || "",
         department: profile.departments?.department_name || "Not assigned",
         jobTitle: profile.job_title || "Not configured",
         phone: profile.phone || "Not configured",
@@ -205,7 +263,18 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
         createdDate: formatDate(profile.created_at),
       }));
 
+      setCurrentUser({
+        id: currentProfile.id,
+        role: normalizeRoleValue(currentProfile.role),
+        is_active: currentProfile.is_active !== false,
+      });
       setUsers(normalizedUsers);
+      setDepartments(organizationDepartments || []);
+      setSelectedUserId((existingSelection) =>
+        normalizedUsers.some((user) => user.id === existingSelection)
+          ? existingSelection
+          : normalizedUsers[0]?.id || ""
+      );
       setIsLoading(false);
     }
 
@@ -226,6 +295,81 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
     [users]
   );
 
+  const selectedUser = useMemo(
+    () => users.find((user) => user.id === selectedUserId) || null,
+    [users, selectedUserId]
+  );
+
+  const currentUserIsAdministrator = currentUser?.role === "admin";
+  const canEditSelectedUser =
+    !isDemoMode && currentUserIsAdministrator && Boolean(selectedUser);
+
+  function beginEditSelectedUser() {
+    if (!selectedUser || !canEditSelectedUser) return;
+
+    setEditDraft({
+      full_name: selectedUser.fullName,
+      role: selectedUser.roleValue,
+      department_id: selectedUser.departmentId,
+      job_title:
+        selectedUser.jobTitle === "Not configured" ? "" : selectedUser.jobTitle,
+      phone: selectedUser.phone === "Not configured" ? "" : selectedUser.phone,
+    });
+    setActionMessage("");
+    setErrorMessage("");
+  }
+
+  function updateEditDraft(field, value) {
+    setEditDraft((currentDraft) => ({
+      ...currentDraft,
+      [field]: value,
+    }));
+  }
+
+  async function saveEditedUser(event) {
+    event.preventDefault();
+
+    if (!selectedUser || !editDraft) return;
+
+    setIsSaving(true);
+    setActionMessage("");
+    setErrorMessage("");
+
+    try {
+      await updateArgosUserProfile(selectedUser.id, editDraft);
+      setActionMessage("User profile updated successfully.");
+      setEditDraft(null);
+
+      const updatedDepartment =
+        departments.find(
+          (department) => department.id === editDraft.department_id
+        )?.department_name || "Not assigned";
+
+      setUsers((currentUsers) =>
+        currentUsers.map((user) =>
+          user.id === selectedUser.id
+            ? {
+                ...user,
+                fullName: editDraft.full_name.trim(),
+                role: formatRole(editDraft.role),
+                roleValue: normalizeRoleValue(editDraft.role),
+                departmentId: editDraft.department_id || "",
+                department: updatedDepartment,
+                jobTitle: editDraft.job_title.trim() || "Not configured",
+                phone: editDraft.phone.trim() || "Not configured",
+              }
+            : user
+        )
+      );
+    } catch (error) {
+      setErrorMessage(
+        error?.message || "ARGOS could not update this user profile."
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   return (
     <div className="argos-users-content">
       <div className="argos-users-heading">
@@ -233,21 +377,25 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
           <p className="eyebrow">Identity &amp; Access Management</p>
           <h4>Organization Users</h4>
           <p>
-            Review organization-scoped user identity, role, department assignment,
-            account status, and account activity. Administrative changes remain locked
-            until the Sprint 001N permission and update policies are verified.
+            Review and update organization-scoped user identity, role, department
+            assignment, job title, and contact information through the controlled
+            ARGOS administrator security boundary.
           </p>
         </div>
 
-        <span className="argos-users-mode">IAM Foundation</span>
+        <span className="argos-users-mode">Controlled Editing</span>
       </div>
 
-      <div className="argos-users-actions" aria-label="Planned user management actions">
+      <div className="argos-users-actions" aria-label="User management actions">
         <button type="button" disabled>
           Invite User
         </button>
-        <button type="button" disabled>
-          Edit User
+        <button
+          type="button"
+          onClick={beginEditSelectedUser}
+          disabled={!canEditSelectedUser || Boolean(editDraft)}
+        >
+          Edit Selected User
         </button>
         <button type="button" disabled>
           Suspend / Restore
@@ -269,9 +417,13 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
         </div>
         <div>
           <span>Management Status</span>
-          <strong>Read Only</strong>
+          <strong>{currentUserIsAdministrator ? "Administrator" : "Read Only"}</strong>
         </div>
       </div>
+
+      {actionMessage ? (
+        <div className="argos-users-message success">{actionMessage}</div>
+      ) : null}
 
       {isLoading ? (
         <UsersState>Loading organization users…</UsersState>
@@ -284,6 +436,7 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
           <table className="argos-users-table">
             <thead>
               <tr>
+                <th>Select</th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Role</th>
@@ -297,7 +450,23 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr key={user.id}>
+                <tr
+                  key={user.id}
+                  className={selectedUserId === user.id ? "selected" : ""}
+                  onClick={() => {
+                    if (!editDraft) setSelectedUserId(user.id);
+                  }}
+                >
+                  <td>
+                    <input
+                      type="radio"
+                      name="argos-selected-user"
+                      checked={selectedUserId === user.id}
+                      onChange={() => setSelectedUserId(user.id)}
+                      disabled={Boolean(editDraft)}
+                      aria-label={`Select ${user.fullName}`}
+                    />
+                  </td>
                   <td className="argos-users-name">{user.fullName}</td>
                   <td>{user.email}</td>
                   <td>{user.role}</td>
@@ -322,14 +491,117 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
         </div>
       )}
 
+      {editDraft && selectedUser ? (
+        <form className="argos-users-editor" onSubmit={saveEditedUser}>
+          <div className="argos-users-editor-heading">
+            <div>
+              <p className="eyebrow">Controlled User Edit</p>
+              <h5>{selectedUser.fullName}</h5>
+            </div>
+            <span>Administrator Only</span>
+          </div>
+
+          <div className="argos-users-editor-grid">
+            <label>
+              <span>Full Name</span>
+              <input
+                type="text"
+                value={editDraft.full_name}
+                onChange={(event) =>
+                  updateEditDraft("full_name", event.target.value)
+                }
+                maxLength={160}
+                required
+              />
+            </label>
+
+            <label>
+              <span>Role</span>
+              <select
+                value={editDraft.role}
+                onChange={(event) =>
+                  updateEditDraft("role", event.target.value)
+                }
+                disabled={selectedUser.id === currentUser?.id}
+              >
+                {ARGOS_ROLE_OPTIONS.map((roleOption) => (
+                  <option key={roleOption.value} value={roleOption.value}>
+                    {roleOption.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>Department</span>
+              <select
+                value={editDraft.department_id}
+                onChange={(event) =>
+                  updateEditDraft("department_id", event.target.value)
+                }
+              >
+                <option value="">Not assigned</option>
+                {departments.map((department) => (
+                  <option key={department.id} value={department.id}>
+                    {department.department_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>Job Title</span>
+              <input
+                type="text"
+                value={editDraft.job_title}
+                onChange={(event) =>
+                  updateEditDraft("job_title", event.target.value)
+                }
+                maxLength={120}
+              />
+            </label>
+
+            <label>
+              <span>Phone</span>
+              <input
+                type="tel"
+                value={editDraft.phone}
+                onChange={(event) =>
+                  updateEditDraft("phone", event.target.value)
+                }
+                maxLength={40}
+              />
+            </label>
+          </div>
+
+          {selectedUser.id === currentUser?.id ? (
+            <div className="argos-users-editor-note">
+              Your own administrator role cannot be changed.
+            </div>
+          ) : null}
+
+          <div className="argos-users-editor-actions">
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setEditDraft(null)}
+            >
+              Cancel
+            </button>
+            <button type="submit" disabled={isSaving}>
+              {isSaving ? "Saving…" : "Save User"}
+            </button>
+          </div>
+        </form>
+      ) : null}
+
       <div className="argos-users-foundation-note">
-        <strong>Sprint 001N.1 identity data active</strong>
+        <strong>Sprint 001N.3 controlled editing active</strong>
         <span>
-          ARGOS now reads the expanded profile model, including department assignment,
-          job title, phone, account status, last login, and created date. Invitations,
-          role changes, department changes, suspension, restoration, and authentication
-          enforcement remain disabled until the associated administrator-only policies
-          are installed and tested.
+          ARGOS now routes profile edits through the authenticated, tenant-scoped
+          administrator RPC. Organization ownership and protected account fields remain
+          outside the browser editing surface. Invitations and suspension remain disabled
+          until their dedicated controls are installed and verified.
         </span>
       </div>
     </div>
