@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { supabase } from "./supabaseClient";
 import AdministrationModule from "./components/Administration/ARGOS_Administration_Module_Component";
-import ARGOSIdentityConfirmationModal from "./components/Shared/ARGOS_Identity_Confirmation_Modal";
-import { resolveIdentity } from "./utils/ARGOS_IdentityResolver";
 import "./App.css";
 
 
@@ -357,6 +355,7 @@ const initialAssets = [
     reason: "Available",
     priority: "Normal",
     downSince: "",
+    technicianId: "",
     technician: "Unassigned",
     rtsType: "No RTS Established",
     rtsDate: "",
@@ -387,6 +386,7 @@ const initialAssets = [
     reason: "Inspection / QC",
     priority: "Normal",
     downSince: "2026-07-07",
+    technicianId: "",
     technician: "Unassigned",
     rtsType: "No RTS Established",
     rtsDate: "",
@@ -402,6 +402,7 @@ const initialAssets = [
     reason: "Available",
     priority: "Normal",
     downSince: "",
+    technicianId: "",
     technician: "Unassigned",
     rtsType: "No RTS Established",
     rtsDate: "",
@@ -524,6 +525,7 @@ function createBlankAsset() {
     reason: "Available",
     priority: "Normal",
     downSince: "",
+    technicianId: "",
     technician: "Unassigned",
     rtsType: "No RTS Established",
     rtsDate: "",
@@ -605,7 +607,8 @@ function mapSupabaseAsset(row) {
     reason: row.reason || "Available",
     priority: row.priority || "Normal",
     downSince: row.down_since || "",
-    technician: row.technician || "Unassigned",
+    technicianId: row.technician_id || "",
+    technician: row.technicians?.technician_name || row.technician || "Unassigned",
     rtsType: row.rts_type || "No RTS Established",
     rtsDate: row.rts_date || "",
     details: row.details || "Available",
@@ -982,7 +985,9 @@ function App() {
   const [statusConfigurationsError, setStatusConfigurationsError] = useState("");
   const [departmentsLoading, setDepartmentsLoading] = useState(false);
   const [departmentsError, setDepartmentsError] = useState("");
-  const [technicianIdentityConfirmation, setTechnicianIdentityConfirmation] = useState(null);
+  const [technicians, setTechnicians] = useState([]);
+  const [techniciansLoading, setTechniciansLoading] = useState(false);
+  const [techniciansError, setTechniciansError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -1304,12 +1309,62 @@ useEffect(() => {
 }, [session, organizationId, isDemoMode]);
 
 useEffect(() => {
+  let isMounted = true;
+
+  if (isDemoMode) {
+    const demoNames = Array.from(
+      new Set(DEMO_ASSETS.map((asset) => normalizeTechnicianDisplayName(asset.technician)))
+    ).filter((name) => name !== "Unassigned");
+    setTechnicians(demoNames.map((name, index) => ({
+      id: `demo-technician-${index}`,
+      technician_name: name,
+      is_active: true,
+    })));
+    setTechniciansLoading(false);
+    setTechniciansError("");
+    return undefined;
+  }
+
+  if (!session || !organizationId) {
+    setTechnicians([]);
+    setTechniciansLoading(false);
+    setTechniciansError("");
+    return undefined;
+  }
+
+  async function loadOrganizationTechnicians() {
+    setTechniciansLoading(true);
+    setTechniciansError("");
+    const { data, error } = await supabase
+      .from("technicians")
+      .select("id, technician_name, employee_number, is_active")
+      .eq("organization_id", organizationId)
+      .eq("is_active", true)
+      .order("technician_name", { ascending: true });
+
+    if (!isMounted) return;
+    if (error) {
+      console.error("ARGOS technicians load failed:", error);
+      setTechnicians([]);
+      setTechniciansError("ARGOS could not load active technicians.");
+      setTechniciansLoading(false);
+      return;
+    }
+    setTechnicians(data || []);
+    setTechniciansLoading(false);
+  }
+
+  loadOrganizationTechnicians();
+  return () => { isMounted = false; };
+}, [session, organizationId, isDemoMode]);
+
+useEffect(() => {
   if (!session || !organizationId) return;
 
   async function loadCloudAssets() {
     const { data, error } = await supabase
       .from("assets")
-      .select("*, asset_types(asset_type_name)")
+      .select("*, asset_types(asset_type_name), technicians(technician_name)")
       .eq("organization_id", organizationId)
       .order("created_at", { ascending: true });
 
@@ -1509,17 +1564,6 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
   completedDisplayDate: event.completedDate || event.statusEndedAt || event.statusStartedAt,
   daysDownDisplay: event.finalDaysDown ?? calculateFinalDaysDown(event.downSince),
 }));
-
-const technicianSuggestions = Array.from(
-  new Map(
-    [...assets, ...completedRepairRecords]
-      .map((record) => normalizeTechnicianDisplayName(record.technician))
-      .filter((technician) => technician !== "Unassigned")
-      .map((technician) => [normalizeTechnicianKey(technician), technician])
-  ).values()
-).sort((firstTechnician, secondTechnician) =>
-  firstTechnician.localeCompare(secondTechnician)
-);
 
   const totalAssets = assets.length;
   const readyAssets = readyArchiveAssets.length;
@@ -1732,76 +1776,33 @@ const technicianSuggestions = Array.from(
     return true;
   }
 
-  function requestTechnicianResolution(enteredTechnician, saveType) {
-    const resolution = resolveIdentity(enteredTechnician, technicianSuggestions);
-
-    if (resolution.status === "exact") {
-      if (saveType === "edit") {
-        completeSave(resolution.match);
-      } else {
-        completeSaveNewAsset(resolution.match);
-      }
-      return;
-    }
-
-    if (resolution.status === "similar") {
-      setTechnicianIdentityConfirmation({
-        enteredValue: resolution.enteredValue,
-        existingValue: resolution.match,
-        saveType,
-      });
-      return;
-    }
-
-    if (saveType === "edit") {
-      completeSave(resolution.enteredValue);
-    } else {
-      completeSaveNewAsset(resolution.enteredValue);
-    }
+  function applyTechnicianSelection(currentAsset, technicianId) {
+    const selectedTechnician = technicians.find((technician) => technician.id === technicianId);
+    return {
+      ...currentAsset,
+      technicianId: selectedTechnician?.id || "",
+      technician: selectedTechnician?.technician_name || "Unassigned",
+    };
   }
 
-  function handleSave() {
-    requestTechnicianResolution(editAsset?.technician, "edit");
+  function handleTechnicianChange(event) {
+    setEditAsset((currentAsset) => applyTechnicianSelection(currentAsset, event.target.value));
   }
 
-  function handleSaveNewAsset() {
-    requestTechnicianResolution(newAsset?.technician, "new");
+  function handleNewAssetTechnicianChange(event) {
+    setNewAsset((currentAsset) => applyTechnicianSelection(currentAsset, event.target.value));
   }
 
-  function handleUseExistingTechnician() {
-    const confirmation = technicianIdentityConfirmation;
-    if (!confirmation) return;
+  function handleSave() { completeSave(); }
+  function handleSaveNewAsset() { completeSaveNewAsset(); }
 
-    setTechnicianIdentityConfirmation(null);
-
-    if (confirmation.saveType === "edit") {
-      completeSave(confirmation.existingValue);
-    } else {
-      completeSaveNewAsset(confirmation.existingValue);
-    }
-  }
-
-  function handleKeepNewTechnician() {
-    const confirmation = technicianIdentityConfirmation;
-    if (!confirmation) return;
-
-    setTechnicianIdentityConfirmation(null);
-
-    if (confirmation.saveType === "edit") {
-      completeSave(confirmation.enteredValue);
-    } else {
-      completeSaveNewAsset(confirmation.enteredValue);
-    }
-  }
-
-  async function completeSave(technicianOverride = null) {
+  async function completeSave() {
     const originalUnit = selectedAsset.unit;
     const originalVin = selectedAsset.vin || "";
     const statusChanged = selectedAsset.status !== editAsset.status;
 
     const updatedAsset = cleanAsset({
       ...editAsset,
-      technician: technicianOverride ?? editAsset.technician,
       statusStartedAt: statusChanged ? getTodayDateString() : editAsset.statusStartedAt,
     });
 
@@ -2091,6 +2092,7 @@ return;
     reason: updatedAsset.reason,
     priority: updatedAsset.priority,
     down_since: updatedAsset.downSince,
+    technician_id: updatedAsset.technicianId || null,
     technician: updatedAsset.technician,
     rts_type: updatedAsset.rtsType,
     rts_date: updatedAsset.rtsDate,
@@ -2119,10 +2121,9 @@ setEditAsset(null);
 setActiveView(savedAsset.status === "Ready" ? "history" : "command");
   }
 
-  async function completeSaveNewAsset(technicianOverride = null) {
+  async function completeSaveNewAsset() {
   const cleanedAsset = cleanAsset({
     ...newAsset,
-    technician: technicianOverride ?? newAsset.technician,
     statusStartedAt: newAsset.statusStartedAt || getTodayDateString(),
   });
 
@@ -2152,6 +2153,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
       reason: cleanedAsset.reason,
       priority: cleanedAsset.priority,
       down_since: cleanedAsset.downSince,
+      technician_id: cleanedAsset.technicianId || null,
       technician: cleanedAsset.technician,
       rts_type: cleanedAsset.rtsType,
       rts_date: cleanedAsset.rtsDate,
@@ -2558,7 +2560,8 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     onDepartmentChange,
     onAssetTypeChange,
     onStatusChange,
-    onRTSTypeChange
+    onRTSTypeChange,
+    onTechnicianChange
   ) {
     return (
       <div className="update-form">
@@ -2679,20 +2682,24 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         )}
 
         <label>
-          Technician / Responsible Party
-          <input
-            type="text"
-            name="technician"
-            value={asset.technician}
-            onChange={onChange}
-            list="argos-technician-suggestions"
-            autoComplete="off"
-          />
-          <datalist id="argos-technician-suggestions">
-            {technicianSuggestions.map((technician) => (
-              <option value={technician} key={normalizeTechnicianKey(technician)} />
+          Technician
+          <select
+            name="technicianId"
+            value={asset.technicianId || ""}
+            onChange={onTechnicianChange}
+            disabled={techniciansLoading}
+          >
+            <option value="">{techniciansLoading ? "Loading technicians…" : "Unassigned"}</option>
+            {technicians.map((technician) => (
+              <option key={technician.id} value={technician.id}>
+                {technician.technician_name}
+                {technician.employee_number ? ` (${technician.employee_number})` : ""}
+              </option>
             ))}
-          </datalist>
+          </select>
+          {techniciansError && (
+            <span className="department-field-error">{techniciansError}</span>
+          )}
         </label>
 
         {asset.status !== "Ready" && (
@@ -3961,17 +3968,6 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
           </div>
         )}
 
-        {technicianIdentityConfirmation && (
-          <ARGOSIdentityConfirmationModal
-            identityLabel="technician"
-            enteredValue={technicianIdentityConfirmation.enteredValue}
-            existingValue={technicianIdentityConfirmation.existingValue}
-            onUseExisting={handleUseExistingTechnician}
-            onKeepNew={handleKeepNewTechnician}
-            onCancel={() => setTechnicianIdentityConfirmation(null)}
-          />
-        )}
-
         {newAsset && (
           <div className="update-overlay">
             <section className="update-panel">
@@ -4003,7 +3999,8 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 handleNewAssetDepartmentChange,
                 handleNewAssetTypeChange,
                 handleNewAssetStatusChange,
-                handleNewAssetRTSTypeChange
+                handleNewAssetRTSTypeChange,
+                handleNewAssetTechnicianChange
               )}
 
               <div className="update-actions">
@@ -4049,7 +4046,8 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 handleDepartmentChange,
                 handleAssetTypeChange,
                 handleStatusChange,
-                handleRTSTypeChange
+                handleRTSTypeChange,
+                handleTechnicianChange
               )}
 
               <div className="update-actions">
