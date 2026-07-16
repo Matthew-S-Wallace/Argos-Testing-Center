@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import "./ARGOS_Users_Administration_Module.css";
 
@@ -9,35 +9,88 @@ const DEMO_USERS = [
     email: "demo@argos.local",
     role: "Administrator",
     department: "Fleet Administration",
+    jobTitle: "System Administrator",
+    phone: "Not configured",
     status: "Active",
     lastLogin: "Demo session",
+    createdDate: "Jul 10, 2026",
   },
   {
     id: "demo-manager",
     fullName: "Operations Manager",
     email: "Not available",
     role: "Manager",
-    department: "Not yet tracked",
+    department: "Public Works",
+    jobTitle: "Fleet Operations Manager",
+    phone: "Not configured",
     status: "Active",
-    lastLogin: "Not yet tracked",
+    lastLogin: "Not yet recorded",
+    createdDate: "Jul 10, 2026",
   },
   {
     id: "demo-technician",
     fullName: "Fleet Technician",
     email: "Not available",
     role: "Technician",
-    department: "Not yet tracked",
+    department: "Fleet Maintenance",
+    jobTitle: "Automotive Technician",
+    phone: "Not configured",
     status: "Active",
-    lastLogin: "Not yet tracked",
+    lastLogin: "Not yet recorded",
+    createdDate: "Jul 10, 2026",
   },
 ];
 
 function formatRole(role) {
   if (!role) return "Not assigned";
 
-  return String(role)
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
+  const normalizedRole = String(role).trim().toLowerCase();
+
+  const roleLabels = {
+    admin: "Administrator",
+    administrator: "Administrator",
+    manager: "Manager",
+    user: "User",
+    technician: "Technician",
+    demo: "Demo",
+  };
+
+  return (
+    roleLabels[normalizedRole] ||
+    String(role)
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (character) => character.toUpperCase())
+  );
+}
+
+function formatDateTime(value, fallback = "Not yet recorded") {
+  if (!value) return fallback;
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return fallback;
+
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function formatDate(value, fallback = "Not available") {
+  if (!value) return fallback;
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return fallback;
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 function UsersState({ children, error = false }) {
@@ -99,7 +152,22 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
 
       const { data: organizationProfiles, error: organizationProfilesError } = await supabase
         .from("profiles")
-        .select("id, full_name, role, created_at")
+        .select(
+          `
+            id,
+            full_name,
+            role,
+            is_active,
+            department_id,
+            job_title,
+            phone,
+            last_login,
+            created_at,
+            departments (
+              department_name
+            )
+          `
+        )
         .eq("organization_id", currentProfile.organization_id)
         .order("full_name", { ascending: true });
 
@@ -124,12 +192,17 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
         email:
           profile.id === authenticatedUser.id
             ? authenticatedUser.email || "Not available"
-            : "Not available",
+            : "Protected by Supabase Auth",
         role: formatRole(profile.role),
-        department: "Not yet tracked",
-        status: "Active",
+        department: profile.departments?.department_name || "Not assigned",
+        jobTitle: profile.job_title || "Not configured",
+        phone: profile.phone || "Not configured",
+        status: profile.is_active === false ? "Suspended" : "Active",
         lastLogin:
-          profile.id === authenticatedUser.id ? "Current session" : "Not yet tracked",
+          profile.id === authenticatedUser.id && !profile.last_login
+            ? "Current session"
+            : formatDateTime(profile.last_login),
+        createdDate: formatDate(profile.created_at),
       }));
 
       setUsers(normalizedUsers);
@@ -143,30 +216,41 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
     };
   }, [isDemoMode]);
 
+  const activeUserCount = useMemo(
+    () => users.filter((user) => user.status === "Active").length,
+    [users]
+  );
+
+  const suspendedUserCount = useMemo(
+    () => users.filter((user) => user.status === "Suspended").length,
+    [users]
+  );
+
   return (
     <div className="argos-users-content">
       <div className="argos-users-heading">
         <div>
-          <p className="eyebrow">Organization Access</p>
+          <p className="eyebrow">Identity &amp; Access Management</p>
           <h4>Organization Users</h4>
           <p>
-            Review user profiles currently visible to this organization. User-management
-            actions remain disabled until role-based security is implemented.
+            Review organization-scoped user identity, role, department assignment,
+            account status, and account activity. Administrative changes remain locked
+            until the Sprint 001N permission and update policies are verified.
           </p>
         </div>
 
-        <span className="argos-users-mode">Read Only</span>
+        <span className="argos-users-mode">IAM Foundation</span>
       </div>
 
-      <div className="argos-users-actions" aria-label="Future user management actions">
+      <div className="argos-users-actions" aria-label="Planned user management actions">
         <button type="button" disabled>
           Invite User
         </button>
         <button type="button" disabled>
-          Disable User
+          Edit User
         </button>
         <button type="button" disabled>
-          Reset Password
+          Suspend / Restore
         </button>
       </div>
 
@@ -174,6 +258,14 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
         <div>
           <span>Visible Users</span>
           <strong>{users.length}</strong>
+        </div>
+        <div>
+          <span>Active Accounts</span>
+          <strong>{activeUserCount}</strong>
+        </div>
+        <div>
+          <span>Suspended Accounts</span>
+          <strong>{suspendedUserCount}</strong>
         </div>
         <div>
           <span>Management Status</span>
@@ -196,8 +288,11 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
                 <th>Email</th>
                 <th>Role</th>
                 <th>Department</th>
+                <th>Job Title</th>
+                <th>Phone</th>
                 <th>Status</th>
                 <th>Last Login</th>
+                <th>Created</th>
               </tr>
             </thead>
             <tbody>
@@ -207,10 +302,19 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
                   <td>{user.email}</td>
                   <td>{user.role}</td>
                   <td>{user.department}</td>
+                  <td>{user.jobTitle}</td>
+                  <td>{user.phone}</td>
                   <td>
-                    <span className="argos-users-status">{user.status}</span>
+                    <span
+                      className={`argos-users-status ${
+                        user.status === "Suspended" ? "suspended" : "active"
+                      }`}
+                    >
+                      {user.status}
+                    </span>
                   </td>
                   <td>{user.lastLogin}</td>
+                  <td>{user.createdDate}</td>
                 </tr>
               ))}
             </tbody>
@@ -219,11 +323,13 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
       )}
 
       <div className="argos-users-foundation-note">
-        <strong>Sprint 001E boundary</strong>
+        <strong>Sprint 001N.1 identity data active</strong>
         <span>
-          Department, account status, and last-login fields are not yet stored in the
-          current ARGOS profile model. No invitations, role edits, password actions,
-          profile writes, or RLS changes are included in this sprint.
+          ARGOS now reads the expanded profile model, including department assignment,
+          job title, phone, account status, last login, and created date. Invitations,
+          role changes, department changes, suspension, restoration, and authentication
+          enforcement remain disabled until the associated administrator-only policies
+          are installed and tested.
         </span>
       </div>
     </div>
