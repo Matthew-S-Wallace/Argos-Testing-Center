@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { supabase } from "./supabaseClient";
 import AdministrationModule from "./components/Administration/ARGOS_Administration_Module_Component";
+import { canViewAdministration } from "./utils/ARGOS_Permission_Resolver";
 import "./App.css";
 
 
@@ -989,6 +990,8 @@ function App() {
   const [techniciansLoading, setTechniciansLoading] = useState(false);
   const [techniciansError, setTechniciansError] = useState("");
 
+  const hasAdministrationAccess = isDemoMode || canViewAdministration(profile);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -1443,6 +1446,17 @@ useEffect(() => {
     if (!storageKey) return;
     localStorage.setItem(storageKey, activeView);
   }, [activeView, organizationId]);
+
+  useEffect(() => {
+    if (
+      activeView === "administration" &&
+      !organizationLoading &&
+      !hasAdministrationAccess
+    ) {
+      setActiveView("command");
+      setActiveAdministrationSection("Organization Profile");
+    }
+  }, [activeView, hasAdministrationAccess, organizationLoading]);
 
   useEffect(() => {
     if (!pendingNewAssetDraft || showVinScanner) return;
@@ -3247,13 +3261,15 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
           >
             ▥ <span>Reports</span>
           </button>
-          <button
-            className={`nav-item ${activeView === "administration" ? "active" : ""}`}
-            type="button"
-            onClick={() => setActiveView("administration")}
-          >
-            ⚙ <span>Administration</span>
-          </button>
+          {hasAdministrationAccess && (
+            <button
+              className={`nav-item ${activeView === "administration" ? "active" : ""}`}
+              type="button"
+              onClick={() => setActiveView("administration")}
+            >
+              ⚙ <span>Administration</span>
+            </button>
+          )}
 
           <button className="nav-item" type="button" onClick={handleSignOut}>
             ⇥ <span>{isDemoMode ? "Exit Demo" : "Log Out"}</span>
@@ -3682,7 +3698,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         )}
 
 
-        {activeView === "administration" && (
+        {activeView === "administration" && hasAdministrationAccess && (
           <AdministrationModule
             activeSection={activeAdministrationSection}
             onSelectSection={setActiveAdministrationSection}
