@@ -136,7 +136,17 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+const [showInviteDialog, setShowInviteDialog] = useState(false);
+const [isInvitingUser, setIsInvitingUser] = useState(false);
 
+const [inviteDraft, setInviteDraft] = useState({
+  first_name: "",
+  last_name: "",
+  email: "",
+  role: "user",
+});
+
+const [inviteErrors, setInviteErrors] = useState({});
   useEffect(() => {
     let isMounted = true;
 
@@ -387,9 +397,22 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
       </div>
 
       <div className="argos-users-actions" aria-label="User management actions">
-        <button type="button" disabled>
-          Invite User
-        </button>
+        <button
+  type="button"
+  disabled={!currentUserIsAdministrator || Boolean(editDraft)}
+  onClick={() => {
+    setInviteErrors({});
+    setInviteDraft({
+      first_name: "",
+      last_name: "",
+      email: "",
+      role: "user",
+    });
+    setShowInviteDialog(true);
+  }}
+>
+  Invite User
+</button>
         <button
           type="button"
           onClick={beginEditSelectedUser}
@@ -490,7 +513,149 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
           </table>
         </div>
       )}
+{showInviteDialog ? (
+  <div
+    className="argos-users-modal-backdrop"
+    role="presentation"
+    onMouseDown={(event) => {
+      if (event.target === event.currentTarget && !isInvitingUser) {
+        setShowInviteDialog(false);
+      }
+    }}
+  >
+    <form
+      className="argos-users-modal"
+      onSubmit={(event) => event.preventDefault()}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="argos-invite-user-title"
+    >
+      <div className="argos-users-modal-heading">
+        <div>
+          <p className="eyebrow">Secure User Invitation</p>
+          <h5 id="argos-invite-user-title">Invite Organization User</h5>
+        </div>
 
+        <button
+          type="button"
+          className="argos-users-modal-close"
+          onClick={() => setShowInviteDialog(false)}
+          disabled={isInvitingUser}
+          aria-label="Close invite user dialog"
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="argos-users-modal-grid">
+        <label>
+          <span>First Name</span>
+          <input
+            type="text"
+            value={inviteDraft.first_name}
+            onChange={(event) =>
+              setInviteDraft((currentDraft) => ({
+                ...currentDraft,
+                first_name: event.target.value,
+              }))
+            }
+            maxLength={80}
+            autoComplete="given-name"
+            required
+          />
+          {inviteErrors.first_name ? (
+            <small className="argos-users-field-error">
+              {inviteErrors.first_name}
+            </small>
+          ) : null}
+        </label>
+
+        <label>
+          <span>Last Name</span>
+          <input
+            type="text"
+            value={inviteDraft.last_name}
+            onChange={(event) =>
+              setInviteDraft((currentDraft) => ({
+                ...currentDraft,
+                last_name: event.target.value,
+              }))
+            }
+            maxLength={80}
+            autoComplete="family-name"
+            required
+          />
+          {inviteErrors.last_name ? (
+            <small className="argos-users-field-error">
+              {inviteErrors.last_name}
+            </small>
+          ) : null}
+        </label>
+
+        <label className="argos-users-modal-full">
+          <span>Email Address</span>
+          <input
+            type="email"
+            value={inviteDraft.email}
+            onChange={(event) =>
+              setInviteDraft((currentDraft) => ({
+                ...currentDraft,
+                email: event.target.value,
+              }))
+            }
+            maxLength={254}
+            autoComplete="email"
+            required
+          />
+          {inviteErrors.email ? (
+            <small className="argos-users-field-error">
+              {inviteErrors.email}
+            </small>
+          ) : null}
+        </label>
+
+        <label className="argos-users-modal-full">
+          <span>Role</span>
+          <select
+            value={inviteDraft.role}
+            onChange={(event) =>
+              setInviteDraft((currentDraft) => ({
+                ...currentDraft,
+                role: event.target.value,
+              }))
+            }
+          >
+            {ARGOS_ROLE_OPTIONS.map((roleOption) => (
+              <option key={roleOption.value} value={roleOption.value}>
+                {roleOption.label}
+              </option>
+            ))}
+          </select>
+          {inviteErrors.role ? (
+            <small className="argos-users-field-error">
+              {inviteErrors.role}
+            </small>
+          ) : null}
+        </label>
+      </div>
+
+      <div className="argos-users-modal-actions">
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => setShowInviteDialog(false)}
+          disabled={isInvitingUser}
+        >
+          Cancel
+        </button>
+
+        <button type="submit" disabled={isInvitingUser}>
+          {isInvitingUser ? "Sending…" : "Send Invitation"}
+        </button>
+      </div>
+    </form>
+  </div>
+) : null}
       {editDraft && selectedUser ? (
         <form className="argos-users-editor" onSubmit={saveEditedUser}>
           <div className="argos-users-editor-heading">

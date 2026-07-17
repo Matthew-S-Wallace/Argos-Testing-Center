@@ -368,3 +368,204 @@
     width: 100%;
   }
 }
+
+
+/* Sprint 001N.5 — Secure user invitation modal */
+
+.argos-users-modal-backdrop,
+.argos-users-modal-backdrop * {
+  box-sizing: border-box;
+}
+
+.argos-users-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  padding: 24px !important;
+  overflow-y: auto !important;
+  background: rgba(7, 26, 51, 0.58) !important;
+}
+
+.argos-users-modal {
+  position: relative !important;
+  display: block !important;
+  width: min(680px, 100%) !important;
+  max-width: 680px !important;
+  max-height: calc(100vh - 48px) !important;
+  margin: auto !important;
+  padding: 30px !important;
+  overflow-y: auto !important;
+  border: 1px solid #d8d8d2 !important;
+  border-radius: 14px !important;
+  background: #ffffff !important;
+  box-shadow: 0 28px 70px rgba(7, 26, 51, 0.28) !important;
+}
+
+.argos-users-modal-heading {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 20px !important;
+  margin: 0 0 24px !important;
+  padding: 0 48px 18px 0 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.argos-users-modal-heading h5 {
+  margin: 4px 0 0 !important;
+  color: #071a33 !important;
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+}
+
+.argos-users-modal-close {
+  position: absolute !important;
+  top: 22px !important;
+  right: 22px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid #cfd5dc !important;
+  border-radius: 9px !important;
+  background: #ffffff !important;
+  color: #071a33 !important;
+  font-size: 22px !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+}
+
+.argos-users-modal-close:hover:not(:disabled) {
+  background: #f6f7f8 !important;
+}
+
+.argos-users-modal-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 18px !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.argos-users-modal-grid label {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 7px !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.argos-users-modal-grid label > span {
+  display: block !important;
+  margin: 0 !important;
+  color: #526174 !important;
+  font-family: Inter, system-ui, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.05em !important;
+  line-height: 1.3 !important;
+  text-transform: uppercase !important;
+}
+
+.argos-users-modal-grid input,
+.argos-users-modal-grid select {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 44px !important;
+  margin: 0 !important;
+  padding: 10px 12px !important;
+  border: 1px solid #cfd5dc !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  color: #071a33 !important;
+  font-family: Inter, system-ui, sans-serif !important;
+  font-size: 14px !important;
+  line-height: 1.35 !important;
+}
+
+.argos-users-modal-grid input:focus,
+.argos-users-modal-grid select:focus {
+  border-color: #9a6614 !important;
+  outline: 3px solid rgba(154, 102, 20, 0.14) !important;
+  outline-offset: 0 !important;
+}
+
+.argos-users-modal-full {
+  grid-column: 1 / -1 !important;
+}
+
+.argos-users-field-error {
+  display: block !important;
+  margin: 0 !important;
+  color: #b42318 !important;
+  font-family: Inter, system-ui, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+}
+
+.argos-users-modal-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  width: 100% !important;
+  margin: 26px 0 0 !important;
+  padding: 20px 0 0 !important;
+  border-top: 1px solid #e5e7eb !important;
+}
+
+.argos-users-modal-actions button {
+  width: auto !important;
+  min-width: 132px !important;
+  margin: 0 !important;
+}
+
+.argos-users-modal-actions button.secondary {
+  border: 1px solid #cfd5dc !important;
+  background: #ffffff !important;
+  color: #344054 !important;
+}
+
+@media (max-width: 640px) {
+  .argos-users-modal-backdrop {
+    align-items: flex-start !important;
+    padding: 12px !important;
+  }
+
+  .argos-users-modal {
+    max-height: calc(100vh - 24px) !important;
+    padding: 24px 20px !important;
+  }
+
+  .argos-users-modal-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .argos-users-modal-full {
+    grid-column: auto !important;
+  }
+
+  .argos-users-modal-actions {
+    flex-direction: column-reverse !important;
+  }
+
+  .argos-users-modal-actions button {
+    width: 100% !important;
+  }
+}
