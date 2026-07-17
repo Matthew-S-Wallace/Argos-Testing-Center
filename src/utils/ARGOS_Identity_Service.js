@@ -1,4 +1,4 @@
-// ARGOS™ Sprint 001N.3
+// ARGOS™ Sprint 001N.4
 // Controlled identity service using secure Supabase RPC functions.
 //
 // This file intentionally performs its own role normalization so that
@@ -73,6 +73,41 @@ export async function updateArgosUserProfile(profileId, updates) {
     throw new Error(
       error.message ||
         "ARGOS could not update this user profile."
+    );
+  }
+
+  return Array.isArray(data) ? data[0] : data;
+}
+
+export async function setArgosUserActiveStatus(
+  profileId,
+  isActive
+) {
+  requireProfileId(profileId);
+
+  if (typeof isActive !== "boolean") {
+    throw new Error(
+      "A valid ARGOS account status is required."
+    );
+  }
+
+  const { data, error } = await supabase.rpc(
+    "argos_set_user_active_status",
+    {
+      target_profile_id: profileId,
+      new_is_active: isActive,
+    }
+  );
+
+  if (error) {
+    console.error(
+      "ARGOS controlled account status update failed:",
+      error
+    );
+
+    throw new Error(
+      error.message ||
+        "ARGOS could not update this user's account status."
     );
   }
 
