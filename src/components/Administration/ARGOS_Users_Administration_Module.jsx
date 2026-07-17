@@ -11,7 +11,9 @@ const ARGOS_ROLE_OPTIONS = [
 ];
 
 function normalizeRoleValue(role) {
-  const normalizedRole = String(role || "").trim().toLowerCase();
+  const normalizedRole = String(role || "")
+    .trim()
+    .toLowerCase();
 
   if (normalizedRole === "administrator") return "admin";
   if (["admin", "manager", "user", "technician"].includes(normalizedRole)) {
@@ -136,17 +138,18 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [actionMessage, setActionMessage] = useState("");
-const [showInviteDialog, setShowInviteDialog] = useState(false);
-const [isInvitingUser, setIsInvitingUser] = useState(false);
+  const [showInvitePanel, setShowInvitePanel] = useState(false);
+  const [isInvitingUser, setIsInvitingUser] = useState(false);
+  const [inviteDraft, setInviteDraft] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    role: "user",
+  });
+  const [inviteErrors, setInviteErrors] = useState({});
+  const [inviteActionError, setInviteActionError] = useState("");
+  const [usersRefreshVersion, setUsersRefreshVersion] = useState(0);
 
-const [inviteDraft, setInviteDraft] = useState({
-  first_name: "",
-  last_name: "",
-  email: "",
-  role: "user",
-});
-
-const [inviteErrors, setInviteErrors] = useState({});
   useEffect(() => {
     let isMounted = true;
 
@@ -182,16 +185,20 @@ const [inviteErrors, setInviteErrors] = useState({});
         return;
       }
 
-      const { data: currentProfile, error: currentProfileError } = await supabase
-        .from("profiles")
-        .select("id, organization_id, full_name, role, is_active")
-        .eq("id", authenticatedUser.id)
-        .single();
+      const { data: currentProfile, error: currentProfileError } =
+        await supabase
+          .from("profiles")
+          .select("id, organization_id, full_name, role, is_active")
+          .eq("id", authenticatedUser.id)
+          .single();
 
       if (!isMounted) return;
 
       if (currentProfileError || !currentProfile?.organization_id) {
-        console.error("ARGOS current user profile lookup failed:", currentProfileError);
+        console.error(
+          "ARGOS current user profile lookup failed:",
+          currentProfileError,
+        );
         setUsers([]);
         setErrorMessage("ARGOS could not resolve the current organization.");
         setIsLoading(false);
@@ -218,7 +225,7 @@ const [inviteErrors, setInviteErrors] = useState({});
               departments (
                 department_name
               )
-            `
+            `,
           )
           .eq("organization_id", currentProfile.organization_id)
           .order("full_name", { ascending: true }),
@@ -235,11 +242,11 @@ const [inviteErrors, setInviteErrors] = useState({});
       if (organizationProfilesError) {
         console.error(
           "ARGOS organization users lookup failed:",
-          organizationProfilesError
+          organizationProfilesError,
         );
         setUsers([]);
         setErrorMessage(
-          "ARGOS could not load organization users through the current security policy."
+          "ARGOS could not load organization users through the current security policy.",
         );
         setIsLoading(false);
         return;
@@ -248,7 +255,7 @@ const [inviteErrors, setInviteErrors] = useState({});
       if (organizationDepartmentsError) {
         console.error(
           "ARGOS organization departments lookup failed:",
-          organizationDepartmentsError
+          organizationDepartmentsError,
         );
       }
 
@@ -283,7 +290,7 @@ const [inviteErrors, setInviteErrors] = useState({});
       setSelectedUserId((existingSelection) =>
         normalizedUsers.some((user) => user.id === existingSelection)
           ? existingSelection
-          : normalizedUsers[0]?.id || ""
+          : normalizedUsers[0]?.id || "",
       );
       setIsLoading(false);
     }
@@ -293,21 +300,21 @@ const [inviteErrors, setInviteErrors] = useState({});
     return () => {
       isMounted = false;
     };
-  }, [isDemoMode]);
+  }, [isDemoMode, usersRefreshVersion]);
 
   const activeUserCount = useMemo(
     () => users.filter((user) => user.status === "Active").length,
-    [users]
+    [users],
   );
 
   const suspendedUserCount = useMemo(
     () => users.filter((user) => user.status === "Suspended").length,
-    [users]
+    [users],
   );
 
   const selectedUser = useMemo(
     () => users.find((user) => user.id === selectedUserId) || null,
-    [users, selectedUserId]
+    [users, selectedUserId],
   );
 
   const currentUserIsAdministrator = currentUser?.role === "admin";
@@ -336,6 +343,146 @@ const [inviteErrors, setInviteErrors] = useState({});
     }));
   }
 
+  function updateInviteDraft(field, value) {
+    setInviteDraft((currentDraft) => ({
+      ...currentDraft,
+      [field]: value,
+    }));
+
+    setInviteErrors((currentErrors) => {
+      if (!currentErrors[field]) return currentErrors;
+
+      const nextErrors = { ...currentErrors };
+      delete nextErrors[field];
+      return nextErrors;
+    });
+  }
+
+  function validateInviteDraft() {
+    const nextErrors = {};
+    const firstName = inviteDraft.first_name.trim();
+    const lastName = inviteDraft.last_name.trim();
+    const email = inviteDraft.email.trim().toLowerCase();
+    const role = normalizeRoleValue(inviteDraft.role);
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!firstName) nextErrors.first_name = "First name is required.";
+    if (!lastName) nextErrors.last_name = "Last name is required.";
+    if (!email) {
+      nextErrors.email = "Email address is required.";
+    } else if (!emailPattern.test(email)) {
+      nextErrors.email = "Enter a valid email address.";
+    }
+    if (!ARGOS_ROLE_OPTIONS.some((option) => option.value === role)) {
+      nextErrors.role = "Select a valid ARGOS role.";
+    }
+
+    setInviteErrors(nextErrors);
+
+    return {
+      isValid: Object.keys(nextErrors).length === 0,
+      payload: {
+        full_name: `${firstName} ${lastName}`.trim(),
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        role,
+      },
+    };
+  }
+
+  async function resolveInviteError(error) {
+    let message = error?.message || "ARGOS could not send this invitation.";
+
+    try {
+      if (error?.context && typeof error.context.json === "function") {
+        const responseBody = await error.context.json();
+        message =
+          responseBody?.error ||
+          responseBody?.message ||
+          responseBody?.details ||
+          message;
+      }
+    } catch (contextError) {
+      console.error(
+        "ARGOS invitation error response could not be read:",
+        contextError,
+      );
+    }
+
+    const normalizedMessage = String(message).toLowerCase();
+
+    if (
+      normalizedMessage.includes("already") ||
+      normalizedMessage.includes("duplicate")
+    ) {
+      return "A user with this email address already exists or has already been invited.";
+    }
+    if (normalizedMessage.includes("role")) {
+      return "The selected ARGOS role is not valid for this invitation.";
+    }
+    if (
+      normalizedMessage.includes("permission") ||
+      normalizedMessage.includes("forbidden") ||
+      normalizedMessage.includes("administrator") ||
+      normalizedMessage.includes("unauthorized")
+    ) {
+      return "Your account is not authorized to invite organization users.";
+    }
+    if (
+      normalizedMessage.includes("network") ||
+      normalizedMessage.includes("fetch") ||
+      normalizedMessage.includes("timeout")
+    ) {
+      return "ARGOS could not reach the invitation service. Check the connection and try again.";
+    }
+
+    return message;
+  }
+
+  async function submitUserInvitation(event) {
+    event.preventDefault();
+
+    if (!currentUserIsAdministrator || isDemoMode) return;
+
+    setActionMessage("");
+    setInviteActionError("");
+
+    const { isValid, payload } = validateInviteDraft();
+    if (!isValid) return;
+
+    setIsInvitingUser(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "argos-invite-user",
+        { body: payload },
+      );
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setInviteDraft({
+        first_name: "",
+        last_name: "",
+        email: "",
+        role: "user",
+      });
+      setInviteErrors({});
+      setShowInvitePanel(false);
+      setInviteActionError("");
+      setActionMessage(
+        data?.message || `Invitation sent successfully to ${payload.email}.`,
+      );
+      setUsersRefreshVersion((currentVersion) => currentVersion + 1);
+    } catch (error) {
+      console.error("ARGOS secure user invitation failed:", error);
+      setInviteActionError(await resolveInviteError(error));
+    } finally {
+      setIsInvitingUser(false);
+    }
+  }
+
   async function saveEditedUser(event) {
     event.preventDefault();
 
@@ -352,7 +499,7 @@ const [inviteErrors, setInviteErrors] = useState({});
 
       const updatedDepartment =
         departments.find(
-          (department) => department.id === editDraft.department_id
+          (department) => department.id === editDraft.department_id,
         )?.department_name || "Not assigned";
 
       setUsers((currentUsers) =>
@@ -368,12 +515,12 @@ const [inviteErrors, setInviteErrors] = useState({});
                 jobTitle: editDraft.job_title.trim() || "Not configured",
                 phone: editDraft.phone.trim() || "Not configured",
               }
-            : user
-        )
+            : user,
+        ),
       );
     } catch (error) {
       setErrorMessage(
-        error?.message || "ARGOS could not update this user profile."
+        error?.message || "ARGOS could not update this user profile.",
       );
     } finally {
       setIsSaving(false);
@@ -387,9 +534,9 @@ const [inviteErrors, setInviteErrors] = useState({});
           <p className="eyebrow">Identity &amp; Access Management</p>
           <h4>Organization Users</h4>
           <p>
-            Review and update organization-scoped user identity, role, department
-            assignment, job title, and contact information through the controlled
-            ARGOS administrator security boundary.
+            Review and update organization-scoped user identity, role,
+            department assignment, job title, and contact information through
+            the controlled ARGOS administrator security boundary.
           </p>
         </div>
 
@@ -398,25 +545,31 @@ const [inviteErrors, setInviteErrors] = useState({});
 
       <div className="argos-users-actions" aria-label="User management actions">
         <button
-  type="button"
-  disabled={!currentUserIsAdministrator || Boolean(editDraft)}
-  onClick={() => {
-    setInviteErrors({});
-    setInviteDraft({
-      first_name: "",
-      last_name: "",
-      email: "",
-      role: "user",
-    });
-    setShowInviteDialog(true);
-  }}
->
-  Invite User
-</button>
+          type="button"
+          disabled={
+            !currentUserIsAdministrator || Boolean(editDraft) || showInvitePanel
+          }
+          onClick={() => {
+            setActionMessage("");
+            setInviteActionError("");
+            setInviteErrors({});
+            setInviteDraft({
+              first_name: "",
+              last_name: "",
+              email: "",
+              role: "user",
+            });
+            setShowInvitePanel(true);
+          }}
+        >
+          Invite User
+        </button>
         <button
           type="button"
           onClick={beginEditSelectedUser}
-          disabled={!canEditSelectedUser || Boolean(editDraft)}
+          disabled={
+            !canEditSelectedUser || Boolean(editDraft) || showInvitePanel
+          }
         >
           Edit Selected User
         </button>
@@ -440,7 +593,9 @@ const [inviteErrors, setInviteErrors] = useState({});
         </div>
         <div>
           <span>Management Status</span>
-          <strong>{currentUserIsAdministrator ? "Administrator" : "Read Only"}</strong>
+          <strong>
+            {currentUserIsAdministrator ? "Administrator" : "Read Only"}
+          </strong>
         </div>
       </div>
 
@@ -453,7 +608,9 @@ const [inviteErrors, setInviteErrors] = useState({});
       ) : errorMessage ? (
         <UsersState error>{errorMessage}</UsersState>
       ) : users.length === 0 ? (
-        <UsersState>No user profiles are currently visible for this organization.</UsersState>
+        <UsersState>
+          No user profiles are currently visible for this organization.
+        </UsersState>
       ) : (
         <div className="argos-users-table-wrap">
           <table className="argos-users-table">
@@ -477,7 +634,8 @@ const [inviteErrors, setInviteErrors] = useState({});
                   key={user.id}
                   className={selectedUserId === user.id ? "selected" : ""}
                   onClick={() => {
-                    if (!editDraft) setSelectedUserId(user.id);
+                    if (!editDraft && !showInvitePanel)
+                      setSelectedUserId(user.id);
                   }}
                 >
                   <td>
@@ -486,7 +644,7 @@ const [inviteErrors, setInviteErrors] = useState({});
                       name="argos-selected-user"
                       checked={selectedUserId === user.id}
                       onChange={() => setSelectedUserId(user.id)}
-                      disabled={Boolean(editDraft)}
+                      disabled={Boolean(editDraft) || showInvitePanel}
                       aria-label={`Select ${user.fullName}`}
                     />
                   </td>
@@ -513,149 +671,132 @@ const [inviteErrors, setInviteErrors] = useState({});
           </table>
         </div>
       )}
-{showInviteDialog ? (
-  <div
-    className="argos-users-modal-backdrop"
-    role="presentation"
-    onMouseDown={(event) => {
-      if (event.target === event.currentTarget && !isInvitingUser) {
-        setShowInviteDialog(false);
-      }
-    }}
-  >
-    <form
-      className="argos-users-modal"
-      onSubmit={(event) => event.preventDefault()}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="argos-invite-user-title"
-    >
-      <div className="argos-users-modal-heading">
-        <div>
-          <p className="eyebrow">Secure User Invitation</p>
-          <h5 id="argos-invite-user-title">Invite Organization User</h5>
-        </div>
 
-        <button
-          type="button"
-          className="argos-users-modal-close"
-          onClick={() => setShowInviteDialog(false)}
-          disabled={isInvitingUser}
-          aria-label="Close invite user dialog"
+      {showInvitePanel ? (
+        <form
+          className="argos-users-invite-panel"
+          onSubmit={submitUserInvitation}
+          aria-labelledby="argos-invite-user-title"
         >
-          ×
-        </button>
-      </div>
+          <div className="argos-users-invite-heading">
+            <div>
+              <p className="eyebrow">Secure User Invitation</p>
+              <h5 id="argos-invite-user-title">Invite Organization User</h5>
+            </div>
+            <span>Administrator Only</span>
+          </div>
 
-      <div className="argos-users-modal-grid">
-        <label>
-          <span>First Name</span>
-          <input
-            type="text"
-            value={inviteDraft.first_name}
-            onChange={(event) =>
-              setInviteDraft((currentDraft) => ({
-                ...currentDraft,
-                first_name: event.target.value,
-              }))
-            }
-            maxLength={80}
-            autoComplete="given-name"
-            required
-          />
-          {inviteErrors.first_name ? (
-            <small className="argos-users-field-error">
-              {inviteErrors.first_name}
-            </small>
+          <div className="argos-users-invite-grid">
+            <label>
+              <span>First Name</span>
+              <input
+                type="text"
+                value={inviteDraft.first_name}
+                onChange={(event) =>
+                  updateInviteDraft("first_name", event.target.value)
+                }
+                maxLength={80}
+                autoComplete="given-name"
+                required
+              />
+              {inviteErrors.first_name ? (
+                <small className="argos-users-field-error">
+                  {inviteErrors.first_name}
+                </small>
+              ) : null}
+            </label>
+
+            <label>
+              <span>Last Name</span>
+              <input
+                type="text"
+                value={inviteDraft.last_name}
+                onChange={(event) =>
+                  updateInviteDraft("last_name", event.target.value)
+                }
+                maxLength={80}
+                autoComplete="family-name"
+                required
+              />
+              {inviteErrors.last_name ? (
+                <small className="argos-users-field-error">
+                  {inviteErrors.last_name}
+                </small>
+              ) : null}
+            </label>
+
+            <label className="argos-users-invite-full">
+              <span>Email Address</span>
+              <input
+                type="email"
+                value={inviteDraft.email}
+                onChange={(event) =>
+                  updateInviteDraft("email", event.target.value)
+                }
+                maxLength={254}
+                autoComplete="email"
+                required
+              />
+              {inviteErrors.email ? (
+                <small className="argos-users-field-error">
+                  {inviteErrors.email}
+                </small>
+              ) : null}
+            </label>
+
+            <label className="argos-users-invite-full">
+              <span>Role</span>
+              <select
+                value={inviteDraft.role}
+                onChange={(event) =>
+                  updateInviteDraft("role", event.target.value)
+                }
+              >
+                {ARGOS_ROLE_OPTIONS.map((roleOption) => (
+                  <option key={roleOption.value} value={roleOption.value}>
+                    {roleOption.label}
+                  </option>
+                ))}
+              </select>
+              {inviteErrors.role ? (
+                <small className="argos-users-field-error">
+                  {inviteErrors.role}
+                </small>
+              ) : null}
+            </label>
+          </div>
+
+          <div className="argos-users-invite-note">
+            The invitation will be restricted to the current ARGOS organization
+            and assigned the selected role.
+          </div>
+
+          {inviteActionError ? (
+            <div className="argos-users-message error" role="alert">
+              {inviteActionError}
+            </div>
           ) : null}
-        </label>
 
-        <label>
-          <span>Last Name</span>
-          <input
-            type="text"
-            value={inviteDraft.last_name}
-            onChange={(event) =>
-              setInviteDraft((currentDraft) => ({
-                ...currentDraft,
-                last_name: event.target.value,
-              }))
-            }
-            maxLength={80}
-            autoComplete="family-name"
-            required
-          />
-          {inviteErrors.last_name ? (
-            <small className="argos-users-field-error">
-              {inviteErrors.last_name}
-            </small>
-          ) : null}
-        </label>
+          <div className="argos-users-invite-actions">
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => {
+                setShowInvitePanel(false);
+                setInviteErrors({});
+                setInviteActionError("");
+              }}
+              disabled={isInvitingUser}
+            >
+              Cancel
+            </button>
 
-        <label className="argos-users-modal-full">
-          <span>Email Address</span>
-          <input
-            type="email"
-            value={inviteDraft.email}
-            onChange={(event) =>
-              setInviteDraft((currentDraft) => ({
-                ...currentDraft,
-                email: event.target.value,
-              }))
-            }
-            maxLength={254}
-            autoComplete="email"
-            required
-          />
-          {inviteErrors.email ? (
-            <small className="argos-users-field-error">
-              {inviteErrors.email}
-            </small>
-          ) : null}
-        </label>
-
-        <label className="argos-users-modal-full">
-          <span>Role</span>
-          <select
-            value={inviteDraft.role}
-            onChange={(event) =>
-              setInviteDraft((currentDraft) => ({
-                ...currentDraft,
-                role: event.target.value,
-              }))
-            }
-          >
-            {ARGOS_ROLE_OPTIONS.map((roleOption) => (
-              <option key={roleOption.value} value={roleOption.value}>
-                {roleOption.label}
-              </option>
-            ))}
-          </select>
-          {inviteErrors.role ? (
-            <small className="argos-users-field-error">
-              {inviteErrors.role}
-            </small>
-          ) : null}
-        </label>
-      </div>
-
-      <div className="argos-users-modal-actions">
-        <button
-          type="button"
-          className="secondary"
-          onClick={() => setShowInviteDialog(false)}
-          disabled={isInvitingUser}
-        >
-          Cancel
-        </button>
-
-        <button type="submit" disabled={isInvitingUser}>
-          {isInvitingUser ? "Sending…" : "Send Invitation"}
-        </button>
-      </div>
-    </form>
-  </div>
-) : null}
+            <button type="submit" disabled={isInvitingUser}>
+              {isInvitingUser ? "Sending…" : "Send Invitation"}
+            </button>
+          </div>
+        </form>
+      ) : null}
       {editDraft && selectedUser ? (
         <form className="argos-users-editor" onSubmit={saveEditedUser}>
           <div className="argos-users-editor-heading">
@@ -761,12 +902,15 @@ const [inviteErrors, setInviteErrors] = useState({});
       ) : null}
 
       <div className="argos-users-foundation-note">
-        <strong>Sprint 001N.3 controlled editing active</strong>
+        <strong>Sprint 001N.5 secure invitation interface active</strong>
         <span>
-          ARGOS now routes profile edits through the authenticated, tenant-scoped
-          administrator RPC. Organization ownership and protected account fields remain
-          outside the browser editing surface. Invitations and suspension remain disabled
-          until their dedicated controls are installed and verified.
+          ARGOS routes profile edits through the authenticated, tenant-scoped
+          administrator RPC. Secure user invitations now use an isolated inline
+          administration panel connected to the deployed Edge Function with
+          client-side validation, controlled error handling, and automatic user
+          list refresh. Organization ownership and protected account fields
+          remain outside the browser editing surface; suspension remains
+          disabled until its dedicated controls are installed and verified.
         </span>
       </div>
     </div>
