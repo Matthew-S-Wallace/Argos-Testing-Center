@@ -2107,3 +2107,188 @@ button.administration-menu-item.active {
     animation: none;
   }
 }
+
+/* Sprint 001S Phase 2.7 — Compact Mobile Vehicle Status Workflow */
+
+.argos-field-details-toggle {
+  display: none;
+}
+
+.argos-field-full-form {
+  display: block;
+}
+
+@media (max-width: 760px) {
+  .vehicle-record-panel {
+    padding: 14px 12px max(18px, env(safe-area-inset-bottom));
+  }
+
+  .vehicle-record-panel .update-panel-header {
+    align-items: center;
+    gap: 10px;
+    padding: 0 2px 12px;
+  }
+
+  .vehicle-record-panel .update-panel-header .eyebrow {
+    margin-bottom: 3px;
+    font-size: 9px;
+  }
+
+  .vehicle-record-panel .update-panel-header h3 {
+    font-size: 22px;
+    line-height: 1.08;
+  }
+
+  .vehicle-record-panel .update-asset-name {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .vehicle-record-panel .close-button {
+    width: 34px;
+    height: 34px;
+    font-size: 20px;
+  }
+
+  .vehicle-record-panel .argos-field-scan-result {
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    border-radius: 11px;
+  }
+
+  .vehicle-record-panel .argos-field-scan-result h4 {
+    font-size: 14px;
+    line-height: 1.25;
+  }
+
+  .vehicle-record-panel .argos-field-scan-result span {
+    margin-top: 2px;
+    font-size: 10px;
+  }
+
+  .vehicle-record-panel .argos-field-scan-result > strong {
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+
+  .vehicle-record-panel .argos-field-quick-status {
+    margin: 0 0 10px;
+    padding: 11px;
+    border-radius: 12px;
+  }
+
+  .vehicle-record-panel .argos-field-quick-status .eyebrow {
+    font-size: 9px;
+  }
+
+  .vehicle-record-panel .argos-field-quick-status h4 {
+    margin-top: 1px;
+    font-size: 14px;
+  }
+
+  .vehicle-record-panel .argos-field-status-buttons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .vehicle-record-panel .argos-field-status-buttons button {
+    min-height: 38px;
+    padding: 6px 8px;
+    border-radius: 9px;
+    font-size: 10px;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .argos-field-details-toggle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 10px;
+    padding: 11px 12px;
+    border: 1px solid #cfd7df;
+    border-radius: 11px;
+    background: #f8fafc;
+    color: #1e3041;
+    box-shadow: none;
+    text-align: left;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .argos-field-details-toggle span,
+  .argos-field-details-toggle strong,
+  .argos-field-details-toggle small {
+    display: block;
+  }
+
+  .argos-field-details-toggle strong {
+    font-size: 12px;
+  }
+
+  .argos-field-details-toggle small {
+    margin-top: 2px;
+    color: #647383;
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .argos-field-details-toggle b {
+    flex: 0 0 auto;
+    font-size: 22px;
+    font-weight: 500;
+  }
+
+  .argos-field-full-form {
+    display: none;
+  }
+
+  .argos-field-full-form.is-open {
+    display: block;
+  }
+
+  .argos-field-full-form .update-form {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .argos-field-full-form .update-form label {
+    gap: 4px;
+    font-size: 9px;
+  }
+
+  .argos-field-full-form .update-form input,
+  .argos-field-full-form .update-form select,
+  .argos-field-full-form .update-form textarea {
+    min-height: 40px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  .argos-field-full-form .update-form textarea {
+    min-height: 72px;
+  }
+
+  .vehicle-record-panel .argos-field-update-actions {
+    gap: 7px;
+    margin: 10px -12px -14px;
+    padding: 10px 12px max(10px, env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.97);
+    border-top: 1px solid #d9e0e6;
+  }
+
+  .vehicle-record-panel .argos-field-update-actions button {
+    min-height: 40px;
+    padding: 8px 9px;
+    font-size: 9px;
+    letter-spacing: 0.04em;
+  }
+}
+

@@ -57,6 +57,14 @@ const CSV_COLUMNS = [
   "details",
 ];
 
+function getFieldGreeting(date = new Date()) {
+  const hour = date.getHours();
+
+  if (hour >= 5 && hour < 12) return "Good morning";
+  if (hour >= 12 && hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 function getTodayDateString() {
   const today = new Date();
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
@@ -1093,6 +1101,8 @@ function App() {
   const [showFieldHome, setShowFieldHome] = useState(true);
   const [fieldQueueMode, setFieldQueueMode] = useState("all");
   const [fieldScanContext, setFieldScanContext] = useState(null);
+  const [fieldCurrentTime, setFieldCurrentTime] = useState(() => new Date());
+  const [showFieldVehicleDetails, setShowFieldVehicleDetails] = useState(false);
   const [activeAdministrationSection, setActiveAdministrationSection] = useState("Organization Profile");
   const [fleetSearch, setFleetSearch] = useState("");
   const [fleetStatusFilter, setFleetStatusFilter] = useState("All Statuses");
@@ -1148,6 +1158,18 @@ function App() {
   const [techniciansError, setTechniciansError] = useState("");
 
   const hasAdministrationAccess = isDemoMode || canViewAdministration(profile);
+
+  useEffect(() => {
+    const greetingClock = window.setInterval(() => {
+      setFieldCurrentTime(new Date());
+    }, 60 * 1000);
+
+    return () => window.clearInterval(greetingClock);
+  }, []);
+
+  useEffect(() => {
+    setShowFieldVehicleDetails(false);
+  }, [editAsset?.unit]);
 
   useEffect(() => {
     let isMounted = true;
@@ -3717,7 +3739,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
           <div>
             <p className="argos-field-kicker">Technician Fleet Operations</p>
             <h1>ARGOS <span>Field</span></h1>
-            <p>Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}, {profile?.full_name?.split(" ")?.[0] || "Operator"}.</p>
+            <p>{getFieldGreeting(fieldCurrentTime)}, {profile?.full_name?.split(" ")?.[0] || "Operator"}.</p>
           </div>
           <div className="argos-field-availability" aria-label={`${availability}% fleet availability`}>
             <span>Availability</span>
@@ -4692,17 +4714,36 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 </div>
               </section>
 
-              {renderAssetForm(
-                editAsset,
-                handleChange,
-                handleDepartmentChange,
-                handleAssetTypeChange,
-                handleStatusChange,
-                handleRTSTypeChange,
-                handleTechnicianChange
-              )}
+              <button
+                className="argos-field-details-toggle"
+                type="button"
+                onClick={() => setShowFieldVehicleDetails((currentValue) => !currentValue)}
+                aria-expanded={showFieldVehicleDetails}
+              >
+                <span>
+                  <strong>{showFieldVehicleDetails ? "Hide Full Vehicle Details" : "More Vehicle Details"}</strong>
+                  <small>
+                    {showFieldVehicleDetails
+                      ? "Return to the compact status workflow"
+                      : "Mileage, technician, repair, warranty, and asset information"}
+                  </small>
+                </span>
+                <b aria-hidden="true">{showFieldVehicleDetails ? "−" : "+"}</b>
+              </button>
 
-              <div className="update-actions">
+              <div className={`argos-field-full-form${showFieldVehicleDetails ? " is-open" : ""}`}>
+                {renderAssetForm(
+                  editAsset,
+                  handleChange,
+                  handleDepartmentChange,
+                  handleAssetTypeChange,
+                  handleStatusChange,
+                  handleRTSTypeChange,
+                  handleTechnicianChange
+                )}
+              </div>
+
+              <div className="update-actions argos-field-update-actions">
                 <button
                   className="cancel-button"
                   onClick={() => {
