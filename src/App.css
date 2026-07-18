@@ -1829,3 +1829,170 @@ button.administration-menu-item.active {
     backdrop-filter: blur(10px);
   }
 }
+
+/* Sprint 001S Phase 2.5 — Enhanced VIN Scanner Targeting Overlay */
+
+.argos-vin-scanner-viewport {
+  position: relative;
+  width: 100%;
+  min-height: 300px;
+  overflow: hidden;
+  border: 1px solid rgba(216, 169, 59, 0.45);
+  border-radius: 18px;
+  background: #071a33;
+  box-shadow: 0 14px 34px rgba(7, 26, 51, 0.24);
+  isolation: isolate;
+}
+
+.argos-vin-scanner-video {
+  display: block;
+  width: 100%;
+  min-height: 300px;
+  object-fit: cover;
+  background: #071a33;
+}
+
+.argos-vin-scanner-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.argos-vin-scanner-shade {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 31%;
+  background: rgba(2, 11, 23, 0.5);
+  backdrop-filter: blur(1px);
+}
+
+.argos-vin-scanner-shade-top {
+  top: 0;
+}
+
+.argos-vin-scanner-shade-bottom {
+  bottom: 0;
+}
+
+.argos-vin-scanner-target {
+  position: absolute;
+  top: 31%;
+  right: 8%;
+  bottom: 31%;
+  left: 8%;
+}
+
+.argos-vin-scanner-corner {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  border-color: #ff3030;
+  filter: drop-shadow(0 0 5px rgba(255, 48, 48, 0.75));
+}
+
+.argos-vin-scanner-corner.corner-top-left {
+  top: 0;
+  left: 0;
+  border-top: 3px solid #ff3030;
+  border-left: 3px solid #ff3030;
+  border-radius: 8px 0 0;
+}
+
+.argos-vin-scanner-corner.corner-top-right {
+  top: 0;
+  right: 0;
+  border-top: 3px solid #ff3030;
+  border-right: 3px solid #ff3030;
+  border-radius: 0 8px 0 0;
+}
+
+.argos-vin-scanner-corner.corner-bottom-left {
+  bottom: 0;
+  left: 0;
+  border-bottom: 3px solid #ff3030;
+  border-left: 3px solid #ff3030;
+  border-radius: 0 0 0 8px;
+}
+
+.argos-vin-scanner-corner.corner-bottom-right {
+  right: 0;
+  bottom: 0;
+  border-right: 3px solid #ff3030;
+  border-bottom: 3px solid #ff3030;
+  border-radius: 0 0 8px;
+}
+
+.argos-vin-scanner-laser {
+  position: absolute;
+  top: 50%;
+  left: 5%;
+  width: 90%;
+  height: 2px;
+  border-radius: 999px;
+  background: #ff3030;
+  box-shadow:
+    0 0 4px #ff3030,
+    0 0 12px rgba(255, 48, 48, 0.95),
+    0 0 22px rgba(255, 48, 48, 0.65);
+  transform: translateY(-50%);
+  animation: argosVinScannerSweep 2.1s ease-in-out infinite;
+}
+
+.argos-vin-scanner-instruction {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  padding: 9px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(4, 21, 42, 0.82);
+  color: #ffffff;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.24);
+}
+
+@keyframes argosVinScannerSweep {
+  0%,
+  100% {
+    top: 25%;
+    opacity: 0.7;
+  }
+
+  50% {
+    top: 75%;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .argos-vin-scanner-laser {
+    top: 50%;
+    animation: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .argos-vin-scanner-viewport,
+  .argos-vin-scanner-video {
+    min-height: 340px;
+  }
+
+  .argos-vin-scanner-target {
+    right: 6%;
+    left: 6%;
+  }
+
+  .argos-vin-scanner-instruction {
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    font-size: 10px;
+  }
+}
+

@@ -2884,6 +2884,11 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     }
 
     vinScanLockedRef.current = true;
+
+    if (source === "scanner" && typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate([90, 45, 140]);
+    }
+
     await openAssetFromVin(scannedVin, source === "manual" ? "Manual entry" : "Scanner");
   }
 
@@ -4326,12 +4331,31 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
               <div className="update-form">
                 <div className="issue-field">
-                  <video
-                    ref={vinScannerVideoRef}
-                    style={{ width: "100%", borderRadius: "18px", background: "#071a33" }}
-                    muted
-                    playsInline
-                  />
+                  <div className="argos-vin-scanner-viewport">
+                    <video
+                      ref={vinScannerVideoRef}
+                      className="argos-vin-scanner-video"
+                      muted
+                      playsInline
+                    />
+
+                    <div className="argos-vin-scanner-overlay" aria-hidden="true">
+                      <div className="argos-vin-scanner-shade argos-vin-scanner-shade-top" />
+                      <div className="argos-vin-scanner-shade argos-vin-scanner-shade-bottom" />
+
+                      <div className="argos-vin-scanner-target">
+                        <span className="argos-vin-scanner-corner corner-top-left" />
+                        <span className="argos-vin-scanner-corner corner-top-right" />
+                        <span className="argos-vin-scanner-corner corner-bottom-left" />
+                        <span className="argos-vin-scanner-corner corner-bottom-right" />
+                        <span className="argos-vin-scanner-laser" />
+                      </div>
+
+                      <div className="argos-vin-scanner-instruction">
+                        Align VIN barcode inside the guide
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="issue-field">
