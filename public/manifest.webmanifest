@@ -1,0 +1,27 @@
+{
+  "id": "/",
+  "name": "ARGOS Field",
+  "short_name": "ARGOS",
+  "description": "Mobile fleet awareness for technicians and supervisors.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f7f4",
+  "theme_color": "#061b36",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
