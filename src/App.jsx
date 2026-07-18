@@ -512,6 +512,42 @@ function inferDemoAssetTypeId(assetDescription) {
   return "demo-other";
 }
 
+function calculateWarrantyAwareness(asset) {
+  const explicitStatus = String(asset.warrantyStatus || "Unknown");
+  const expirationDate = asset.warrantyExpirationDate
+    ? new Date(`${asset.warrantyExpirationDate}T23:59:59`)
+    : null;
+  const mileageLimit = Number(asset.warrantyMileageLimit || 0);
+  const currentMileage = Number(asset.currentMileage || 0);
+  const expiredByDate = expirationDate && expirationDate.getTime() < Date.now();
+  const expiredByMileage = mileageLimit > 0 && currentMileage >= mileageLimit;
+
+  if (explicitStatus === "Not Applicable") return "Not Applicable";
+  if (expiredByDate || expiredByMileage || explicitStatus === "Expired") return "Expired";
+  if (expirationDate || mileageLimit > 0 || explicitStatus === "Under Warranty") return "In Warranty";
+  return "Unknown";
+}
+
+function calculateServiceAwareness(asset) {
+  const currentMileage = Number(asset.currentMileage || 0);
+  const currentHours = Number(asset.currentEngineHours || 0);
+  const dueMileage = Number(asset.nextServiceMileage || 0);
+  const dueHours = Number(asset.nextServiceHours || 0);
+  const mileageRemaining = dueMileage > 0 ? dueMileage - currentMileage : null;
+  const hoursRemaining = dueHours > 0 ? dueHours - currentHours : null;
+
+  if ((mileageRemaining !== null && mileageRemaining < 0) || (hoursRemaining !== null && hoursRemaining < 0)) {
+    return "PM Overdue";
+  }
+  if ((mileageRemaining !== null && mileageRemaining === 0) || (hoursRemaining !== null && hoursRemaining === 0)) {
+    return "PM Due";
+  }
+  if ((mileageRemaining !== null && mileageRemaining <= 500) || (hoursRemaining !== null && hoursRemaining <= 25)) {
+    return "Oil Change Due Soon";
+  }
+  return "No Service Due";
+}
+
 function createBlankAsset() {
   return {
     unit: "",
@@ -521,6 +557,41 @@ function createBlankAsset() {
     assetTypeId: "",
     assetTypeName: "",
     asset: "",
+    year: "",
+    make: "",
+    model: "",
+    engine: "",
+    fuelType: "",
+    bodyClass: "",
+    driveType: "",
+    gvwrClass: "",
+    manufacturer: "",
+    apwaCode: "",
+    apwaDescription: "",
+    currentMileage: "",
+    currentEngineHours: "",
+    workOrderNumber: "",
+    vendorShop: "",
+    primaryVmrs: "",
+    secondaryVmrs: "",
+    repairOpenedAt: "",
+    repairCompletedAt: "",
+    mileageAtRepair: "",
+    engineHoursAtRepair: "",
+    warrantyStatus: "Unknown",
+    warrantyType: "",
+    warrantyExpirationDate: "",
+    warrantyMileageLimit: "",
+    lastServiceDate: "",
+    lastServiceMileage: "",
+    lastServiceHours: "",
+    nextServiceMileage: "",
+    nextServiceHours: "",
+    repairTimeline: [],
+    repairUpdateDraft: "",
+    mileageUpdatedAt: "",
+    engineHoursUpdatedAt: "",
+    nhtsaDecode: {},
     status: "Ready",
     statusStartedAt: getTodayDateString(),
     reason: "Available",
@@ -544,6 +615,41 @@ function normalizeAsset(asset) {
     departmentId: asset.departmentId || "",
     assetTypeId: asset.assetTypeId || inferDemoAssetTypeId(asset.asset),
     assetTypeName: asset.assetTypeName || "",
+    year: asset.year || "",
+    make: asset.make || "",
+    model: asset.model || "",
+    engine: asset.engine || "",
+    fuelType: asset.fuelType || "",
+    bodyClass: asset.bodyClass || "",
+    driveType: asset.driveType || "",
+    gvwrClass: asset.gvwrClass || "",
+    manufacturer: asset.manufacturer || "",
+    apwaCode: asset.apwaCode || "",
+    apwaDescription: asset.apwaDescription || "",
+    currentMileage: asset.currentMileage ?? "",
+    currentEngineHours: asset.currentEngineHours ?? "",
+    workOrderNumber: asset.workOrderNumber || "",
+    vendorShop: asset.vendorShop || "",
+    primaryVmrs: asset.primaryVmrs || "",
+    secondaryVmrs: asset.secondaryVmrs || "",
+    repairOpenedAt: asset.repairOpenedAt || "",
+    repairCompletedAt: asset.repairCompletedAt || "",
+    mileageAtRepair: asset.mileageAtRepair ?? "",
+    engineHoursAtRepair: asset.engineHoursAtRepair ?? "",
+    warrantyStatus: asset.warrantyStatus || "Unknown",
+    warrantyType: asset.warrantyType || "",
+    warrantyExpirationDate: asset.warrantyExpirationDate || "",
+    warrantyMileageLimit: asset.warrantyMileageLimit ?? "",
+    lastServiceDate: asset.lastServiceDate || "",
+    lastServiceMileage: asset.lastServiceMileage ?? "",
+    lastServiceHours: asset.lastServiceHours ?? "",
+    nextServiceMileage: asset.nextServiceMileage ?? "",
+    nextServiceHours: asset.nextServiceHours ?? "",
+    repairTimeline: Array.isArray(asset.repairTimeline) ? asset.repairTimeline : [],
+    repairUpdateDraft: asset.repairUpdateDraft || "",
+    mileageUpdatedAt: asset.mileageUpdatedAt || "",
+    engineHoursUpdatedAt: asset.engineHoursUpdatedAt || "",
+    nhtsaDecode: asset.nhtsaDecode || {},
     ...asset,
     status: normalizedStatus,
     reason: isReadyStatus ? "Available" : asset.reason || asset.issue || "Other",
@@ -603,6 +709,40 @@ function mapSupabaseAsset(row) {
     assetTypeId: row.asset_type_id || "",
     assetTypeName: row.asset_types?.asset_type_name || "",
     asset: row.asset || "",
+    year: row.year || "",
+    make: row.make || "",
+    model: row.model || "",
+    engine: row.engine || "",
+    fuelType: row.fuel_type || "",
+    bodyClass: row.body_class || "",
+    driveType: row.drive_type || "",
+    gvwrClass: row.gvwr_class || "",
+    manufacturer: row.manufacturer || "",
+    apwaCode: row.apwa_code || "",
+    apwaDescription: row.apwa_description || "",
+    currentMileage: row.current_mileage ?? "",
+    currentEngineHours: row.current_engine_hours ?? "",
+    workOrderNumber: row.work_order_number || "",
+    vendorShop: row.vendor_shop || "",
+    primaryVmrs: row.primary_vmrs || "",
+    secondaryVmrs: row.secondary_vmrs || "",
+    repairOpenedAt: row.repair_opened_at || "",
+    repairCompletedAt: row.repair_completed_at || "",
+    mileageAtRepair: row.mileage_at_repair ?? "",
+    engineHoursAtRepair: row.engine_hours_at_repair ?? "",
+    warrantyStatus: row.warranty_status || "Unknown",
+    warrantyType: row.warranty_type || "",
+    warrantyExpirationDate: row.warranty_expiration_date || "",
+    warrantyMileageLimit: row.warranty_mileage_limit ?? "",
+    lastServiceDate: row.last_service_date || "",
+    lastServiceMileage: row.last_service_mileage ?? "",
+    lastServiceHours: row.last_service_hours ?? "",
+    nextServiceMileage: row.next_service_mileage ?? "",
+    nextServiceHours: row.next_service_hours ?? "",
+    repairTimeline: Array.isArray(row.repair_timeline) ? row.repair_timeline : [],
+    mileageUpdatedAt: row.mileage_updated_at || "",
+    engineHoursUpdatedAt: row.engine_hours_updated_at || "",
+    nhtsaDecode: row.nhtsa_decode || {},
     status: row.status || "Ready",
     statusStartedAt: row.status_started_at || row.down_since || getTodayDateString(),
     reason: row.reason || "Available",
@@ -643,6 +783,16 @@ function mapSupabaseRepairHistory(row) {
     finalDaysDown: row.days_down ?? 0,
     technician: row.technician || "Unassigned",
     completedDate: row.completed || "",
+    workOrderNumber: row.work_order_number || "",
+    vendorShop: row.vendor_shop || "",
+    primaryVmrs: row.primary_vmrs || "",
+    secondaryVmrs: row.secondary_vmrs || "",
+    mileageAtRepair: row.mileage_at_repair ?? "",
+    engineHoursAtRepair: row.engine_hours_at_repair ?? "",
+    warrantyStatus: row.warranty_status || "Unknown",
+    repairOpenedAt: row.repair_opened_at || "",
+    repairCompletedAt: row.repair_completed_at || row.completed || "",
+    repairTimeline: Array.isArray(row.repair_timeline) ? row.repair_timeline : [],
     details: row.details || "Details pending",
   });
 }
@@ -1600,6 +1750,19 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     const { __fromVinScan, __decodedAssetDescription, ...assetFields } = assetToClean;
     const isReadyStatus = assetFields.status === "Ready";
 
+    const repairUpdateText = String(assetFields.repairUpdateDraft || "").trim();
+    const repairTimeline = Array.isArray(assetFields.repairTimeline)
+      ? [...assetFields.repairTimeline]
+      : [];
+
+    if (repairUpdateText) {
+      repairTimeline.unshift({
+        id: `repair-update-${Date.now()}`,
+        note: repairUpdateText,
+        recordedAt: new Date().toISOString(),
+      });
+    }
+
     return {
       ...assetFields,
       unit: assetFields.unit.trim(),
@@ -1609,6 +1772,13 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
       assetTypeId: assetFields.assetTypeId || "",
       assetTypeName: String(assetFields.assetTypeName || "").trim(),
       asset: assetFields.asset.trim(),
+      workOrderNumber: String(assetFields.workOrderNumber || "").trim(),
+      vendorShop: String(assetFields.vendorShop || "").trim(),
+      primaryVmrs: String(assetFields.primaryVmrs || "").trim(),
+      secondaryVmrs: String(assetFields.secondaryVmrs || "").trim(),
+      warrantyStatus: calculateWarrantyAwareness(assetFields),
+      repairTimeline,
+      repairUpdateDraft: "",
       technician: normalizeTechnicianDisplayName(assetFields.technician),
       reason: isReadyStatus ? "Available" : assetFields.reason || "Other",
       priority: isReadyStatus ? assetFields.priority || "Normal" : assetFields.priority,
@@ -1722,6 +1892,19 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
       rtsType: isNowReady ? "No RTS Established" : currentAsset.rtsType,
       rtsDate: isNowReady ? "" : currentAsset.rtsDate,
       details: isNowReady ? "Available" : currentAsset.details === "Available" ? "" : currentAsset.details,
+      repairOpenedAt:
+        !isNowReady && wasReady
+          ? currentAsset.repairOpenedAt || getTodayDateString()
+          : currentAsset.repairOpenedAt,
+      repairCompletedAt: isNowReady ? getTodayDateString() : "",
+      mileageAtRepair:
+        !isNowReady && wasReady && currentAsset.mileageAtRepair === ""
+          ? currentAsset.currentMileage
+          : currentAsset.mileageAtRepair,
+      engineHoursAtRepair:
+        !isNowReady && wasReady && currentAsset.engineHoursAtRepair === ""
+          ? currentAsset.currentEngineHours
+          : currentAsset.engineHoursAtRepair,
     };
   }
 
@@ -1914,6 +2097,38 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     department_id: returnedAsset.departmentId,
     asset_type_id: returnedAsset.assetTypeId,
     asset: returnedAsset.asset,
+    year: returnedAsset.year || null,
+    make: returnedAsset.make || null,
+    model: returnedAsset.model || null,
+    engine: returnedAsset.engine || null,
+    fuel_type: returnedAsset.fuelType || null,
+    body_class: returnedAsset.bodyClass || null,
+    drive_type: returnedAsset.driveType || null,
+    gvwr_class: returnedAsset.gvwrClass || null,
+    manufacturer: returnedAsset.manufacturer || null,
+    apwa_code: returnedAsset.apwaCode || null,
+    apwa_description: returnedAsset.apwaDescription || null,
+    current_mileage: returnedAsset.currentMileage === "" ? null : Number(returnedAsset.currentMileage),
+    current_engine_hours: returnedAsset.currentEngineHours === "" ? null : Number(returnedAsset.currentEngineHours),
+    work_order_number: returnedAsset.workOrderNumber || null,
+    vendor_shop: returnedAsset.vendorShop || null,
+    primary_vmrs: returnedAsset.primaryVmrs || null,
+    secondary_vmrs: returnedAsset.secondaryVmrs || null,
+    repair_opened_at: returnedAsset.repairOpenedAt || null,
+    repair_completed_at: returnedAsset.repairCompletedAt || getTodayDateString(),
+    mileage_at_repair: returnedAsset.mileageAtRepair === "" ? null : Number(returnedAsset.mileageAtRepair),
+    engine_hours_at_repair: returnedAsset.engineHoursAtRepair === "" ? null : Number(returnedAsset.engineHoursAtRepair),
+    warranty_status: calculateWarrantyAwareness(returnedAsset),
+    warranty_type: returnedAsset.warrantyType || null,
+    warranty_expiration_date: returnedAsset.warrantyExpirationDate || null,
+    warranty_mileage_limit: returnedAsset.warrantyMileageLimit === "" ? null : Number(returnedAsset.warrantyMileageLimit),
+    last_service_date: returnedAsset.lastServiceDate || null,
+    last_service_mileage: returnedAsset.lastServiceMileage === "" ? null : Number(returnedAsset.lastServiceMileage),
+    last_service_hours: returnedAsset.lastServiceHours === "" ? null : Number(returnedAsset.lastServiceHours),
+    next_service_mileage: returnedAsset.nextServiceMileage === "" ? null : Number(returnedAsset.nextServiceMileage),
+    next_service_hours: returnedAsset.nextServiceHours === "" ? null : Number(returnedAsset.nextServiceHours),
+    repair_timeline: returnedAsset.repairTimeline || [],
+    nhtsa_decode: returnedAsset.nhtsaDecode || {},
     status: returnedAsset.status,
     status_started_at: returnedAsset.statusStartedAt,
     reason: returnedAsset.reason,
@@ -1953,6 +2168,16 @@ const { data: savedRepairHistory, error: repairHistoryError } = await supabase
     days_down: completedEvent.finalDaysDown,
     technician: completedEvent.technician || "Unassigned",
     completed: completedEvent.completedDate,
+    work_order_number: completedEvent.workOrderNumber || null,
+    vendor_shop: completedEvent.vendorShop || null,
+    primary_vmrs: completedEvent.primaryVmrs || null,
+    secondary_vmrs: completedEvent.secondaryVmrs || null,
+    mileage_at_repair: completedEvent.mileageAtRepair === "" ? null : Number(completedEvent.mileageAtRepair),
+    engine_hours_at_repair: completedEvent.engineHoursAtRepair === "" ? null : Number(completedEvent.engineHoursAtRepair),
+    warranty_status: completedEvent.warrantyStatus || "Unknown",
+    repair_opened_at: completedEvent.repairOpenedAt || completedEvent.downSince || null,
+    repair_completed_at: completedEvent.completedDate,
+    repair_timeline: completedEvent.repairTimeline || [],
     details: completedEvent.details,
   })
   .select()
@@ -2101,6 +2326,38 @@ return;
     department_id: updatedAsset.departmentId,
     asset_type_id: updatedAsset.assetTypeId,
     asset: updatedAsset.asset,
+    year: updatedAsset.year || null,
+    make: updatedAsset.make || null,
+    model: updatedAsset.model || null,
+    engine: updatedAsset.engine || null,
+    fuel_type: updatedAsset.fuelType || null,
+    body_class: updatedAsset.bodyClass || null,
+    drive_type: updatedAsset.driveType || null,
+    gvwr_class: updatedAsset.gvwrClass || null,
+    manufacturer: updatedAsset.manufacturer || null,
+    apwa_code: updatedAsset.apwaCode || null,
+    apwa_description: updatedAsset.apwaDescription || null,
+    current_mileage: updatedAsset.currentMileage === "" ? null : Number(updatedAsset.currentMileage),
+    current_engine_hours: updatedAsset.currentEngineHours === "" ? null : Number(updatedAsset.currentEngineHours),
+    work_order_number: updatedAsset.workOrderNumber || null,
+    vendor_shop: updatedAsset.vendorShop || null,
+    primary_vmrs: updatedAsset.primaryVmrs || null,
+    secondary_vmrs: updatedAsset.secondaryVmrs || null,
+    repair_opened_at: updatedAsset.repairOpenedAt || null,
+    repair_completed_at: updatedAsset.repairCompletedAt || null,
+    mileage_at_repair: updatedAsset.mileageAtRepair === "" ? null : Number(updatedAsset.mileageAtRepair),
+    engine_hours_at_repair: updatedAsset.engineHoursAtRepair === "" ? null : Number(updatedAsset.engineHoursAtRepair),
+    warranty_status: calculateWarrantyAwareness(updatedAsset),
+    warranty_type: updatedAsset.warrantyType || null,
+    warranty_expiration_date: updatedAsset.warrantyExpirationDate || null,
+    warranty_mileage_limit: updatedAsset.warrantyMileageLimit === "" ? null : Number(updatedAsset.warrantyMileageLimit),
+    last_service_date: updatedAsset.lastServiceDate || null,
+    last_service_mileage: updatedAsset.lastServiceMileage === "" ? null : Number(updatedAsset.lastServiceMileage),
+    last_service_hours: updatedAsset.lastServiceHours === "" ? null : Number(updatedAsset.lastServiceHours),
+    next_service_mileage: updatedAsset.nextServiceMileage === "" ? null : Number(updatedAsset.nextServiceMileage),
+    next_service_hours: updatedAsset.nextServiceHours === "" ? null : Number(updatedAsset.nextServiceHours),
+    repair_timeline: updatedAsset.repairTimeline || [],
+    nhtsa_decode: updatedAsset.nhtsaDecode || {},
     status: updatedAsset.status,
     status_started_at: updatedAsset.statusStartedAt,
     reason: updatedAsset.reason,
@@ -2162,6 +2419,38 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
       department_id: cleanedAsset.departmentId,
       asset_type_id: cleanedAsset.assetTypeId,
       asset: cleanedAsset.asset,
+      year: cleanedAsset.year || null,
+      make: cleanedAsset.make || null,
+      model: cleanedAsset.model || null,
+      engine: cleanedAsset.engine || null,
+      fuel_type: cleanedAsset.fuelType || null,
+      body_class: cleanedAsset.bodyClass || null,
+      drive_type: cleanedAsset.driveType || null,
+      gvwr_class: cleanedAsset.gvwrClass || null,
+      manufacturer: cleanedAsset.manufacturer || null,
+      apwa_code: cleanedAsset.apwaCode || null,
+      apwa_description: cleanedAsset.apwaDescription || null,
+      current_mileage: cleanedAsset.currentMileage === "" ? null : Number(cleanedAsset.currentMileage),
+      current_engine_hours: cleanedAsset.currentEngineHours === "" ? null : Number(cleanedAsset.currentEngineHours),
+      work_order_number: cleanedAsset.workOrderNumber || null,
+      vendor_shop: cleanedAsset.vendorShop || null,
+      primary_vmrs: cleanedAsset.primaryVmrs || null,
+      secondary_vmrs: cleanedAsset.secondaryVmrs || null,
+      repair_opened_at: cleanedAsset.repairOpenedAt || null,
+      repair_completed_at: cleanedAsset.repairCompletedAt || null,
+      mileage_at_repair: cleanedAsset.mileageAtRepair === "" ? null : Number(cleanedAsset.mileageAtRepair),
+      engine_hours_at_repair: cleanedAsset.engineHoursAtRepair === "" ? null : Number(cleanedAsset.engineHoursAtRepair),
+      warranty_status: calculateWarrantyAwareness(cleanedAsset),
+      warranty_type: cleanedAsset.warrantyType || null,
+      warranty_expiration_date: cleanedAsset.warrantyExpirationDate || null,
+      warranty_mileage_limit: cleanedAsset.warrantyMileageLimit === "" ? null : Number(cleanedAsset.warrantyMileageLimit),
+      last_service_date: cleanedAsset.lastServiceDate || null,
+      last_service_mileage: cleanedAsset.lastServiceMileage === "" ? null : Number(cleanedAsset.lastServiceMileage),
+      last_service_hours: cleanedAsset.lastServiceHours === "" ? null : Number(cleanedAsset.lastServiceHours),
+      next_service_mileage: cleanedAsset.nextServiceMileage === "" ? null : Number(cleanedAsset.nextServiceMileage),
+      next_service_hours: cleanedAsset.nextServiceHours === "" ? null : Number(cleanedAsset.nextServiceHours),
+      repair_timeline: cleanedAsset.repairTimeline || [],
+      nhtsa_decode: cleanedAsset.nhtsaDecode || {},
       status: cleanedAsset.status,
       status_started_at: cleanedAsset.statusStartedAt,
       reason: cleanedAsset.reason,
@@ -2577,167 +2866,284 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     onRTSTypeChange,
     onTechnicianChange
   ) {
+    const decodedEntries = Object.entries(asset.nhtsaDecode || {}).filter(
+      ([, value]) => value !== null && value !== undefined && String(value).trim() !== ""
+    );
+
     return (
-      <div className="update-form">
-        <label>
-          Unit
-          <input type="text" name="unit" value={asset.unit} onChange={onChange} />
-        </label>
-
-        <label>
-          VIN
-          <input type="text" name="vin" value={asset.vin} onChange={onChange} placeholder="Optional" />
-        </label>
-
-        <label>
-          Department
-          <select
-            name="departmentId"
-            value={asset.departmentId || ""}
-            onChange={onDepartmentChange}
-            disabled={departmentsLoading || departments.length === 0}
-          >
-            <option value="">
-              {departmentsLoading
-                ? "Loading departments…"
-                : departments.length === 0
-                  ? "No active departments configured"
-                  : "Select Department"}
-            </option>
-            {departments.map((department) => (
-              <option key={department.id} value={department.id}>
-                {department.department_name}
-                {department.department_code
-                  ? ` (${department.department_code})`
-                  : ""}
-              </option>
-            ))}
-          </select>
-          {departmentsError && (
-            <span className="department-field-error">{departmentsError}</span>
-          )}
-        </label>
-
-        <label>
-          Asset Type
-          <select
-            name="assetTypeId"
-            value={asset.assetTypeId || ""}
-            onChange={onAssetTypeChange}
-            disabled={assetTypesLoading || assetTypes.length === 0}
-          >
-            <option value="">
-              {assetTypesLoading
-                ? "Loading Asset Types…"
-                : assetTypes.length === 0
-                  ? "No active Asset Types configured"
-                  : "Select Asset Type"}
-            </option>
-            {assetTypes.map((assetType) => (
-              <option key={assetType.id} value={assetType.id}>
-                {assetType.asset_type_name}
-                {assetType.asset_type_code ? ` (${assetType.asset_type_code})` : ""}
-              </option>
-            ))}
-          </select>
-          {assetTypesError && (
-            <span className="department-field-error">{assetTypesError}</span>
-          )}
-        </label>
-
-        <label>
-          Asset Description
-          <input type="text" name="asset" value={asset.asset} onChange={onChange} />
-        </label>
-
-        <label>
-          Status
-          <select name="status" value={asset.status} onChange={onStatusChange}>
-            {statusOptions.map((status) => (
-              <option key={status}>{status}</option>
-            ))}
-          </select>
-        </label>
-
-        {asset.__fromVinScan && (
-          <div className="issue-field">
-            <p className="eyebrow">Scanned VIN Onboarding</p>
-            <strong>
-              {asset.status === "Ready"
-                ? "This vehicle will be added to ARGOS, but Ready assets do not appear on the Command Center."
-                : "This vehicle will be added to ARGOS and will appear on the Command Center because this status requires operational visibility."}
-            </strong>
+      <div className="vehicle-record-form">
+        <section className="vehicle-form-section vehicle-form-section-open">
+          <div className="vehicle-form-section-heading">
+            <div>
+              <p className="eyebrow">Fleet Record</p>
+              <h4>Vehicle Identity</h4>
+            </div>
+            <span>Required working fields</span>
           </div>
-        )}
 
-        <label>
-          Reason
-          <select name="reason" value={asset.reason} onChange={onChange}>
-            {REASON_OPTIONS.map((reason) => (
-              <option key={reason}>{reason}</option>
-            ))}
-          </select>
-        </label>
+          <div className="vehicle-form-grid">
+            <label>
+              Unit Number
+              <input type="text" name="unit" value={asset.unit} onChange={onChange} />
+            </label>
 
-        <label>
-          Priority
-          <select name="priority" value={asset.priority} onChange={onChange}>
-            {PRIORITY_OPTIONS.map((priority) => (
-              <option key={priority}>{priority}</option>
-            ))}
-          </select>
-        </label>
+            <label>
+              VIN
+              <input type="text" name="vin" value={asset.vin} onChange={onChange} placeholder="17-character VIN" maxLength="17" />
+            </label>
 
-        {asset.status !== "Ready" && (
-          <label>
-            Down Since
-            <input type="date" name="downSince" value={asset.downSince} onChange={onChange} />
-          </label>
-        )}
+            <label>
+              Year
+              <input type="text" name="year" value={asset.year || ""} onChange={onChange} inputMode="numeric" />
+            </label>
 
-        <label>
-          Technician
-          <select
-            name="technicianId"
-            value={asset.technicianId || ""}
-            onChange={onTechnicianChange}
-            disabled={techniciansLoading}
-          >
-            <option value="">{techniciansLoading ? "Loading technicians…" : "Unassigned"}</option>
-            {technicians.map((technician) => (
-              <option key={technician.id} value={technician.id}>
-                {technician.technician_name}
-                {technician.employee_number ? ` (${technician.employee_number})` : ""}
-              </option>
-            ))}
-          </select>
-          {techniciansError && (
-            <span className="department-field-error">{techniciansError}</span>
-          )}
-        </label>
+            <label>
+              Make
+              <input type="text" name="make" value={asset.make || ""} onChange={onChange} />
+            </label>
 
-        {asset.status !== "Ready" && (
-          <label>
-            RTS Status
-            <select name="rtsType" value={asset.rtsType} onChange={onRTSTypeChange}>
-              {RTS_TYPE_OPTIONS.map((rtsType) => (
-                <option key={rtsType}>{rtsType}</option>
-              ))}
-            </select>
-          </label>
-        )}
+            <label>
+              Model
+              <input type="text" name="model" value={asset.model || ""} onChange={onChange} />
+            </label>
 
-        {asset.status !== "Ready" && asset.rtsType === "Estimated Date" && (
-          <label>
-            Estimated Return to Service
-            <input type="date" name="rtsDate" value={asset.rtsDate} onChange={onChange} />
-          </label>
-        )}
+            <label>
+              Engine
+              <input type="text" name="engine" value={asset.engine || ""} onChange={onChange} />
+            </label>
 
-        <label className="issue-field">
-          Details / Notes
-          <textarea name="details" value={asset.details} onChange={onChange} rows="4" />
-        </label>
+            <label className="vehicle-field-wide">
+              Fleet Asset Description
+              <input type="text" name="asset" value={asset.asset} onChange={onChange} placeholder="Agency-facing vehicle description" />
+            </label>
+          </div>
+        </section>
+
+        <section className="vehicle-form-section vehicle-meter-section">
+          <div className="vehicle-section-heading">
+            <span><strong>Current Meter Readings</strong><small>Used for maintenance history, utilization, and lifecycle reporting</small></span>
+          </div>
+          <div className="vehicle-form-grid vehicle-details-body">
+            <label>
+              Current Mileage
+              <input
+                type="number"
+                name="currentMileage"
+                value={asset.currentMileage ?? ""}
+                onChange={onChange}
+                inputMode="numeric"
+                min="0"
+                step="1"
+                placeholder="Miles"
+              />
+              {asset.mileageUpdatedAt && <small className="meter-updated-note">Last updated {new Date(asset.mileageUpdatedAt).toLocaleString()}</small>}
+            </label>
+
+            <label>
+              Current Engine Hours
+              <input
+                type="number"
+                name="currentEngineHours"
+                value={asset.currentEngineHours ?? ""}
+                onChange={onChange}
+                inputMode="decimal"
+                min="0"
+                step="0.1"
+                placeholder="Hours"
+              />
+              {asset.engineHoursUpdatedAt && <small className="meter-updated-note">Last updated {new Date(asset.engineHoursUpdatedAt).toLocaleString()}</small>}
+            </label>
+
+            <div className="vehicle-field-wide meter-guidance">
+              <strong>Meter history is preserved automatically.</strong>
+              <span>Each saved change creates a dated reading for future maintenance, cost-per-mile, cost-per-hour, and replacement analysis.</span>
+            </div>
+          </div>
+        </section>
+
+        <details className="vehicle-form-section" open>
+          <summary>
+            <span><strong>Fleet Classification</strong><small>Department, asset type, and APWA reporting carve-out</small></span>
+          </summary>
+          <div className="vehicle-form-grid vehicle-details-body">
+            <label>
+              Department
+              <select name="departmentId" value={asset.departmentId || ""} onChange={onDepartmentChange} disabled={departmentsLoading || departments.length === 0}>
+                <option value="">{departmentsLoading ? "Loading departments…" : departments.length === 0 ? "No active departments configured" : "Select Department"}</option>
+                {departments.map((department) => (
+                  <option key={department.id} value={department.id}>{department.department_name}{department.department_code ? ` (${department.department_code})` : ""}</option>
+                ))}
+              </select>
+              {departmentsError && <span className="department-field-error">{departmentsError}</span>}
+            </label>
+
+            <label>
+              Asset Type
+              <select name="assetTypeId" value={asset.assetTypeId || ""} onChange={onAssetTypeChange} disabled={assetTypesLoading || assetTypes.length === 0}>
+                <option value="">{assetTypesLoading ? "Loading Asset Types…" : assetTypes.length === 0 ? "No active Asset Types configured" : "Select Asset Type"}</option>
+                {assetTypes.map((assetType) => (
+                  <option key={assetType.id} value={assetType.id}>{assetType.asset_type_name}{assetType.asset_type_code ? ` (${assetType.asset_type_code})` : ""}</option>
+                ))}
+              </select>
+              {assetTypesError && <span className="department-field-error">{assetTypesError}</span>}
+            </label>
+
+            <label>
+              APWA Code
+              <input type="text" name="apwaCode" value={asset.apwaCode || ""} onChange={onChange} placeholder="Controlled code" />
+            </label>
+
+            <label>
+              APWA Description
+              <input type="text" name="apwaDescription" value={asset.apwaDescription || ""} onChange={onChange} placeholder="Equipment classification" />
+            </label>
+          </div>
+        </details>
+
+        <details className="vehicle-form-section">
+          <summary>
+            <span><strong>NHTSA Vehicle Specifications</strong><small>Expanded decoded data; editable where operationally relevant</small></span>
+          </summary>
+          <div className="vehicle-form-grid vehicle-details-body">
+            <label>Fuel Type<input type="text" name="fuelType" value={asset.fuelType || ""} onChange={onChange} /></label>
+            <label>Body Class<input type="text" name="bodyClass" value={asset.bodyClass || ""} onChange={onChange} /></label>
+            <label>Drive Type<input type="text" name="driveType" value={asset.driveType || ""} onChange={onChange} /></label>
+            <label>GVWR Class<input type="text" name="gvwrClass" value={asset.gvwrClass || ""} onChange={onChange} /></label>
+            <label className="vehicle-field-wide">Manufacturer<input type="text" name="manufacturer" value={asset.manufacturer || ""} onChange={onChange} /></label>
+            <div className="vehicle-field-wide nhtsa-decode-summary">
+              <strong>Complete NHTSA Decode</strong>
+              <span>{decodedEntries.length > 0 ? `${decodedEntries.length} populated decoded values retained.` : "No mobile NHTSA decode has been attached to this record yet."}</span>
+              {decodedEntries.length > 0 && (
+                <details className="raw-decode-details">
+                  <summary>Show all decoded values</summary>
+                  <dl>{decodedEntries.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{String(value)}</dd></div>)}</dl>
+                </details>
+              )}
+            </div>
+          </div>
+        </details>
+
+        <details className="vehicle-form-section repair-awareness-section" open>
+          <summary>
+            <span><strong>Repair Awareness</strong><small>Operational reference only — ARGOS does not replace the work order system</small></span>
+          </summary>
+          <div className="vehicle-form-grid vehicle-details-body">
+            <label>
+              Work Order Number
+              <input type="text" name="workOrderNumber" value={asset.workOrderNumber || ""} onChange={onChange} placeholder="Optional FMIS or internal reference" maxLength="80" />
+            </label>
+            <label>
+              Vendor / Shop
+              <input type="text" name="vendorShop" value={asset.vendorShop || ""} onChange={onChange} placeholder="Internal shop or third-party provider" maxLength="160" />
+            </label>
+            <label>
+              Primary VMRS Code
+              <input type="text" name="primaryVmrs" value={asset.primaryVmrs || ""} onChange={onChange} placeholder="Optional; controlled lookup follows later" maxLength="40" />
+            </label>
+            <label>
+              Secondary VMRS Code
+              <input type="text" name="secondaryVmrs" value={asset.secondaryVmrs || ""} onChange={onChange} placeholder="Optional" maxLength="40" />
+            </label>
+            <label>
+              Repair Opened
+              <input type="date" name="repairOpenedAt" value={asset.repairOpenedAt || ""} onChange={onChange} />
+            </label>
+            <label>
+              Repair Completed
+              <input type="date" name="repairCompletedAt" value={asset.repairCompletedAt || ""} onChange={onChange} />
+            </label>
+            <label>
+              Mileage at Repair
+              <input type="number" name="mileageAtRepair" value={asset.mileageAtRepair ?? ""} onChange={onChange} min="0" step="1" placeholder="Snapshot when repair opens" />
+            </label>
+            <label>
+              Engine Hours at Repair
+              <input type="number" name="engineHoursAtRepair" value={asset.engineHoursAtRepair ?? ""} onChange={onChange} min="0" step="0.1" placeholder="Optional snapshot" />
+            </label>
+            <label className="vehicle-field-wide">
+              Warranty Status at Repair
+              <select name="warrantyStatus" value={asset.warrantyStatus || "Unknown"} onChange={onChange}>
+                <option>Unknown</option>
+                <option>Under Warranty</option>
+                <option>Near Expiration</option>
+                <option>Expired</option>
+                <option>Not Applicable</option>
+              </select>
+            </label>
+            <label className="vehicle-field-wide">
+              Add Repair Timeline Update
+              <textarea name="repairUpdateDraft" value={asset.repairUpdateDraft || ""} onChange={onChange} rows="3" placeholder="Example: Diagnosis confirmed; alternator ordered. This entry will be timestamped when saved." />
+            </label>
+            <div className="vehicle-field-wide repair-timeline-preview">
+              <div className="repair-timeline-heading">
+                <strong>Operational Timeline</strong>
+                <span>{(asset.repairTimeline || []).length} update{(asset.repairTimeline || []).length === 1 ? "" : "s"}</span>
+              </div>
+              {(asset.repairTimeline || []).length === 0 ? (
+                <p>No repair updates have been recorded.</p>
+              ) : (
+                <ol>
+                  {(asset.repairTimeline || []).map((entry) => (
+                    <li key={entry.id || `${entry.recordedAt}-${entry.note}`}>
+                      <time>{entry.recordedAt ? new Date(entry.recordedAt).toLocaleString() : "Recorded update"}</time>
+                      <span>{entry.note}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </div>
+        </details>
+
+
+        <details className="vehicle-form-section warranty-awareness-section" open>
+          <summary>
+            <span><strong>Warranty Awareness</strong><small>Expiration and mileage awareness without warranty claim administration</small></span>
+          </summary>
+          <div className="vehicle-form-grid vehicle-details-body">
+            <div className="vehicle-field-wide awareness-status-banner">
+              <span>Current Warranty State</span>
+              <strong>{calculateWarrantyAwareness(asset)}</strong>
+            </div>
+            <label>Warranty Type<input type="text" name="warrantyType" value={asset.warrantyType || ""} onChange={onChange} placeholder="Example: Powertrain" maxLength="100" /></label>
+            <label>Warranty Expiration Date<input type="date" name="warrantyExpirationDate" value={asset.warrantyExpirationDate || ""} onChange={onChange} /></label>
+            <label>Warranty Mileage Limit<input type="number" name="warrantyMileageLimit" value={asset.warrantyMileageLimit ?? ""} onChange={onChange} min="0" step="1" placeholder="Example: 100000" /></label>
+            <label>Warranty Status Override<select name="warrantyStatus" value={asset.warrantyStatus || "Unknown"} onChange={onChange}><option>Unknown</option><option>Under Warranty</option><option>Expired</option><option>Not Applicable</option></select></label>
+          </div>
+        </details>
+
+        <details className="vehicle-form-section service-awareness-section" open>
+          <summary>
+            <span><strong>Service Awareness</strong><small>Lightweight meter-based awareness; no PM scheduling or work-order generation</small></span>
+          </summary>
+          <div className="vehicle-form-grid vehicle-details-body">
+            <div className="vehicle-field-wide awareness-status-banner">
+              <span>Current Service State</span>
+              <strong>{calculateServiceAwareness(asset)}</strong>
+            </div>
+            <label>Last Service Date<input type="date" name="lastServiceDate" value={asset.lastServiceDate || ""} onChange={onChange} /></label>
+            <label>Last Service Mileage<input type="number" name="lastServiceMileage" value={asset.lastServiceMileage ?? ""} onChange={onChange} min="0" step="1" /></label>
+            <label>Last Service Engine Hours<input type="number" name="lastServiceHours" value={asset.lastServiceHours ?? ""} onChange={onChange} min="0" step="0.1" /></label>
+            <label>Next Service Mileage<input type="number" name="nextServiceMileage" value={asset.nextServiceMileage ?? ""} onChange={onChange} min="0" step="1" /></label>
+            <label>Next Service Engine Hours<input type="number" name="nextServiceHours" value={asset.nextServiceHours ?? ""} onChange={onChange} min="0" step="0.1" /></label>
+          </div>
+        </details>
+
+        <details className="vehicle-form-section" open>
+          <summary>
+            <span><strong>Operational Status</strong><small>Availability, assignment, and return-to-service workflow</small></span>
+          </summary>
+          <div className="vehicle-form-grid vehicle-details-body">
+            <label>Status<select name="status" value={asset.status} onChange={onStatusChange}>{statusOptions.map((status) => <option key={status}>{status}</option>)}</select></label>
+            <label>Reason<select name="reason" value={asset.reason} onChange={onChange}>{REASON_OPTIONS.map((reason) => <option key={reason}>{reason}</option>)}</select></label>
+            <label>Priority<select name="priority" value={asset.priority} onChange={onChange}>{PRIORITY_OPTIONS.map((priority) => <option key={priority}>{priority}</option>)}</select></label>
+            {asset.status !== "Ready" && <label>Down Since<input type="date" name="downSince" value={asset.downSince} onChange={onChange} /></label>}
+            <label>Technician<select name="technicianId" value={asset.technicianId || ""} onChange={onTechnicianChange} disabled={techniciansLoading}><option value="">{techniciansLoading ? "Loading technicians…" : "Unassigned"}</option>{technicians.map((technician) => <option key={technician.id} value={technician.id}>{technician.technician_name}{technician.employee_number ? ` (${technician.employee_number})` : ""}</option>)}</select>{techniciansError && <span className="department-field-error">{techniciansError}</span>}</label>
+            {asset.status !== "Ready" && <label>RTS Status<select name="rtsType" value={asset.rtsType} onChange={onRTSTypeChange}>{RTS_TYPE_OPTIONS.map((rtsType) => <option key={rtsType}>{rtsType}</option>)}</select></label>}
+            {asset.status !== "Ready" && asset.rtsType === "Estimated Date" && <label>Estimated Return to Service<input type="date" name="rtsDate" value={asset.rtsDate} onChange={onChange} /></label>}
+            <label className="vehicle-field-wide">Details / Notes<textarea name="details" value={asset.details} onChange={onChange} rows="4" /></label>
+          </div>
+        </details>
       </div>
     );
   }
@@ -3235,9 +3641,6 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
             ✦ <span>Daily Summary</span>
           </button>
 
-          <button className="nav-item" type="button" onClick={handleOpenVinScanner}>
-            ▣ <span>Scan VIN</span>
-          </button>
 
           <button
             className={`nav-item ${activeView === "history" ? "active" : ""}`}
@@ -3322,7 +3725,6 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 </div>
 
                 <div>
-                  <button type="button" onClick={handleOpenVinScanner}>Scan VIN</button>{" "}
                   <button type="button" onClick={() => {
                     setSelectedAsset(null);
                     setEditAsset(null);
@@ -3419,44 +3821,19 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                   <h3>Search and Update Established Assets</h3>
                 </div>
 
-                <div
-                  style={{
-                    minWidth: "280px",
-                    display: "flex",
-                    gap: "0.65rem",
-                    flexWrap: "wrap",
-                    justifyContent: "flex-end",
-                  }}
-                >
+                <div className="fleet-directory-toolbar">
                   <input
                     type="search"
                     value={fleetSearch}
                     onChange={(event) => setFleetSearch(event.target.value)}
                     placeholder="Search by unit number"
                     aria-label="Search My Fleet by unit number"
-                    style={{
-                      flex: "1 1 220px",
-                      minWidth: "220px",
-                      padding: "0.7rem 0.8rem",
-                      border: "1px solid #c7d0d8",
-                      borderRadius: "6px",
-                      font: "inherit",
-                    }}
                   />
 
                   <select
                     value={fleetStatusFilter}
                     onChange={(event) => setFleetStatusFilter(event.target.value)}
                     aria-label="Filter My Fleet by status"
-                    style={{
-                      flex: "0 1 210px",
-                      minWidth: "190px",
-                      padding: "0.7rem 0.8rem",
-                      border: "1px solid #c7d0d8",
-                      borderRadius: "6px",
-                      background: "#ffffff",
-                      font: "inherit",
-                    }}
                   >
                     <option value="All Statuses">All Statuses</option>
                     {statusOptions.map((status) => (
@@ -3468,9 +3845,10 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 </div>
               </div>
 
-              <p className="eyebrow">
-                Select any asset to update its status. Ready assets moved to a down status will appear on the Command Center automatically.
-              </p>
+              <div className="fleet-directory-guidance">
+                <p>Select any asset to open its expandable vehicle record. Ready assets moved to a down status will appear on the Command Center automatically.</p>
+                <span>Mobile VIN Intake: receiving workflow foundation prepared; desktop camera scanning is no longer part of the primary interface.</span>
+              </div>
 
               <table>
                 <thead>
@@ -3506,7 +3884,6 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                         key={asset.unit}
                         onClick={() => handleSelectAsset(asset)}
                         className={selectedAsset?.unit === asset.unit ? "selected-row" : ""}
-                        style={{ cursor: "pointer" }}
                       >
                         <td className="unit">{asset.unit}</td>
                         <td>{asset.department}</td>
@@ -3987,7 +4364,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
         {newAsset && (
           <div className="update-overlay">
-            <section className="update-panel">
+            <section className="update-panel vehicle-record-panel">
               <div className="update-panel-header">
                 <div>
                   <p className="eyebrow">Asset Management</p>
@@ -4035,7 +4412,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
         {editAsset && (
           <div className="update-overlay">
-            <section className="update-panel">
+            <section className="update-panel vehicle-record-panel">
               <div className="update-panel-header">
                 <div>
                   <p className="eyebrow">Manual Fleet Update</p>

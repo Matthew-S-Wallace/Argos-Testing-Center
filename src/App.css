@@ -880,3 +880,393 @@ button.administration-menu-item.active {
     padding: 34px 22px;
   }
 }
+
+/* Sprint 001Q — Expandable Vehicle Record & Mobile Intake Foundation */
+
+.vehicle-record-panel {
+  width: min(920px, 100%);
+  padding: 32px;
+}
+
+.vehicle-record-form {
+  display: grid;
+  gap: 18px;
+  margin-top: 24px;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.vehicle-form-section {
+  border: 1px solid #d7dde3;
+  border-radius: 12px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.vehicle-form-section-open {
+  padding: 22px;
+}
+
+.vehicle-form-section-heading,
+.vehicle-form-section summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+
+.vehicle-form-section-heading h4 {
+  margin: 0;
+  color: #071a33;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 26px;
+  font-weight: 500;
+}
+
+.vehicle-form-section-heading > span,
+.vehicle-form-section summary small {
+  color: #667085;
+  font-size: 12px;
+}
+
+.vehicle-form-section summary {
+  cursor: pointer;
+  padding: 18px 22px;
+  background: #f7f7f4;
+  color: #071a33;
+  list-style-position: inside;
+}
+
+.vehicle-form-section summary span {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.vehicle-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.vehicle-details-body {
+  padding: 4px 22px 22px;
+  margin-top: 0;
+}
+
+.vehicle-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #071a33;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.vehicle-form-grid input,
+.vehicle-form-grid select,
+.vehicle-form-grid textarea {
+  width: 100%;
+  border: 1px solid #cfd5dc;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #071a33;
+  padding: 12px 13px;
+  font: 15px Inter, system-ui, sans-serif;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.vehicle-form-grid input:focus,
+.vehicle-form-grid select:focus,
+.vehicle-form-grid textarea:focus {
+  outline: none;
+  border-color: #d8a93b;
+  box-shadow: 0 0 0 3px rgba(216, 169, 59, 0.15);
+}
+
+.vehicle-field-wide {
+  grid-column: 1 / -1;
+}
+
+.nhtsa-decode-summary {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px dashed #b8c2cc;
+  border-radius: 9px;
+  background: #f8fafc;
+  color: #31415a;
+}
+
+.raw-decode-details summary {
+  padding: 10px 0;
+  background: transparent;
+  font-weight: 800;
+}
+
+.raw-decode-details dl {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+}
+
+.raw-decode-details dl div {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.7fr) 1fr;
+  gap: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e1e6eb;
+}
+
+.raw-decode-details dt {
+  font-weight: 800;
+}
+
+.raw-decode-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.fleet-directory-toolbar {
+  min-width: 280px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.fleet-directory-toolbar input,
+.fleet-directory-toolbar select {
+  min-width: 210px;
+  padding: 11px 13px;
+  border: 1px solid #c7d0d8;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #071a33;
+  font: 14px Inter, system-ui, sans-serif;
+}
+
+.fleet-directory-guidance {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 18px;
+  padding: 13px 15px;
+  border-left: 4px solid #d8a93b;
+  background: #f7f7f4;
+  color: #31415a;
+  font: 13px Inter, system-ui, sans-serif;
+}
+
+.fleet-directory-guidance p {
+  margin: 0;
+}
+
+.fleet-directory-guidance span {
+  max-width: 390px;
+  color: #667085;
+}
+
+@media (max-width: 760px) {
+  .vehicle-record-panel {
+    padding: 22px;
+  }
+
+  .vehicle-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vehicle-field-wide {
+    grid-column: auto;
+  }
+
+  .fleet-directory-toolbar,
+  .fleet-directory-guidance {
+    flex-direction: column;
+  }
+
+  .fleet-directory-toolbar input,
+  .fleet-directory-toolbar select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .raw-decode-details dl div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+/* Sprint 001Q — Current mileage, engine hours, and meter history */
+.vehicle-meter-section {
+  border-color: rgba(32, 87, 125, 0.26);
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
+}
+
+.vehicle-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid rgba(30, 52, 70, 0.12);
+}
+
+.vehicle-section-heading span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.vehicle-section-heading strong {
+  color: #102638;
+}
+
+.vehicle-section-heading small,
+.meter-updated-note {
+  color: #667582;
+  font-weight: 500;
+}
+
+.meter-updated-note {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.76rem;
+}
+
+.meter-guidance {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(32, 87, 125, 0.16);
+  border-radius: 10px;
+  background: rgba(232, 242, 248, 0.62);
+}
+
+.meter-guidance strong {
+  color: #17394f;
+}
+
+.meter-guidance span {
+  color: #596b78;
+  line-height: 1.45;
+}
+
+
+/* Sprint 001Q — Integrated Repair Awareness Subsystem */
+.repair-awareness-section {
+  border-color: rgba(154, 102, 20, 0.28);
+  background: linear-gradient(180deg, #ffffff 0%, #fffdf8 100%);
+}
+
+.repair-awareness-section > summary {
+  background: linear-gradient(90deg, #f7f1df 0%, #fbfaf6 100%);
+}
+
+.repair-timeline-preview {
+  padding: 16px;
+  border: 1px solid #d8d8d2;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.repair-timeline-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e1e6eb;
+}
+
+.repair-timeline-heading strong {
+  color: #071a33;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20px;
+}
+
+.repair-timeline-heading span,
+.repair-timeline-preview p {
+  color: #667085;
+  font-size: 13px;
+}
+
+.repair-timeline-preview ol {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.repair-timeline-preview li {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.35fr) 1fr;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e1e6eb;
+}
+
+.repair-timeline-preview li:last-child {
+  border-bottom: 0;
+}
+
+.repair-timeline-preview time {
+  color: #8a641d;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.repair-timeline-preview li span {
+  color: #26384a;
+  line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+  .repair-timeline-preview li {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+}
+
+/* Sprint 001Q Final — Warranty and Service Awareness */
+.warranty-awareness-section,
+.service-awareness-section {
+  border-color: rgba(154, 102, 20, 0.32);
+}
+
+.awareness-status-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px;
+  border: 1px solid #d8d8d2;
+  border-radius: 9px;
+  background: #f7f7f4;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.awareness-status-banner span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.awareness-status-banner strong {
+  color: #071a33;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+@media (max-width: 760px) {
+  .awareness-status-banner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
