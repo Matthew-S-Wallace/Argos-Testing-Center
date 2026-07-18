@@ -3,6 +3,10 @@ import ARGOSDepartmentsAdministrationModule from "./ARGOS_Departments_Administra
 import ARGOSAssetTypesAdministrationModule from "./ARGOS_Asset_Types_Administration_Module";
 import ARGOSStatusConfigurationAdministrationModule from "./ARGOS_Status_Configuration_Administration_Module";
 import ARGOSTechniciansAdministrationModule from "./ARGOS_Technicians_Administration_Module";
+import {
+  canViewAdministration,
+  canViewAdministrationSection,
+} from "../../utils/ARGOS_Permission_Resolver";
 
 const ADMINISTRATION_GROUPS = [
   {
@@ -97,6 +101,22 @@ function OrganizationProfileWorkspace({
   );
 }
 
+function AdministrationAccessDenied({ message }) {
+  return (
+    <div className="administration-content-body">
+      <div className="administration-placeholder-icon" aria-hidden="true">🔒</div>
+      <h4>Access Restricted</h4>
+      <p>{message}</p>
+      <div className="administration-foundation-note">
+        <strong>Role authorization required</strong>
+        <span>
+          ARGOS prevented this Administration workspace from rendering for the current account.
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function PlannedAdministrationWorkspace({ section }) {
   return (
     <div className="administration-content-body">
@@ -125,7 +145,20 @@ export default function AdministrationModule({
   organizationProfile,
   organizationProfileLoading,
   organizationProfileError,
+  currentUser,
+  userProfile,
+  profile,
+  user,
 }) {
+  const authorizationUser = currentUser || userProfile || profile || user || null;
+  const canAccessAdministration =
+    isDemoMode || canViewAdministration(authorizationUser);
+  const canAccessActiveSection = canViewAdministrationSection(
+    authorizationUser,
+    activeSection,
+    isDemoMode
+  );
+
   const isOrganizationProfile = activeSection === "Organization Profile";
   const isUsersSection = activeSection === "Users";
   const isDepartmentsSection = activeSection === "Departments";
@@ -156,6 +189,12 @@ export default function AdministrationModule({
     if (isStatusConfigurationSection) return "Live Status Configuration";
     if (isTechniciansSection) return "Live Technicians";
     return "Framework Ready";
+  }
+
+  if (!canAccessAdministration) {
+    return (
+      <AdministrationAccessDenied message="You do not have permission to access ARGOS Administration." />
+    );
   }
 
   return (
@@ -214,7 +253,9 @@ export default function AdministrationModule({
             <span className="administration-status">{getWorkspaceStatus()}</span>
           </div>
 
-          {isOrganizationProfile ? (
+          {!canAccessActiveSection ? (
+            <AdministrationAccessDenied message="You do not have permission to access this Administration workspace." />
+          ) : isOrganizationProfile ? (
             <OrganizationProfileWorkspace
               isDemoMode={isDemoMode}
               organizationProfile={organizationProfile}

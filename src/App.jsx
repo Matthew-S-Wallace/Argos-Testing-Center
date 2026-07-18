@@ -3703,6 +3703,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
             activeSection={activeAdministrationSection}
             onSelectSection={setActiveAdministrationSection}
             isDemoMode={isDemoMode}
+            profile={profile}
             organizationProfile={organizationProfile}
             organizationProfileLoading={organizationProfileLoading}
             organizationProfileError={organizationProfileError}

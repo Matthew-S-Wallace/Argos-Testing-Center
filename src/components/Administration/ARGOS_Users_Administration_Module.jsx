@@ -1,6 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
-import { updateArgosUserProfile } from "../../utils/ARGOS_Identity_Service";
+import {
+  restoreArgosUser,
+  suspendArgosUser,
+  updateArgosUserProfile,
+} from "../../utils/ARGOS_Identity_Service";
+import {
+  canChangeUserDepartment,
+  canChangeUserRole,
+  canDemoteUser,
+  canEditUser,
+  canInviteUsers,
+  canAccessUsersAdministration,
+  canRestoreUser,
+  canSuspendUser,
+  getUserManagementRestrictions,
+  isArgosAdministrator,
+  isArgosManager,
+} from "../../utils/ARGOS_Permission_Resolver";
 import "./ARGOS_Users_Administration_Module.css";
 
 const ARGOS_ROLE_OPTIONS = [
@@ -35,6 +52,7 @@ const DEMO_USERS = [
     jobTitle: "System Administrator",
     phone: "Not configured",
     status: "Active",
+    is_active: true,
     lastLogin: "Demo session",
     createdDate: "Jul 10, 2026",
   },
@@ -49,6 +67,7 @@ const DEMO_USERS = [
     jobTitle: "Fleet Operations Manager",
     phone: "Not configured",
     status: "Active",
+    is_active: true,
     lastLogin: "Not yet recorded",
     createdDate: "Jul 10, 2026",
   },
@@ -63,6 +82,7 @@ const DEMO_USERS = [
     jobTitle: "Automotive Technician",
     phone: "Not configured",
     status: "Active",
+    is_active: true,
     lastLogin: "Not yet recorded",
     createdDate: "Jul 10, 2026",
   },
@@ -136,6 +156,7 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
   const [editDraft, setEditDraft] = useState(null);
   const [isLoading, setIsLoading] = useState(!isDemoMode);
   const [isSaving, setIsSaving] = useState(false);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [showInvitePanel, setShowInvitePanel] = useState(false);
@@ -273,6 +294,7 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
         jobTitle: profile.job_title || "Not configured",
         phone: profile.phone || "Not configured",
         status: profile.is_active === false ? "Suspended" : "Active",
+        is_active: profile.is_active !== false,
         lastLogin:
           profile.id === authenticatedUser.id && !profile.last_login
             ? "Current session"
@@ -317,12 +339,62 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
     [users, selectedUserId],
   );
 
-  const currentUserIsAdministrator = currentUser?.role === "admin";
+  const activeAdministratorCount = useMemo(
+    () =>
+      users.filter(
+        (user) => user.roleValue === "admin" && user.is_active !== false,
+      ).length,
+    [users],
+  );
+
+  const currentUserIsAdministrator = isArgosAdministrator(currentUser);
+  const currentUserIsManager = isArgosManager(currentUser);
+  const usersAdministrationPermitted =
+    isDemoMode || canAccessUsersAdministration(currentUser);
+  const userInvitationPermitted =
+    !isDemoMode && canInviteUsers(currentUser);
   const canEditSelectedUser =
-    !isDemoMode && currentUserIsAdministrator && Boolean(selectedUser);
+    !isDemoMode &&
+    Boolean(selectedUser) &&
+    canEditUser(currentUser, selectedUser);
+  const canChangeSelectedUserRole =
+    !isDemoMode &&
+    Boolean(selectedUser) &&
+    canChangeUserRole(currentUser, selectedUser);
+  const canChangeSelectedUserDepartment =
+    !isDemoMode &&
+    Boolean(selectedUser) &&
+    canChangeUserDepartment(currentUser, selectedUser);
+  const selectedUserCanBeSuspended =
+    !isDemoMode &&
+    selectedUser?.is_active !== false &&
+    canSuspendUser({
+      currentUser,
+      targetUser: selectedUser,
+      activeAdministratorCount,
+    });
+  const selectedUserCanBeRestored =
+    !isDemoMode &&
+    selectedUser?.is_active === false &&
+    canRestoreUser(currentUser, selectedUser);
+  const selectedUserRestrictions = useMemo(
+    () =>
+      selectedUser
+        ? getUserManagementRestrictions({
+            currentUser,
+            targetUser: selectedUser,
+            activeAdministratorCount,
+          })
+        : [],
+    [currentUser, selectedUser, activeAdministratorCount],
+  );
 
   function beginEditSelectedUser() {
-    if (!selectedUser || !canEditSelectedUser) return;
+    if (!usersAdministrationPermitted || !selectedUser || !canEditSelectedUser) {
+      setActionMessage("");
+      setErrorMessage("Your account is not authorized to manage organization users.");
+      return;
+    }
 
     setEditDraft({
       full_name: selectedUser.fullName,
@@ -443,7 +515,7 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
   async function submitUserInvitation(event) {
     event.preventDefault();
 
-    if (!currentUserIsAdministrator || isDemoMode) return;
+    if (!userInvitationPermitted) return;
 
     setActionMessage("");
     setInviteActionError("");
@@ -483,23 +555,133 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
     }
   }
 
+  async function changeSelectedUserStatus() {
+    if (!selectedUser || isChangingStatus || isDemoMode) return;
+
+    const shouldRestore = selectedUser.is_active === false;
+    const operationPermitted = shouldRestore
+      ? selectedUserCanBeRestored
+      : selectedUserCanBeSuspended;
+
+    if (!operationPermitted) {
+      setActionMessage("");
+      setErrorMessage(
+        selectedUserRestrictions[0] ||
+          `Your account is not authorized to ${
+            shouldRestore ? "restore" : "suspend"
+          } this user.`,
+      );
+      return;
+    }
+
+    setIsChangingStatus(true);
+    setActionMessage("");
+    setErrorMessage("");
+
+    try {
+      if (shouldRestore) {
+        await restoreArgosUser(selectedUser.id);
+      } else {
+        await suspendArgosUser(selectedUser.id);
+      }
+
+      const nextIsActive = shouldRestore;
+      setUsers((currentUsers) =>
+        currentUsers.map((user) =>
+          user.id === selectedUser.id
+            ? {
+                ...user,
+                is_active: nextIsActive,
+                status: nextIsActive ? "Active" : "Suspended",
+              }
+            : user,
+        ),
+      );
+      setActionMessage(
+        `${selectedUser.fullName} was ${
+          nextIsActive ? "restored" : "suspended"
+        } successfully.`,
+      );
+    } catch (error) {
+      setErrorMessage(
+        error?.message ||
+          `ARGOS could not ${shouldRestore ? "restore" : "suspend"} this user.`,
+      );
+    } finally {
+      setIsChangingStatus(false);
+    }
+  }
+
   async function saveEditedUser(event) {
     event.preventDefault();
 
-    if (!selectedUser || !editDraft) return;
+    if (
+      !usersAdministrationPermitted ||
+      !selectedUser ||
+      !editDraft ||
+      !canEditSelectedUser
+    ) {
+      setActionMessage("");
+      setErrorMessage("Your account is not authorized to manage organization users.");
+      return;
+    }
+
+    const roleChanged = editDraft.role !== selectedUser.roleValue;
+    const departmentChanged =
+      editDraft.department_id !== selectedUser.departmentId;
+    const isAdministratorDemotion =
+      selectedUser.roleValue === "admin" && editDraft.role !== "admin";
+
+    if (roleChanged && !canChangeSelectedUserRole) {
+      setErrorMessage("Your account is not authorized to change this user's role.");
+      return;
+    }
+
+    if (
+      isAdministratorDemotion &&
+      !canDemoteUser({
+        currentUser,
+        targetUser: selectedUser,
+        activeAdministratorCount,
+      })
+    ) {
+      setErrorMessage(
+        selectedUser.id === currentUser?.id
+          ? "Administrators cannot demote their own account."
+          : "The last active administrator cannot be demoted.",
+      );
+      return;
+    }
+
+    if (departmentChanged && !canChangeSelectedUserDepartment) {
+      setErrorMessage(
+        "Your account is not authorized to change this user's department.",
+      );
+      return;
+    }
+
+    const authorizedDraft = {
+      ...editDraft,
+      role: canChangeSelectedUserRole
+        ? editDraft.role
+        : selectedUser.roleValue,
+      department_id: canChangeSelectedUserDepartment
+        ? editDraft.department_id
+        : selectedUser.departmentId,
+    };
 
     setIsSaving(true);
     setActionMessage("");
     setErrorMessage("");
 
     try {
-      await updateArgosUserProfile(selectedUser.id, editDraft);
+      await updateArgosUserProfile(selectedUser.id, authorizedDraft);
       setActionMessage("User profile updated successfully.");
       setEditDraft(null);
 
       const updatedDepartment =
         departments.find(
-          (department) => department.id === editDraft.department_id,
+          (department) => department.id === authorizedDraft.department_id,
         )?.department_name || "Not assigned";
 
       setUsers((currentUsers) =>
@@ -507,13 +689,13 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
           user.id === selectedUser.id
             ? {
                 ...user,
-                fullName: editDraft.full_name.trim(),
-                role: formatRole(editDraft.role),
-                roleValue: normalizeRoleValue(editDraft.role),
-                departmentId: editDraft.department_id || "",
+                fullName: authorizedDraft.full_name.trim(),
+                role: formatRole(authorizedDraft.role),
+                roleValue: normalizeRoleValue(authorizedDraft.role),
+                departmentId: authorizedDraft.department_id || "",
                 department: updatedDepartment,
-                jobTitle: editDraft.job_title.trim() || "Not configured",
-                phone: editDraft.phone.trim() || "Not configured",
+                jobTitle: authorizedDraft.job_title.trim() || "Not configured",
+                phone: authorizedDraft.phone.trim() || "Not configured",
               }
             : user,
         ),
@@ -525,6 +707,28 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
     } finally {
       setIsSaving(false);
     }
+  }
+
+  if (!isLoading && !usersAdministrationPermitted) {
+    return (
+      <div className="argos-users-content">
+        <div className="argos-users-heading">
+          <div>
+            <p className="eyebrow">Identity &amp; Access Management</p>
+            <h4>Organization Users</h4>
+            <p>
+              This workspace is restricted to active ARGOS Administrators and
+              Managers. Technician and standard-user accounts cannot view or
+              perform user-management operations.
+            </p>
+          </div>
+          <span className="argos-users-mode">Access Restricted</span>
+        </div>
+        <UsersState error>
+          Your account is not authorized to manage organization users.
+        </UsersState>
+      </div>
+    );
   }
 
   return (
@@ -547,7 +751,10 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
         <button
           type="button"
           disabled={
-            !currentUserIsAdministrator || Boolean(editDraft) || showInvitePanel
+            !userInvitationPermitted ||
+            Boolean(editDraft) ||
+            showInvitePanel ||
+            isChangingStatus
           }
           onClick={() => {
             setActionMessage("");
@@ -568,13 +775,36 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
           type="button"
           onClick={beginEditSelectedUser}
           disabled={
-            !canEditSelectedUser || Boolean(editDraft) || showInvitePanel
+            !canEditSelectedUser ||
+            Boolean(editDraft) ||
+            showInvitePanel ||
+            isChangingStatus
           }
         >
           Edit Selected User
         </button>
-        <button type="button" disabled>
-          Suspend / Restore
+        <button
+          type="button"
+          onClick={changeSelectedUserStatus}
+          disabled={
+            !selectedUser ||
+            (!selectedUserCanBeSuspended && !selectedUserCanBeRestored) ||
+            Boolean(editDraft) ||
+            showInvitePanel ||
+            isChangingStatus
+          }
+          title={
+            selectedUserRestrictions[0] ||
+            (selectedUser?.is_active === false
+              ? "Restore the selected user"
+              : "Suspend the selected user")
+          }
+        >
+          {isChangingStatus
+            ? "Updating…"
+            : selectedUser?.is_active === false
+              ? "Restore Selected User"
+              : "Suspend Selected User"}
         </button>
       </div>
 
@@ -594,7 +824,11 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
         <div>
           <span>Management Status</span>
           <strong>
-            {currentUserIsAdministrator ? "Administrator" : "Read Only"}
+            {currentUserIsAdministrator
+              ? "Administrator"
+              : currentUserIsManager
+                ? "Manager — Limited"
+                : "Read Only"}
           </strong>
         </div>
       </div>
@@ -804,7 +1038,7 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
               <p className="eyebrow">Controlled User Edit</p>
               <h5>{selectedUser.fullName}</h5>
             </div>
-            <span>Administrator Only</span>
+            <span>{currentUserIsAdministrator ? "Administrator" : "Manager — Limited"}</span>
           </div>
 
           <div className="argos-users-editor-grid">
@@ -828,7 +1062,7 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
                 onChange={(event) =>
                   updateEditDraft("role", event.target.value)
                 }
-                disabled={selectedUser.id === currentUser?.id}
+                disabled={!canChangeSelectedUserRole || isSaving}
               >
                 {ARGOS_ROLE_OPTIONS.map((roleOption) => (
                   <option key={roleOption.value} value={roleOption.value}>
@@ -845,6 +1079,7 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
                 onChange={(event) =>
                   updateEditDraft("department_id", event.target.value)
                 }
+                disabled={!canChangeSelectedUserDepartment || isSaving}
               >
                 <option value="">Not assigned</option>
                 {departments.map((department) => (
@@ -880,9 +1115,17 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
             </label>
           </div>
 
-          {selectedUser.id === currentUser?.id ? (
+          {!canChangeSelectedUserRole ? (
             <div className="argos-users-editor-note">
-              Your own administrator role cannot be changed.
+              {selectedUser.id === currentUser?.id
+                ? "Your own administrator role cannot be changed."
+                : "Your role permits profile editing but not role changes."}
+            </div>
+          ) : null}
+
+          {selectedUserRestrictions.length > 0 ? (
+            <div className="argos-users-editor-note">
+              {selectedUserRestrictions[0]}
             </div>
           ) : null}
 
@@ -891,6 +1134,7 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
               type="button"
               className="secondary"
               onClick={() => setEditDraft(null)}
+              disabled={isSaving}
             >
               Cancel
             </button>
@@ -902,15 +1146,14 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
       ) : null}
 
       <div className="argos-users-foundation-note">
-        <strong>Sprint 001N.5 secure invitation interface active</strong>
+        <strong>Sprint 001O operation-level authorization active</strong>
         <span>
-          ARGOS routes profile edits through the authenticated, tenant-scoped
-          administrator RPC. Secure user invitations now use an isolated inline
-          administration panel connected to the deployed Edge Function with
-          client-side validation, controlled error handling, and automatic user
-          list refresh. Organization ownership and protected account fields
-          remain outside the browser editing surface; suspension remains
-          disabled until its dedicated controls are installed and verified.
+          ARGOS routes profile edits and account-status operations through the
+          authenticated, tenant-scoped identity boundary. Administrators retain
+          controlled invitation, role, department, suspend, and restore authority;
+          Managers receive limited non-Administrator profile editing according to
+          the central Permission Resolver. Self-protection and final-active-
+          Administrator safeguards remain enforced in the interface.
         </span>
       </div>
     </div>
