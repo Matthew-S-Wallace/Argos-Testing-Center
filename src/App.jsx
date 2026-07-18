@@ -1090,6 +1090,7 @@ function App() {
   const [newAsset, setNewAsset] = useState(null);
   const [showDailySummary, setShowDailySummary] = useState(false);
   const [activeView, setActiveView] = useState("command");
+  const [showFieldHome, setShowFieldHome] = useState(true);
   const [activeAdministrationSection, setActiveAdministrationSection] = useState("Organization Profile");
   const [fleetSearch, setFleetSearch] = useState("");
   const [fleetStatusFilter, setFleetStatusFilter] = useState("All Statuses");
@@ -3596,8 +3597,80 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     );
   }
 
+  function openFieldView(view, options = {}) {
+    if (options.resetFleet) {
+      setFleetSearch("");
+      setFleetStatusFilter("All Statuses");
+    }
+
+    setActiveView(view);
+    setShowFieldHome(false);
+  }
+
   return (
-    <main className="argos-shell">
+    <main className={`argos-shell ${showFieldHome ? "argos-field-home-active" : "argos-field-workspace-active"}`}>
+      <section className="argos-field-home" aria-label="ARGOS Field mobile workspace">
+        <header className="argos-field-hero">
+          <div>
+            <p className="argos-field-kicker">Mobile Fleet Operations</p>
+            <h1>ARGOS <span>Field</span></h1>
+            <p>Scan, locate, and update fleet assets from the field.</p>
+          </div>
+          <div className="argos-field-availability" aria-label={`${availability}% fleet availability`}>
+            <span>Availability</span>
+            <strong>{availability}%</strong>
+          </div>
+        </header>
+
+        {isDemoMode && <p className="argos-field-demo-badge">Demo environment · fictional fleet data</p>}
+
+        <div className="argos-field-actions">
+          <button className="argos-field-action argos-field-action-primary" type="button" onClick={() => { setShowFieldHome(false); handleOpenVinScanner(); }}>
+            <span className="argos-field-action-icon">▣</span>
+            <span><strong>Scan VIN</strong><small>Open a vehicle by camera or manual VIN</small></span>
+            <b>›</b>
+          </button>
+
+          <button className="argos-field-action" type="button" onClick={() => openFieldView("fleet", { resetFleet: true })}>
+            <span className="argos-field-action-icon">⌕</span>
+            <span><strong>Find Vehicle</strong><small>Search the complete fleet by unit number</small></span>
+            <b>›</b>
+          </button>
+
+          <button className="argos-field-action" type="button" onClick={() => openFieldView("command")}>
+            <span className="argos-field-action-icon">!</span>
+            <span><strong>Units Down</strong><small>{unavailableAssets} assets currently require attention</small></span>
+            <b>›</b>
+          </button>
+
+          <button className="argos-field-action" type="button" onClick={() => { setShowFieldHome(false); setShowDailySummary(true); }}>
+            <span className="argos-field-action-icon">✦</span>
+            <span><strong>Daily Summary</strong><small>Review current fleet priorities and exceptions</small></span>
+            <b>›</b>
+          </button>
+        </div>
+
+        <section className="argos-field-snapshot">
+          <h2>Operational Snapshot</h2>
+          <div>
+            <article><strong>{totalAssets}</strong><span>Total Assets</span></article>
+            <article><strong>{unavailableAssets}</strong><span>Units Down</span></article>
+            <article><strong>{waitingParts}</strong><span>Waiting Parts</span></article>
+            <article><strong>{criticalAssets}</strong><span>Critical</span></article>
+          </div>
+        </section>
+
+        <footer className="argos-field-footer">
+          <span>{profile?.full_name || session?.user?.email || "ARGOS Demo Visitor"}</span>
+          <button type="button" onClick={handleSignOut}>{isDemoMode ? "Exit Demo" : "Log Out"}</button>
+        </footer>
+      </section>
+
+      <header className="argos-field-workspace-header">
+        <button type="button" onClick={() => setShowFieldHome(true)} aria-label="Return to ARGOS Field home">‹</button>
+        <div><strong>ARGOS Field</strong><span>{activeView === "command" ? "Units Down" : activeView === "fleet" ? "Find Vehicle" : activeView}</span></div>
+        <button type="button" onClick={handleOpenVinScanner} aria-label="Scan VIN">▣</button>
+      </header>
       <aside className="argos-sidebar">
         <div className="argos-logo">
           <h1>ARGOS</h1>
