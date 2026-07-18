@@ -897,6 +897,77 @@ function createStatusHistoryEvent(previousAsset, updatedAsset, statusHistoryEven
   };
 }
 
+function isSameLocalCalendarDate(value, comparisonDate = new Date()) {
+  if (!value) return false;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+
+  return (
+    date.getFullYear() === comparisonDate.getFullYear() &&
+    date.getMonth() === comparisonDate.getMonth() &&
+    date.getDate() === comparisonDate.getDate()
+  );
+}
+
+function buildTechnicianDailySummary({
+  assets,
+  statusHistoryEvents,
+  completedRepairRecords,
+  isAssignedToTechnician,
+  technicianKey,
+  now = new Date(),
+}) {
+  const assignedAssets = assets.filter(isAssignedToTechnician);
+  const activeAssignedAssets = assignedAssets.filter((asset) => asset.status !== "Ready");
+
+  const todayStatusEvents = statusHistoryEvents.filter(
+    (event) =>
+      isSameLocalCalendarDate(event.recordedAt || event.statusEndedAt, now) &&
+      normalizeTechnicianKey(event.technician) === technicianKey
+  );
+
+  const todayCompletedRepairs = completedRepairRecords.filter(
+    (record) =>
+      isSameLocalCalendarDate(
+        record.completedDate ||
+          record.completedDisplayDate ||
+          record.statusEndedAt ||
+          record.recordedAt,
+        now
+      ) &&
+      normalizeTechnicianKey(record.technician) === technicianKey
+  );
+
+  const updatedUnits = Array.from(
+    new Set(todayStatusEvents.map((event) => event.unit).filter(Boolean))
+  );
+
+  return {
+    assignedAssets,
+    activeAssignedAssets,
+    waitingPartsAssets: activeAssignedAssets.filter(
+      (asset) => asset.status === "Waiting Parts"
+    ),
+    awaitingQcAssets: activeAssignedAssets.filter(
+      (asset) => asset.status === "Awaiting QC"
+    ),
+    readyForPickupAssets: activeAssignedAssets.filter(
+      (asset) => asset.status === "Ready for Pickup"
+    ),
+    criticalAssets: activeAssignedAssets.filter(
+      (asset) => asset.priority === "Critical"
+    ),
+    todayStatusEvents: [...todayStatusEvents].sort((firstEvent, secondEvent) =>
+      String(secondEvent.recordedAt || secondEvent.statusEndedAt || "").localeCompare(
+        String(firstEvent.recordedAt || firstEvent.statusEndedAt || "")
+      )
+    ),
+    todayCompletedRepairs,
+    updatedUnits,
+  };
+}
+
 function buildDailySummary(assets) {
   const assetsWithDaysDown = assets.map((asset) => ({
     ...asset,
@@ -1799,6 +1870,14 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
   const criticalAssets = activeBoardAssets.filter((asset) => asset.priority === "Critical").length;
   const availability = totalAssets > 0 ? ((readyAssets / totalAssets) * 100).toFixed(1) : "0.0";
   const dailySummary = buildDailySummary(assets);
+  const technicianDailySummary = buildTechnicianDailySummary({
+    assets,
+    statusHistoryEvents,
+    completedRepairRecords,
+    isAssignedToTechnician: isAssignedToSignedInTechnician,
+    technicianKey: signedInTechnicianKey,
+    now: fieldCurrentTime,
+  });
   const technicianAnalytics = buildTechnicianAnalytics(assets, completedRepairRecords);
 
   const statusDurationAnalytics = buildStatusDurationAnalytics(assets, statusHistoryEvents, statusOptions);
@@ -1807,6 +1886,13 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     const liveAsset = assets.find((currentAsset) => currentAsset.unit === asset.unit) || asset;
     setSelectedAsset(liveAsset);
     setEditAsset(normalizeAsset(liveAsset));
+  }
+
+  function handleOpenDailySummaryAsset(asset) {
+    setShowDailySummary(false);
+    setShowFieldHome(false);
+    setActiveView(asset.status === "Ready" ? "fleet" : "command");
+    handleSelectAsset(asset);
   }
 
   function cleanAsset(assetToClean) {
@@ -3792,7 +3878,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
           <button className="argos-field-action" type="button" onClick={() => { setShowFieldHome(false); setShowDailySummary(true); }}>
             <span className="argos-field-action-icon">✦</span>
-            <span><strong>Daily Summary</strong><small>Review current fleet priorities and exceptions</small></span>
+            <span><strong>Daily Summary</strong><small>Review your work, handoffs, blockers, and completed activity</small></span>
             <b>›</b>
           </button>
         </div>
@@ -4517,7 +4603,148 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 </button>
               </div>
 
-              <div className="update-form">
+              <section className="argos-technician-daily-summary">
+                <div className="argos-technician-summary-heading">
+                  <div>
+                    <p className="eyebrow">My Work Today</p>
+                    <h4>{signedInTechnicianName !== "Unassigned" ? signedInTechnicianName : "Current Operator"}</h4>
+                    <p>
+                      {fieldCurrentTime.toLocaleDateString(undefined, {
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <span>{technicianDailySummary.activeAssignedAssets.length} active</span>
+                </div>
+
+                <div className="argos-technician-summary-metrics">
+                  <article>
+                    <span>Assigned</span>
+                    <strong>{technicianDailySummary.assignedAssets.length}</strong>
+                  </article>
+                  <article>
+                    <span>Updated Today</span>
+                    <strong>{technicianDailySummary.updatedUnits.length}</strong>
+                  </article>
+                  <article>
+                    <span>Awaiting QC</span>
+                    <strong>{technicianDailySummary.awaitingQcAssets.length}</strong>
+                  </article>
+                  <article>
+                    <span>Ready Pickup</span>
+                    <strong>{technicianDailySummary.readyForPickupAssets.length}</strong>
+                  </article>
+                  <article>
+                    <span>Waiting Parts</span>
+                    <strong>{technicianDailySummary.waitingPartsAssets.length}</strong>
+                  </article>
+                  <article className="critical">
+                    <span>Critical</span>
+                    <strong>{technicianDailySummary.criticalAssets.length}</strong>
+                  </article>
+                </div>
+
+                <div className="argos-technician-summary-grid">
+                  <div className="argos-technician-work-list">
+                    <div className="argos-technician-list-heading">
+                      <div>
+                        <p className="eyebrow">Current Work</p>
+                        <h4>Assigned Units Requiring Action</h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowDailySummary(false);
+                          openFieldView("fleet", {
+                            resetFleet: true,
+                            fieldQueueMode: "awaiting",
+                          });
+                        }}
+                      >
+                        Open Queue
+                      </button>
+                    </div>
+
+                    {technicianDailySummary.activeAssignedAssets.length === 0 ? (
+                      <p className="argos-technician-empty-state">
+                        No active units are currently assigned to you.
+                      </p>
+                    ) : (
+                      technicianDailySummary.activeAssignedAssets.map((asset) => (
+                        <button
+                          className="argos-technician-work-item"
+                          key={`daily-work-${asset.unit}`}
+                          type="button"
+                          onClick={() => handleOpenDailySummaryAsset(asset)}
+                        >
+                          <span>
+                            <strong>{asset.unit}</strong>
+                            <small>{asset.asset}</small>
+                          </span>
+                          <span>
+                            <b className={`status-pill ${getStatusClass(asset.status)}`}>
+                              {asset.status}
+                            </b>
+                            <small>{asset.details}</small>
+                          </span>
+                          <i aria-hidden="true">›</i>
+                        </button>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="argos-technician-activity-list">
+                    <div className="argos-technician-list-heading">
+                      <div>
+                        <p className="eyebrow">Activity Log</p>
+                        <h4>Updates Recorded Today</h4>
+                      </div>
+                      <strong>
+                        {technicianDailySummary.todayStatusEvents.length +
+                          technicianDailySummary.todayCompletedRepairs.length}
+                      </strong>
+                    </div>
+
+                    {technicianDailySummary.todayStatusEvents.length === 0 &&
+                    technicianDailySummary.todayCompletedRepairs.length === 0 ? (
+                      <p className="argos-technician-empty-state">
+                        No technician activity has been recorded today.
+                      </p>
+                    ) : (
+                      <>
+                        {technicianDailySummary.todayStatusEvents.slice(0, 6).map((event) => (
+                          <article key={`daily-event-${event.id}`}>
+                            <span>{event.unit}</span>
+                            <strong>{event.previousStatus} → {event.newStatus}</strong>
+                            <small>
+                              {new Date(event.recordedAt || event.statusEndedAt).toLocaleTimeString(
+                                undefined,
+                                { hour: "numeric", minute: "2-digit" }
+                              )}
+                            </small>
+                          </article>
+                        ))}
+
+                        {technicianDailySummary.todayCompletedRepairs.slice(0, 4).map((record) => (
+                          <article key={`daily-completed-${record.recordId}`}>
+                            <span>{record.unit}</span>
+                            <strong>Repair completed</strong>
+                            <small>{record.details || record.reason || "Returned to service"}</small>
+                          </article>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <div className="argos-fleet-daily-divider">
+                <span>Fleet-wide operational brief</span>
+              </div>
+
+              <div className="update-form argos-fleet-daily-summary">
                 <div className="issue-field">
                   <p className="eyebrow">Operational Readiness</p>
                   <h3>{dailySummary.availability}% Fleet Availability</h3>
