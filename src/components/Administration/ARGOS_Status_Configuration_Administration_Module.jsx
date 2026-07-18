@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
+import { canManageStatusConfiguration } from "../../utils/ARGOS_Permission_Resolver";
 import "./ARGOS_Status_Configuration_Administration_Module.css";
 
 const DEMO_STATUSES = [
@@ -33,7 +34,10 @@ export default function ARGOSStatusConfigurationAdministrationModule({isDemoMode
   const [editingId,setEditingId]=useState(null);
   const [edit,setEdit]=useState(EMPTY);
   const [saving,setSaving]=useState(false);
-  const isAdmin=["admin","administrator"].includes(String(role).toLowerCase());
+  const isAdmin=canManageStatusConfiguration({
+    role,
+    is_active:true,
+  });
   const active=useMemo(()=>rows.filter((row)=>row.is_active),[rows]);
 
   useEffect(()=>{

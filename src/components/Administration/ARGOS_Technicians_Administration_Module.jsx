@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
+import { canManageTechnicians } from "../../utils/ARGOS_Permission_Resolver";
 import "./ARGOS_Technicians_Administration_Module.css";
 
 const SELECT_FIELDS = "id, organization_id, technician_name, employee_number, email, phone, is_active, created_at, updated_at";
@@ -27,7 +28,10 @@ export default function ARGOSTechniciansAdministrationModule({ isDemoMode }) {
   const [editDraft, setEditDraft] = useState({});
   const [isSaving, setIsSaving] = useState(false);
 
-  const canManage = ["admin", "administrator", "manager"].includes(String(currentRole || "").toLowerCase());
+  const canManage = canManageTechnicians({
+    role: currentRole,
+    is_active: true,
+  });
   const activeCount = useMemo(() => technicians.filter((row) => row.is_active).length, [technicians]);
 
   useEffect(() => {

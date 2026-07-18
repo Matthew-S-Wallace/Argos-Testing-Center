@@ -1,4 +1,4 @@
-// ARGOS™ Sprint 001O – Phase 2
+// ARGOS™ Sprint 001P
 // Central permission rules for Identity & Access Management,
 // Administration access, and operation-level user controls.
 
@@ -84,19 +84,27 @@ export function canAccessUsersAdministration(user) {
 }
 
 export function canManageDepartments(user) {
-  return canViewAdministration(user);
+  return isActiveUser(user) && isArgosAdministrator(user);
 }
 
 export function canManageTechnicians(user) {
-  return canViewAdministration(user);
+  return (
+    isActiveUser(user) &&
+    (isArgosAdministrator(user) || isArgosManager(user))
+  );
 }
 
 export function canManageAssetTypes(user) {
-  return canViewAdministration(user);
+  return isActiveUser(user) && isArgosAdministrator(user);
 }
 
+export function canManageStatusConfiguration(user) {
+  return isActiveUser(user) && isArgosAdministrator(user);
+}
+
+// Compatibility alias retained for existing Administration-shell imports.
 export function canManageStatuses(user) {
-  return canViewAdministration(user);
+  return canManageStatusConfiguration(user);
 }
 
 export function canViewAdministrationSection(

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
+import { canManageAssetTypes } from "../../utils/ARGOS_Permission_Resolver";
 import "./ARGOS_Asset_Types_Administration_Module.css";
 
 const DEMO_ASSET_TYPES = [
@@ -48,9 +49,10 @@ export default function ARGOSAssetTypesAdministrationModule({ isDemoMode }) {
   const [isSaving, setIsSaving] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
 
-  const isAdministrator = ["admin", "administrator"].includes(
-    String(currentRole || "").toLowerCase()
-  );
+  const isAdministrator = canManageAssetTypes({
+    role: currentRole,
+    is_active: true,
+  });
 
   const activeAssetTypes = useMemo(
     () => assetTypes.filter((assetType) => assetType.is_active),

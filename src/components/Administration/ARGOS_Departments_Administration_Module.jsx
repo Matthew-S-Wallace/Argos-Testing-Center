@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
+import { canManageDepartments } from "../../utils/ARGOS_Permission_Resolver";
 import "./ARGOS_Departments_Administration_Module.css";
 
 const DEMO_DEPARTMENTS = [
@@ -52,9 +53,19 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
   const [departmentCode, setDepartmentCode] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState(null);
+  const [editingDepartment, setEditingDepartment] = useState(null);
+  const [editDepartmentName, setEditDepartmentName] = useState("");
+  const [editDepartmentCode, setEditDepartmentCode] = useState("");
 
-  const isAdministrator = ["admin", "administrator"].includes(
-    String(currentRole || "").toLowerCase()
+  const isAdministrator = canManageDepartments({
+    role: currentRole,
+    is_active: true,
+  });
+
+  const selectedDepartment = useMemo(
+    () => departments.find((department) => department.id === selectedDepartmentId) || null,
+    [departments, selectedDepartmentId]
   );
 
   const activeDepartments = useMemo(
@@ -244,6 +255,112 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
     setIsSaving(false);
   }
 
+  function beginEditDepartment(department) {
+    if (!isAdministrator) {
+      setActionMessage("Only an ARGOS administrator can edit departments.");
+      return;
+    }
+
+    setSelectedDepartmentId(department.id);
+    setEditingDepartment(department);
+    setEditDepartmentName(department.department_name || "");
+    setEditDepartmentCode(department.department_code || "");
+    setShowAddForm(false);
+    setActionMessage("");
+  }
+
+  function cancelEditDepartment() {
+    setEditingDepartment(null);
+    setEditDepartmentName("");
+    setEditDepartmentCode("");
+    setActionMessage("");
+  }
+
+  async function handleEditDepartment(event) {
+    event.preventDefault();
+
+    if (!editingDepartment) return;
+
+    const cleanedName = editDepartmentName.trim();
+    const cleanedCode = editDepartmentCode.trim().toUpperCase();
+
+    if (!cleanedName) {
+      setActionMessage("Department name is required.");
+      return;
+    }
+
+    if (!isAdministrator) {
+      setActionMessage("Only an ARGOS administrator can edit departments.");
+      return;
+    }
+
+    if (isDemoMode) {
+      setDepartments((currentDepartments) =>
+        currentDepartments
+          .map((department) =>
+            department.id === editingDepartment.id
+              ? {
+                  ...department,
+                  department_name: cleanedName,
+                  department_code: cleanedCode || null,
+                }
+              : department
+          )
+          .sort((first, second) =>
+            first.department_name.localeCompare(second.department_name)
+          )
+      );
+      cancelEditDepartment();
+      setActionMessage("Demo department updated.");
+      return;
+    }
+
+    if (!organizationId) {
+      setActionMessage("ARGOS could not resolve the current organization.");
+      return;
+    }
+
+    setIsSaving(true);
+    setActionMessage("");
+
+    const { data, error } = await supabase
+      .from("departments")
+      .update({
+        department_name: cleanedName,
+        department_code: cleanedCode || null,
+      })
+      .eq("id", editingDepartment.id)
+      .eq("organization_id", organizationId)
+      .select("id, organization_id, department_name, department_code, is_active, created_at, updated_at")
+      .single();
+
+    if (error) {
+      console.error("ARGOS department update failed:", error);
+      setActionMessage(
+        error.code === "23505"
+          ? "That department name or code already exists for this organization."
+          : "ARGOS could not update the department."
+      );
+      setIsSaving(false);
+      return;
+    }
+
+    setDepartments((currentDepartments) =>
+      currentDepartments
+        .map((department) =>
+          department.id === data.id ? data : department
+        )
+        .sort((first, second) =>
+          first.department_name.localeCompare(second.department_name)
+        )
+    );
+    setEditingDepartment(null);
+    setEditDepartmentName("");
+    setEditDepartmentCode("");
+    setActionMessage("Department updated.");
+    setIsSaving(false);
+  }
+
   async function handleDisableDepartment(department) {
     if (!isAdministrator) {
       setActionMessage("Only an ARGOS administrator can disable departments.");
@@ -318,10 +435,64 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
         >
           {showAddForm ? "Cancel Add" : "Add Department"}
         </button>
-        <button type="button" disabled>
-          Edit Department
+        <button
+          type="button"
+          disabled={!isAdministrator || !selectedDepartment}
+          onClick={() => {
+            if (editingDepartment) {
+              cancelEditDepartment();
+              return;
+            }
+
+            beginEditDepartment(selectedDepartment);
+          }}
+        >
+          {editingDepartment ? "Cancel Edit" : "Edit Department"}
         </button>
       </div>
+
+      {!editingDepartment && departments.length > 0 && (
+        <div className="argos-departments-action-message">
+          {selectedDepartment
+            ? `Selected: ${selectedDepartment.department_name}`
+            : "Select a department row to enable Edit Department."}
+        </div>
+      )}
+
+      {editingDepartment && (
+        <form className="argos-departments-add-form" onSubmit={handleEditDepartment}>
+          <label>
+            Department Name
+            <input
+              type="text"
+              value={editDepartmentName}
+              onChange={(event) => setEditDepartmentName(event.target.value)}
+              placeholder="Example: Public Works"
+              maxLength={120}
+              autoFocus
+            />
+          </label>
+
+          <label>
+            Department Code
+            <input
+              type="text"
+              value={editDepartmentCode}
+              onChange={(event) => setEditDepartmentCode(event.target.value)}
+              placeholder="Example: PW"
+              maxLength={20}
+            />
+          </label>
+
+          <button type="submit" disabled={isSaving}>
+            {isSaving ? "Saving…" : "Save Department"}
+          </button>
+
+          <button type="button" onClick={cancelEditDepartment} disabled={isSaving}>
+            Cancel
+          </button>
+        </form>
+      )}
 
       {showAddForm && (
         <form className="argos-departments-add-form" onSubmit={handleAddDepartment}>
@@ -386,12 +557,32 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
                 <th>Code</th>
                 <th>Asset Count</th>
                 <th>Status</th>
-                <th aria-label="Department actions">Action</th>
+                <th aria-label="Department status action">Action</th>
               </tr>
             </thead>
             <tbody>
               {departments.map((department) => (
-                <tr key={department.id}>
+                <tr
+                  key={department.id}
+                  onClick={() => {
+                    if (editingDepartment) return;
+                    setSelectedDepartmentId(department.id);
+                    setActionMessage("");
+                  }}
+                  aria-selected={selectedDepartmentId === department.id}
+                  style={{
+                    cursor: editingDepartment ? "default" : "pointer",
+                    background:
+                      selectedDepartmentId === department.id
+                        ? "rgba(25, 78, 121, 0.08)"
+                        : undefined,
+                    outline:
+                      selectedDepartmentId === department.id
+                        ? "2px solid rgba(25, 78, 121, 0.22)"
+                        : undefined,
+                    outlineOffset: "-2px",
+                  }}
+                >
                   <td className="argos-departments-name">
                     {department.department_name}
                   </td>
@@ -415,7 +606,10 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
                       className="argos-departments-row-action"
                       type="button"
                       disabled={!isAdministrator || !department.is_active}
-                      onClick={() => handleDisableDepartment(department)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleDisableDepartment(department);
+                      }}
                     >
                       {department.is_active ? "Disable" : "Disabled"}
                     </button>
@@ -430,10 +624,11 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
       <div className="argos-departments-foundation-note">
         <strong>Sprint 001F boundary</strong>
         <span>
-          Departments are now organization-scoped production records. Asset counts are
-          matched against the existing asset department text. This sprint does not yet
-          replace the asset department field with a department ID, edit department names,
-          reactivate departments, or change existing asset records.
+          Departments are organization-scoped production records. Department names and
+          codes can now be edited by Administrators. Asset counts remain matched against
+          the existing asset department text; renaming a department does not rewrite
+          historical asset records. Reactivation and department-ID migration remain
+          outside this sprint.
         </span>
       </div>
     </div>
