@@ -1091,6 +1091,7 @@ function App() {
   const [showDailySummary, setShowDailySummary] = useState(false);
   const [activeView, setActiveView] = useState("command");
   const [showFieldHome, setShowFieldHome] = useState(true);
+  const [fieldQueueMode, setFieldQueueMode] = useState("all");
   const [activeAdministrationSection, setActiveAdministrationSection] = useState("Organization Profile");
   const [fleetSearch, setFleetSearch] = useState("");
   const [fleetStatusFilter, setFleetStatusFilter] = useState("All Statuses");
@@ -1683,6 +1684,27 @@ useEffect(() => {
   const activeBoardAssets = assets.filter((asset) => asset.status !== "Ready");
   const readyArchiveAssets = assets.filter((asset) => asset.status === "Ready");
   const normalizedFleetSearch = fleetSearch.trim().toLowerCase();
+  const signedInTechnicianName = normalizeTechnicianDisplayName(
+    profile?.full_name || session?.user?.user_metadata?.full_name || ""
+  );
+  const signedInTechnicianKey = normalizeTechnicianKey(signedInTechnicianName);
+  const signedInTechnician = technicians.find(
+    (technician) => normalizeTechnicianKey(technician.technician_name) === signedInTechnicianKey
+  );
+  const isAssignedToSignedInTechnician = (asset) => {
+    if (signedInTechnician?.id && asset.technicianId) {
+      return asset.technicianId === signedInTechnician.id;
+    }
+
+    return (
+      signedInTechnicianName !== "Unassigned" &&
+      normalizeTechnicianKey(asset.technician) === signedInTechnicianKey
+    );
+  };
+  const assignedToMeAssets = assets.filter(isAssignedToSignedInTechnician);
+  const unitsAwaitingMeAssets = assignedToMeAssets.filter((asset) => asset.status !== "Ready");
+  const awaitingQcAssets = activeBoardAssets.filter((asset) => asset.status === "Awaiting QC");
+  const readyForPickupAssets = activeBoardAssets.filter((asset) => asset.status === "Ready for Pickup");
   const filteredFleetAssets = [...assets]
     .filter((asset) => {
       const matchesUnitSearch =
@@ -1690,8 +1712,12 @@ useEffect(() => {
         String(asset.unit || "").toLowerCase().includes(normalizedFleetSearch);
       const matchesStatusFilter =
         fleetStatusFilter === "All Statuses" || asset.status === fleetStatusFilter;
+      const matchesFieldQueue =
+        fieldQueueMode === "all" ||
+        (fieldQueueMode === "assigned" && isAssignedToSignedInTechnician(asset)) ||
+        (fieldQueueMode === "awaiting" && isAssignedToSignedInTechnician(asset) && asset.status !== "Ready");
 
-      return matchesUnitSearch && matchesStatusFilter;
+      return matchesUnitSearch && matchesStatusFilter && matchesFieldQueue;
     })
     .sort((firstAsset, secondAsset) =>
       String(firstAsset.unit || "").localeCompare(String(secondAsset.unit || ""), undefined, {
@@ -3603,6 +3629,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
       setFleetStatusFilter("All Statuses");
     }
 
+    setFieldQueueMode(options.fieldQueueMode || "all");
     setActiveView(view);
     setShowFieldHome(false);
   }
@@ -3612,9 +3639,9 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
       <section className="argos-field-home" aria-label="ARGOS Field mobile workspace">
         <header className="argos-field-hero">
           <div>
-            <p className="argos-field-kicker">Mobile Fleet Operations</p>
+            <p className="argos-field-kicker">Technician Fleet Operations</p>
             <h1>ARGOS <span>Field</span></h1>
-            <p>Scan, locate, and update fleet assets from the field.</p>
+            <p>Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}, {profile?.full_name?.split(" ")?.[0] || "Operator"}.</p>
           </div>
           <div className="argos-field-availability" aria-label={`${availability}% fleet availability`}>
             <span>Availability</span>
@@ -3624,10 +3651,32 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
         {isDemoMode && <p className="argos-field-demo-badge">Demo environment · fictional fleet data</p>}
 
+        <section className="argos-field-priority-strip" aria-label="Technician work metrics">
+          <article><span>Assigned to Me</span><strong>{assignedToMeAssets.length}</strong></article>
+          <article className="critical"><span>Critical</span><strong>{criticalAssets}</strong></article>
+          <article><span>Waiting Parts</span><strong>{waitingParts}</strong></article>
+          <article><span>Awaiting QC</span><strong>{awaitingQcAssets.length}</strong></article>
+          <article><span>Ready Pickup</span><strong>{readyForPickupAssets.length}</strong></article>
+        </section>
+
+        <section className="argos-field-primary-workflow" aria-label="Primary technician action">
+          <button className="argos-field-scan-button" type="button" onClick={() => { setShowFieldHome(false); handleOpenVinScanner(); }}>
+            <span className="argos-field-scan-icon">▣</span>
+            <span><strong>Scan VIN</strong><small>Identify a vehicle and open its record</small></span>
+            <b>›</b>
+          </button>
+        </section>
+
         <div className="argos-field-actions">
-          <button className="argos-field-action argos-field-action-primary" type="button" onClick={() => { setShowFieldHome(false); handleOpenVinScanner(); }}>
-            <span className="argos-field-action-icon">▣</span>
-            <span><strong>Scan VIN</strong><small>Open a vehicle by camera or manual VIN</small></span>
+          <button className="argos-field-action argos-field-action-emphasis" type="button" onClick={() => openFieldView("fleet", { resetFleet: true, fieldQueueMode: "assigned" })}>
+            <span className="argos-field-action-icon">✓</span>
+            <span><strong>My Assigned Work</strong><small>{assignedToMeAssets.length} vehicles currently assigned to your technician record</small></span>
+            <b>›</b>
+          </button>
+
+          <button className="argos-field-action" type="button" onClick={() => openFieldView("fleet", { resetFleet: true, fieldQueueMode: "awaiting" })}>
+            <span className="argos-field-action-icon">!</span>
+            <span><strong>Units Awaiting Me</strong><small>{unitsAwaitingMeAssets.length} assigned units require action</small></span>
             <b>›</b>
           </button>
 
@@ -3638,8 +3687,8 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
           </button>
 
           <button className="argos-field-action" type="button" onClick={() => openFieldView("command")}>
-            <span className="argos-field-action-icon">!</span>
-            <span><strong>Units Down</strong><small>{unavailableAssets} assets currently require attention</small></span>
+            <span className="argos-field-action-icon">↯</span>
+            <span><strong>Update Vehicle Status</strong><small>Open the operational exception board</small></span>
             <b>›</b>
           </button>
 
@@ -3650,25 +3699,14 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
           </button>
         </div>
 
-        <section className="argos-field-snapshot">
-          <h2>Operational Snapshot</h2>
-          <div>
-            <article><strong>{totalAssets}</strong><span>Total Assets</span></article>
-            <article><strong>{unavailableAssets}</strong><span>Units Down</span></article>
-            <article><strong>{waitingParts}</strong><span>Waiting Parts</span></article>
-            <article><strong>{criticalAssets}</strong><span>Critical</span></article>
-          </div>
-        </section>
-
         <footer className="argos-field-footer">
-          <span>{profile?.full_name || session?.user?.email || "ARGOS Demo Visitor"}</span>
+          <div><span>Signed in as</span><strong>{profile?.full_name || session?.user?.email || "ARGOS Demo Visitor"}</strong></div>
           <button type="button" onClick={handleSignOut}>{isDemoMode ? "Exit Demo" : "Log Out"}</button>
         </footer>
       </section>
-
       <header className="argos-field-workspace-header">
         <button type="button" onClick={() => setShowFieldHome(true)} aria-label="Return to ARGOS Field home">‹</button>
-        <div><strong>ARGOS Field</strong><span>{activeView === "command" ? "Units Down" : activeView === "fleet" ? "Find Vehicle" : activeView}</span></div>
+        <div><strong>ARGOS Field</strong><span>{activeView === "command" ? "Update Vehicle Status" : activeView === "fleet" && fieldQueueMode === "assigned" ? "My Assigned Work" : activeView === "fleet" && fieldQueueMode === "awaiting" ? "Units Awaiting Me" : activeView === "fleet" ? "Find Vehicle" : activeView}</span></div>
         <button type="button" onClick={handleOpenVinScanner} aria-label="Scan VIN">▣</button>
       </header>
       <aside className="argos-sidebar">
@@ -3877,13 +3915,13 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
           <>
             <header className="dashboard-header">
               <div>
-                <p className="eyebrow">Asset Roster</p>
-                <h2>My Fleet</h2>
+                <p className="eyebrow">{fieldQueueMode === "assigned" ? "Technician Work Queue" : fieldQueueMode === "awaiting" ? "Technician Exceptions" : "Asset Roster"}</p>
+                <h2>{fieldQueueMode === "assigned" ? "My Assigned Work" : fieldQueueMode === "awaiting" ? "Units Awaiting Me" : "My Fleet"}</h2>
               </div>
 
               <div className="refresh-box">
-                <span>Total Assets</span>
-                <strong>{assets.length}</strong>
+                <span>{fieldQueueMode === "all" ? "Total Assets" : "Queue Assets"}</span>
+                <strong>{fieldQueueMode === "all" ? assets.length : filteredFleetAssets.length}</strong>
               </div>
             </header>
 
@@ -3919,8 +3957,8 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
               </div>
 
               <div className="fleet-directory-guidance">
-                <p>Select any asset to open its expandable vehicle record. Ready assets moved to a down status will appear on the Command Center automatically.</p>
-                <span>Mobile VIN Intake: receiving workflow foundation prepared; desktop camera scanning is no longer part of the primary interface.</span>
+                <p>{fieldQueueMode === "assigned" ? "This mobile queue shows vehicles assigned to your technician record. Select a vehicle to review or update it." : fieldQueueMode === "awaiting" ? "This mobile queue shows your assigned vehicles that are not Ready and currently require technician action." : "Select any asset to open its expandable vehicle record. Ready assets moved to a down status will appear on the Command Center automatically."}</p>
+                <span>{fieldQueueMode !== "all" ? "Use the ARGOS Field back button to return to the technician home." : "Mobile VIN Intake: receiving workflow foundation prepared; desktop camera scanning is no longer part of the primary interface."}</span>
               </div>
 
               <table>
