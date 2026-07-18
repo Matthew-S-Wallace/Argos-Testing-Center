@@ -1726,3 +1726,106 @@ button.administration-menu-item.active {
     padding: 22px 18px max(24px, env(safe-area-inset-bottom));
   }
 }
+
+
+/* Sprint 001S Phase 2 — VIN-first field workflow */
+.argos-field-scan-result,
+.argos-field-quick-status {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .argos-field-scan-result {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0 1rem 1rem;
+    padding: 1rem;
+    border: 1px solid #b8d7c6;
+    border-radius: 16px;
+    background: #f1fbf5;
+  }
+
+  .argos-field-scan-result h4,
+  .argos-field-scan-result p,
+  .argos-field-scan-result span {
+    margin: 0;
+  }
+
+  .argos-field-scan-result h4 {
+    margin-top: 0.2rem;
+    color: #153524;
+    font-size: 1rem;
+  }
+
+  .argos-field-scan-result span {
+    display: block;
+    margin-top: 0.35rem;
+    color: #52655a;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.74rem;
+  }
+
+  .argos-field-scan-result > strong {
+    flex: 0 0 auto;
+    padding: 0.55rem 0.7rem;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #173f2a;
+    font-size: 0.76rem;
+  }
+
+  .argos-field-quick-status {
+    display: block;
+    margin: 0 1rem 1rem;
+    padding: 1rem;
+    border: 1px solid #d8dee5;
+    border-radius: 16px;
+    background: #ffffff;
+  }
+
+  .argos-field-quick-status h4,
+  .argos-field-quick-status p {
+    margin: 0;
+  }
+
+  .argos-field-quick-status h4 {
+    margin-top: 0.2rem;
+    color: #172b3d;
+    font-size: 1rem;
+  }
+
+  .argos-field-status-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+    margin-top: 0.85rem;
+  }
+
+  .argos-field-status-buttons button {
+    min-height: 46px;
+    padding: 0.65rem;
+    border: 1px solid #cbd4dd;
+    border-radius: 12px;
+    background: #f7f9fb;
+    color: #263746;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-align: left;
+  }
+
+  .argos-field-status-buttons button.active {
+    border-color: #163a5c;
+    background: #163a5c;
+    color: #ffffff;
+  }
+
+  .vehicle-record-panel .update-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+  }
+}

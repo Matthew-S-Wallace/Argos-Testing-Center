@@ -1092,6 +1092,7 @@ function App() {
   const [activeView, setActiveView] = useState("command");
   const [showFieldHome, setShowFieldHome] = useState(true);
   const [fieldQueueMode, setFieldQueueMode] = useState("all");
+  const [fieldScanContext, setFieldScanContext] = useState(null);
   const [activeAdministrationSection, setActiveAdministrationSection] = useState("Organization Profile");
   const [fleetSearch, setFleetSearch] = useState("");
   const [fleetStatusFilter, setFleetStatusFilter] = useState("All Statuses");
@@ -2792,6 +2793,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     setManualVinEntry("");
     setPendingNewAssetDraft(null);
     setVinScanStatus("");
+    setFieldScanContext(null);
     setShowVinScanner(true);
     setScannerRunId((currentRunId) => currentRunId + 1);
   }
@@ -2833,7 +2835,10 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
     if (matchedAsset) {
       setVinScanStatus(`Matched VIN ${scannedVin} to Unit ${matchedAsset.unit}.`);
+      setFieldScanContext({ type: "matched", vin: scannedVin, unit: matchedAsset.unit });
       setShowVinScanner(false);
+      setShowFieldHome(false);
+      setActiveView("fleet");
       handleSelectAsset(matchedAsset);
       return;
     }
@@ -2853,7 +2858,9 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
       );
     }
 
+    setFieldScanContext({ type: "new", vin: scannedVin, description: decodedAssetDescription || "Vehicle details pending" });
     setShowVinScanner(false);
+    setShowFieldHome(false);
     setSelectedAsset(null);
     setEditAsset(null);
     setPendingNewAssetDraft({
@@ -4538,12 +4545,43 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                   onClick={() => {
                     setEditAsset(null);
                     setSelectedAsset(null);
+                    setFieldScanContext(null);
                   }}
                   type="button"
                 >
                   ×
                 </button>
               </div>
+
+              {fieldScanContext?.type === "matched" && fieldScanContext.unit === editAsset.unit && (
+                <section className="argos-field-scan-result" aria-label="VIN match result">
+                  <div>
+                    <p className="eyebrow">VIN Match Confirmed</p>
+                    <h4>Unit {editAsset.unit} is ready for field action</h4>
+                    <span>{fieldScanContext.vin}</span>
+                  </div>
+                  <strong>{editAsset.status}</strong>
+                </section>
+              )}
+
+              <section className="argos-field-quick-status" aria-label="Quick vehicle status update">
+                <div>
+                  <p className="eyebrow">Field Quick Update</p>
+                  <h4>Set current operational status</h4>
+                </div>
+                <div className="argos-field-status-buttons">
+                  {statusOptions.map((status) => (
+                    <button
+                      type="button"
+                      key={status}
+                      className={editAsset.status === status ? "active" : ""}
+                      onClick={() => setEditAsset((currentAsset) => applyStatusChange(currentAsset, status))}
+                    >
+                      {status}
+                    </button>
+                  ))}
+                </div>
+              </section>
 
               {renderAssetForm(
                 editAsset,
@@ -4561,6 +4599,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                   onClick={() => {
                     setEditAsset(null);
                     setSelectedAsset(null);
+                    setFieldScanContext(null);
                   }}
                   type="button"
                 >
