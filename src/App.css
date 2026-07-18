@@ -1996,3 +1996,114 @@ button.administration-menu-item.active {
   }
 }
 
+
+
+/* Sprint 001S Phase 2.6 — Scanner Success, Torch, and Continuous Workflow */
+
+.argos-vin-scanner-viewport {
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.argos-vin-scanner-viewport.is-success {
+  border-color: #23b26d;
+  box-shadow:
+    0 0 0 3px rgba(35, 178, 109, 0.2),
+    0 14px 34px rgba(7, 26, 51, 0.24);
+}
+
+.argos-vin-scanner-viewport.is-success .argos-vin-scanner-corner {
+  border-color: #35e28a;
+  filter: drop-shadow(0 0 6px rgba(53, 226, 138, 0.85));
+}
+
+.argos-vin-scanner-viewport.is-success .argos-vin-scanner-laser {
+  background: #35e28a;
+  box-shadow:
+    0 0 4px #35e28a,
+    0 0 12px rgba(53, 226, 138, 0.95),
+    0 0 24px rgba(53, 226, 138, 0.7);
+  animation: none;
+}
+
+.argos-vin-scanner-success {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  font-family: Inter, system-ui, sans-serif;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  animation: argosVinSuccessIn 180ms ease-out both;
+}
+
+.argos-vin-scanner-success span {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: #159457;
+  font-size: 38px;
+  line-height: 1;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.3);
+}
+
+.argos-vin-scanner-success strong {
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(4, 21, 42, 0.88);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-vin-torch-button.active {
+  border-color: #d8a93b;
+  background: #fff8e8;
+  color: #82550f;
+}
+
+.argos-save-scan-next-button {
+  border-color: #9a6614;
+  color: #82550f;
+}
+
+@keyframes argosVinSuccessIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@media (max-width: 760px) {
+  .argos-vin-scanner-actions {
+    flex-wrap: wrap;
+  }
+
+  .argos-vin-scanner-actions .argos-vin-torch-button {
+    width: 100%;
+  }
+
+  .argos-save-scan-next-button {
+    order: -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .argos-vin-scanner-success {
+    animation: none;
+  }
+}

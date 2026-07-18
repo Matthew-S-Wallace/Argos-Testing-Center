@@ -1101,8 +1101,12 @@ function App() {
   const vinScannerVideoRef = useRef(null);
   const vinScannerControlsRef = useRef(null);
   const vinScanLockedRef = useRef(false);
+  const fieldSaveCompletedRef = useRef(false);
   const [showVinScanner, setShowVinScanner] = useState(false);
   const [vinScanStatus, setVinScanStatus] = useState("");
+  const [vinScanSuccess, setVinScanSuccess] = useState(false);
+  const [torchSupported, setTorchSupported] = useState(false);
+  const [torchEnabled, setTorchEnabled] = useState(false);
   const [lastScannedVin, setLastScannedVin] = useState("");
   const [manualVinEntry, setManualVinEntry] = useState("");
   const [pendingNewAssetDraft, setPendingNewAssetDraft] = useState(null);
@@ -1659,6 +1663,13 @@ useEffect(() => {
 
         if (!isCancelled) {
           vinScannerControlsRef.current = controls;
+
+          const activeTrack = vinScannerVideoRef.current?.srcObject
+            ?.getVideoTracks?.()[0];
+          const capabilities = activeTrack?.getCapabilities?.() || {};
+          setTorchSupported(Boolean(capabilities.torch));
+          setTorchEnabled(false);
+
           setVinScanStatus(
             preferredCamera
               ? `Camera active (${preferredCamera.label || "rear camera"}). Center the VIN barcode or registration barcode in view.`
@@ -1678,6 +1689,8 @@ useEffect(() => {
       isCancelled = true;
       vinScannerControlsRef.current?.stop();
       vinScannerControlsRef.current = null;
+      setTorchSupported(false);
+      setTorchEnabled(false);
     };
   }, [showVinScanner, scannerRunId, assets]);
 
@@ -2022,6 +2035,7 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
   function handleSaveNewAsset() { completeSaveNewAsset(); }
 
   async function completeSave() {
+    fieldSaveCompletedRef.current = false;
     const originalUnit = selectedAsset.unit;
     const originalVin = selectedAsset.vin || "";
     const statusChanged = selectedAsset.status !== editAsset.status;
@@ -2065,6 +2079,7 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
         setCompletedRepairEvents((currentEvents) => [completedEvent, ...currentEvents]);
         setStatusHistoryEvents((currentEvents) => [historyEvent, ...currentEvents]);
         setAssets((currentAssets) => currentAssets.map((asset) => asset.unit === originalUnit ? returnedAsset : asset));
+        fieldSaveCompletedRef.current = true;
         setSelectedAsset(null);
         setEditAsset(null);
         setActiveView("history");
@@ -2077,6 +2092,7 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
       }
 
       setAssets((currentAssets) => currentAssets.map((asset) => asset.unit === originalUnit ? updatedAsset : asset));
+      fieldSaveCompletedRef.current = true;
       setSelectedAsset(updatedAsset);
       setEditAsset(null);
       setActiveView(updatedAsset.status === "Ready" ? "fleet" : "command");
@@ -2415,9 +2431,20 @@ setAssets((currentAssets) =>
   currentAssets.map((asset) => (asset.unit === originalUnit ? savedAsset : asset))
 );
 
+fieldSaveCompletedRef.current = true;
 setSelectedAsset(savedAsset);
 setEditAsset(null);
 setActiveView(savedAsset.status === "Ready" ? "history" : "command");
+  }
+
+  async function handleSaveAndScanNext() {
+    fieldSaveCompletedRef.current = false;
+    await completeSave();
+
+    if (!fieldSaveCompletedRef.current) return;
+
+    setFieldScanContext(null);
+    handleOpenVinScanner();
   }
 
   async function completeSaveNewAsset() {
@@ -2784,6 +2811,32 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
   }
 
 
+  async function handleToggleScannerTorch() {
+    const activeTrack = vinScannerVideoRef.current?.srcObject
+      ?.getVideoTracks?.()[0];
+
+    if (!activeTrack || !torchSupported) return;
+
+    const nextTorchState = !torchEnabled;
+
+    try {
+      await activeTrack.applyConstraints({
+        advanced: [{ torch: nextTorchState }],
+      });
+      setTorchEnabled(nextTorchState);
+    } catch (error) {
+      console.warn("ARGOS scanner torch control is unavailable:", error);
+      setTorchSupported(false);
+      setTorchEnabled(false);
+    }
+  }
+
+  function resetVinScannerFeedback() {
+    setVinScanSuccess(false);
+    setTorchSupported(false);
+    setTorchEnabled(false);
+  }
+
   function handleOpenVinScanner() {
     vinScanLockedRef.current = false;
     setSelectedAsset(null);
@@ -2793,6 +2846,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     setManualVinEntry("");
     setPendingNewAssetDraft(null);
     setVinScanStatus("");
+    resetVinScannerFeedback();
     setFieldScanContext(null);
     setShowVinScanner(true);
     setScannerRunId((currentRunId) => currentRunId + 1);
@@ -2802,6 +2856,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     vinScanLockedRef.current = false;
     vinScannerControlsRef.current?.stop();
     vinScannerControlsRef.current = null;
+    resetVinScannerFeedback();
     setShowVinScanner(false);
   }
 
@@ -2811,6 +2866,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     vinScannerControlsRef.current = null;
     setLastScannedVin("");
     setVinScanStatus("");
+    resetVinScannerFeedback();
     setScannerRunId((currentRunId) => currentRunId + 1);
   }
 
@@ -2832,6 +2888,14 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     vinScannerControlsRef.current?.stop();
     vinScannerControlsRef.current = null;
     setLastScannedVin(scannedVin);
+    setVinScanSuccess(true);
+    setVinScanStatus(
+      matchedAsset
+        ? `VIN recognized. Unit ${matchedAsset.unit} found.`
+        : "VIN recognized. Preparing a new vehicle record."
+    );
+
+    await new Promise((resolve) => window.setTimeout(resolve, 650));
 
     if (matchedAsset) {
       setVinScanStatus(`Matched VIN ${scannedVin} to Unit ${matchedAsset.unit}.`);
@@ -4331,7 +4395,9 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
               <div className="update-form">
                 <div className="issue-field">
-                  <div className="argos-vin-scanner-viewport">
+                  <div
+                    className={`argos-vin-scanner-viewport${vinScanSuccess ? " is-success" : ""}`}
+                  >
                     <video
                       ref={vinScannerVideoRef}
                       className="argos-vin-scanner-video"
@@ -4351,8 +4417,17 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                         <span className="argos-vin-scanner-laser" />
                       </div>
 
+                      {vinScanSuccess && (
+                        <div className="argos-vin-scanner-success">
+                          <span aria-hidden="true">✓</span>
+                          <strong>VIN Recognized</strong>
+                        </div>
+                      )}
+
                       <div className="argos-vin-scanner-instruction">
-                        Align VIN barcode inside the guide
+                        {vinScanSuccess
+                          ? "Opening vehicle record"
+                          : "Align VIN barcode inside the guide"}
                       </div>
                     </div>
                   </div>
@@ -4376,7 +4451,17 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 </label>
               </div>
 
-              <div className="update-actions">
+              <div className="update-actions argos-vin-scanner-actions">
+                {torchSupported && (
+                  <button
+                    className={`cancel-button argos-vin-torch-button${torchEnabled ? " active" : ""}`}
+                    onClick={handleToggleScannerTorch}
+                    type="button"
+                  >
+                    {torchEnabled ? "Turn Flashlight Off" : "Turn Flashlight On"}
+                  </button>
+                )}
+
                 <button className="cancel-button" onClick={handleCloseVinScanner} type="button">
                   Cancel
                 </button>
@@ -4629,6 +4714,16 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 >
                   Cancel
                 </button>
+
+                {fieldScanContext?.type === "matched" && (
+                  <button
+                    className="cancel-button argos-save-scan-next-button"
+                    onClick={handleSaveAndScanNext}
+                    type="button"
+                  >
+                    Save & Scan Next
+                  </button>
+                )}
 
                 <button className="save-button" onClick={handleSave} type="button">
                   Save Fleet Update
