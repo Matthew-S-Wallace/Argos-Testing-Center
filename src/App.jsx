@@ -3,6 +3,7 @@ import { BrowserMultiFormatReader } from "@zxing/browser";
 import { supabase } from "./supabaseClient";
 import AdministrationModule from "./components/Administration/ARGOS_Administration_Module_Component";
 import CommandCenter from "./components/CommandCenter/ARGOS_Command_Center_Component";
+import ARGOSOperationsNavigation from "./components/Layout/ARGOS_Operations_Navigation_Blue_Shield_Reference_001U";
 import { canViewAdministration } from "./utils/ARGOS_Permission_Resolver";
 import "./App.css";
 
@@ -3894,94 +3895,33 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         <div><strong>ARGOS Field</strong><span>{activeView === "command" ? "Update Vehicle Status" : activeView === "fleet" && fieldQueueMode === "assigned" ? "My Assigned Work" : activeView === "fleet" && fieldQueueMode === "awaiting" ? "Units Awaiting Me" : activeView === "fleet" ? "Find Vehicle" : activeView}</span></div>
         <button type="button" onClick={handleOpenVinScanner} aria-label="Scan VIN">▣</button>
       </header>
-      <aside className="argos-sidebar">
-        <div className="argos-logo">
-          <h1>ARGOS</h1>
-          <p>Fleet Operational Awareness</p>
-          <div className="logo-rule">
-            <span></span>
-            <strong>✦</strong>
-            <span></span>
-          </div>
-        </div>
+      <ARGOSOperationsNavigation
+        activeView={activeView}
+        onNavigate={(nextView) => {
+          if (nextView === "fleet") {
+            setFleetSearch("");
+            setFleetStatusFilter("All Statuses");
+          }
 
-        {isDemoMode && (
-          <div style={{ margin: "0 1rem 1rem", padding: "0.75rem", border: "1px solid rgba(210, 160, 72, 0.55)", borderRadius: "10px", background: "rgba(210, 160, 72, 0.12)", textAlign: "center" }}>
-            <strong style={{ display: "block", color: "#f1c878", fontSize: "0.78rem", letterSpacing: "0.12em" }}>DEMO ENVIRONMENT</strong>
-            <span style={{ display: "block", marginTop: "0.3rem", color: "#cbd5df", fontSize: "0.7rem", lineHeight: 1.35 }}>Fictional data · changes are temporary</span>
-          </div>
-        )}
-
-        <nav className="sidebar-nav">
-          <button
-            className={`nav-item ${activeView === "command" ? "active" : ""}`}
-            type="button"
-            onClick={() => setActiveView("command")}
-          >
-            ⌂ <span>Command Center</span>
-          </button>
-
-          <button
-            className={`nav-item ${activeView === "fleet" ? "active" : ""}`}
-            type="button"
-            onClick={() => {
-              setFleetSearch("");
-              setFleetStatusFilter("All Statuses");
-              setActiveView("fleet");
-            }}
-          >
-            ◫ <span>My Fleet</span>
-          </button>
-
-          <button className="nav-item" type="button" onClick={() => setShowDailySummary(true)}>
-            ✦ <span>Daily Summary</span>
-          </button>
-
-
-          <button
-            className={`nav-item ${activeView === "history" ? "active" : ""}`}
-            type="button"
-            onClick={() => setActiveView("history")}
-          >
-            ⚒ <span>Repair History</span>
-          </button>
-
-          <button
-            className={`nav-item ${activeView === "technicians" ? "active" : ""}`}
-            type="button"
-            onClick={() => setActiveView("technicians")}
-          >
-            👥 <span>Technicians</span>
-          </button>
-          <button
-            className={`nav-item ${activeView === "reports" ? "active" : ""}`}
-            type="button"
-            onClick={() => setActiveView("reports")}
-          >
-            ▥ <span>Reports</span>
-          </button>
-          {hasAdministrationAccess && (
-            <button
-              className={`nav-item ${activeView === "administration" ? "active" : ""}`}
-              type="button"
-              onClick={() => setActiveView("administration")}
-            >
-              ⚙ <span>Administration</span>
-            </button>
-          )}
-
-          <button className="nav-item" type="button" onClick={handleSignOut}>
-            ⇥ <span>{isDemoMode ? "Exit Demo" : "Log Out"}</span>
-          </button>
-        </nav>
-
-        <div className="sidebar-footer">
-          <strong>{profile?.full_name || session?.user?.email || "ARGOS Demo Visitor"}</strong>
-          <span>{profile?.role || "user"}</span>
-          <strong>ARGOS™</strong>
-          <span>Fleet Operational Awareness</span>
-        </div>
-      </aside>
+          setActiveView(nextView);
+        }}
+        onOpenDailySummary={() => setShowDailySummary(true)}
+        onSignOut={handleSignOut}
+        hasAdministrationAccess={hasAdministrationAccess}
+        isDemoMode={isDemoMode}
+        organizationName={
+          organizationProfile?.fleet_name ||
+          organizationProfile?.name ||
+          "Fleet Services"
+        }
+        userName={
+          profile?.full_name ||
+          session?.user?.email ||
+          "ARGOS Demo Visitor"
+        }
+        userRole={profile?.role || (isDemoMode ? "demo" : "user")}
+        versionLabel="Version 1.0"
+      />
 
       <section className="dashboard">
         {activeView === "command" && (

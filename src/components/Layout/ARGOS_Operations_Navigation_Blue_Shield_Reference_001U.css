@@ -1,0 +1,260 @@
+/**************************************************************************************************
+ * ARGOS™ Fleet Management Platform
+ * Sprint 001U
+ * Operations Navigation — Blue Shield Reference Design
+ **************************************************************************************************/
+
+.argos-blue-navigation {
+  --argos-blue-bg-top: #061a39;
+  --argos-blue-bg-bottom: #03152f;
+  --argos-blue-primary: #1267f2;
+  --argos-blue-primary-bright: #1978ff;
+  --argos-blue-text: #f7f9ff;
+  --argos-blue-muted: #b9c6dc;
+  --argos-blue-line: rgba(139, 169, 213, 0.16);
+
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  min-height: 720px;
+  overflow: hidden;
+  color: var(--argos-blue-text);
+  background:
+    radial-gradient(circle at 90% 5%, rgba(31, 112, 240, 0.1), transparent 30%),
+    linear-gradient(180deg, var(--argos-blue-bg-top) 0%, #041a38 48%, var(--argos-blue-bg-bottom) 100%);
+  border-right: 1px solid rgba(49, 104, 176, 0.18);
+  box-shadow: 16px 0 38px rgba(0, 10, 30, 0.16);
+}
+
+.argos-blue-navigation__brand {
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:26px 18px 20px;
+}
+
+.argos-blue-navigation__logo {
+  display:block;
+  width:170px;
+  height:auto;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+
+
+
+
+
+.argos-blue-navigation__demo {
+  margin: 0 10px 10px;
+  padding: 7px 11px;
+  color: #dbe9ff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  background: rgba(18, 103, 242, 0.18);
+  border: 1px solid rgba(72, 148, 255, 0.22);
+  border-radius: 9px;
+}
+
+.argos-blue-navigation__menu {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+  min-height: 0;
+  padding: 10px 9px 20px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(75, 136, 218, 0.3) transparent;
+}
+
+.argos-blue-navigation__item {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 13px;
+  color: #f1f5ff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.argos-blue-navigation__item svg {
+  color: #b9c7df;
+  transition: color 150ms ease, transform 150ms ease;
+}
+
+.argos-blue-navigation__item:hover {
+  background: rgba(25, 83, 161, 0.22);
+  border-color: rgba(104, 162, 236, 0.08);
+  transform: translateX(1px);
+}
+
+.argos-blue-navigation__item:hover svg {
+  color: #e4edff;
+}
+
+.argos-blue-navigation__item:focus-visible {
+  outline: 2px solid #5ca8ff;
+  outline-offset: 2px;
+}
+
+.argos-blue-navigation__item.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, #0e52c4 0%, var(--argos-blue-primary) 72%, #0755cf 100%);
+  border-color: rgba(73, 143, 255, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 8px 20px rgba(0, 64, 171, 0.25);
+}
+
+.argos-blue-navigation__item.is-active svg {
+  color: #fff;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.14));
+}
+
+.argos-blue-navigation__footer {
+  margin: 0 17px;
+  padding: 0 0 15px;
+  border-top: 1px solid var(--argos-blue-line);
+}
+
+.argos-blue-navigation__organization,
+.argos-blue-navigation__identity {
+  display: grid;
+  grid-template-columns: 31px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  color: #f6f8ff;
+}
+
+.argos-blue-navigation__organization {
+  min-height: 84px;
+  border-bottom: 1px solid var(--argos-blue-line);
+}
+
+.argos-blue-navigation__organization > svg:first-child {
+  color: #b9c7df;
+}
+
+.argos-blue-navigation__organization > svg:last-child {
+  color: #244c80;
+}
+
+.argos-blue-navigation__organization div,
+.argos-blue-navigation__identity-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.argos-blue-navigation__organization strong,
+.argos-blue-navigation__identity-copy strong {
+  overflow: hidden;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 680;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.argos-blue-navigation__organization span,
+.argos-blue-navigation__identity-copy > span {
+  margin-top: 2px;
+  overflow: hidden;
+  color: #d7dfed;
+  font-size: 12px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.argos-blue-navigation__identity {
+  min-height: 82px;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.argos-blue-navigation__identity:hover strong {
+  color: #73b6ff;
+}
+
+.argos-blue-navigation__identity:focus-visible {
+  outline: 2px solid #5ca8ff;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.argos-blue-navigation__identity > svg {
+  color: #f1f5ff;
+}
+
+.argos-blue-navigation__avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-left: -4px;
+  color: #17335a;
+  font-size: 12px;
+  font-weight: 800;
+  background:
+    radial-gradient(circle at 50% 31%, #fff 0 18%, transparent 19%),
+    radial-gradient(ellipse at 50% 79%, #fff 0 34%, transparent 35%),
+    linear-gradient(180deg, #dfe6f2, #9eacc1);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.22);
+}
+
+.argos-blue-navigation__version {
+  display: block;
+  margin-top: -7px;
+  color: rgba(171, 192, 222, 0.46);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+@media (max-width: 980px) {
+  .argos-blue-navigation {
+    position: relative;
+    height: auto;
+    min-height: auto;
+  }
+
+  .argos-blue-navigation__menu {
+    overflow: visible;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .argos-blue-navigation__item,
+  .argos-blue-navigation__item svg {
+    transition: none;
+  }
+}
