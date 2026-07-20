@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { supabase } from "./supabaseClient";
 import AdministrationModule from "./components/Administration/ARGOS_Administration_Module_Component";
+import CommandCenter from "./components/CommandCenter/ARGOS_Command_Center_Component";
 import { canViewAdministration } from "./utils/ARGOS_Permission_Resolver";
 import "./App.css";
 
@@ -3984,115 +3985,36 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
       <section className="dashboard">
         {activeView === "command" && (
-          <>
-            <header className="dashboard-header">
-              <div>
-                <p className="eyebrow">Command Center</p>
-                <h2>Fleet Visibility Dashboard</h2>
-              </div>
-
-              <div className="refresh-box">
-                <span>Units Down</span>
-                <strong>{activeBoardAssets.length}</strong>
-              </div>
-            </header>
-
-            <section className="metrics-row">
-              <div className="availability-card">
-                <span>Current Fleet Availability</span>
-                <strong>{availability}%</strong>
-                <p>
-                  {readyAssets} Ready · {unavailableAssets} Units Down · {totalAssets} Total Active Fleet Assets
-                </p>
-              </div>
-
-              <div className="metric-card"><span>Total Assets</span><strong>{totalAssets}</strong></div>
-              <div className="metric-card"><span>Units Down</span><strong>{unavailableAssets}</strong></div>
-              <div className="metric-card"><span>Waiting Parts</span><strong>{waitingParts}</strong></div>
-              <div className="metric-card critical"><span>Critical</span><strong>{criticalAssets}</strong></div>
-            </section>
-
-            <section className="status-board">
-              <div className="status-board-header">
-                <div>
-                  <p className="eyebrow">✦ Live Status Board</p>
-                  <h3>Assets Requiring Visibility</h3>
-                </div>
-
-                <div>
-                  <button type="button" onClick={() => {
-                    setSelectedAsset(null);
-                    setEditAsset(null);
-                    setNewAsset(createBlankAsset());
-                    setActiveView("command");
-                  }}>
-                    Add Asset
-                  </button>{" "}
-                  <button type="button" onClick={handleDownloadCSVTemplate}>Download CSV Template</button>{" "}
-                  <input
-                    ref={csvInputRef}
-                    type="file"
-                    accept=".csv,text/csv"
-                    onChange={handleImportCSV}
-                    style={{ display: "none" }}
-                  />
-                  <button type="button" onClick={() => csvInputRef.current?.click()}>Import CSV</button>{" "}
-                </div>
-              </div>
-
-              {importStatus && <p className="eyebrow">{importStatus}</p>}
-
-              <table>
-                <thead>
-                  <tr>
-                    <th>Unit</th>
-                    <th>Department</th>
-                    <th>Asset</th>
-                    <th>Status</th>
-                    <th>Reason</th>
-                    <th>Priority</th>
-                    <th>Days Down</th>
-                    <th>Technician</th>
-                    <th>RTS</th>
-                    <th>Details</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {activeBoardAssets.length === 0 ? (
-                    <tr>
-                      <td colSpan="10">
-                        No assets currently require visibility. Ready assets are not shown on the Command Center.
-                      </td>
-                    </tr>
-                  ) : (
-                    activeBoardAssets.map((asset) => (
-                      <tr
-                        key={asset.unit}
-                        onClick={() => handleSelectAsset(asset)}
-                        className={selectedAsset?.unit === asset.unit ? "selected-row" : ""}
-                      >
-                        <td className="unit">{asset.unit}</td>
-                        <td>{asset.department}</td>
-                        <td>{asset.asset}</td>
-                        <td>
-                          <span className={`status-pill ${getStatusClass(asset.status)}`}>
-                            {asset.status}
-                          </span>
-                        </td>
-                        <td>{asset.reason}</td>
-                        <td className={asset.priority.toLowerCase()}>{asset.priority}</td>
-                        <td>{calculateDaysDown(asset.downSince, asset.status)}</td>
-                        <td>{asset.technician}</td>
-                        <td>{formatRTS(asset)}</td>
-                        <td>{asset.details}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </section>
-          </>
+          <CommandCenter
+            availability={availability}
+            readyAssets={readyAssets}
+            unavailableAssets={unavailableAssets}
+            totalAssets={totalAssets}
+            waitingParts={waitingParts}
+            criticalAssets={criticalAssets}
+            activeBoardAssets={activeBoardAssets}
+            assets={assets}
+            completedRepairRecords={completedRepairRecords}
+            statusHistoryEvents={statusHistoryEvents}
+            technicianAnalytics={technicianAnalytics}
+            organizationName={organizationProfile?.fleet_name || organizationProfile?.name || "Fleet Services"}
+            selectedAsset={selectedAsset}
+            importStatus={importStatus}
+            csvInputRef={csvInputRef}
+            onAddAsset={() => {
+              setSelectedAsset(null);
+              setEditAsset(null);
+              setNewAsset(createBlankAsset());
+              setActiveView("command");
+            }}
+            onDownloadCSVTemplate={handleDownloadCSVTemplate}
+            onImportCSV={handleImportCSV}
+            onSelectCSV={() => csvInputRef.current?.click()}
+            onSelectAsset={handleSelectAsset}
+            getStatusClass={getStatusClass}
+            calculateDaysDown={calculateDaysDown}
+            formatRTS={formatRTS}
+          />
         )}
 
         {activeView === "fleet" && (
