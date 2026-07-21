@@ -1,0 +1,98 @@
+.argos-executive-kpi-card {
+  min-height: 122px;
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+  padding: 1rem;
+  border: 1px solid var(--argos-color-border);
+  border-radius: var(--argos-radius-md);
+  background: var(--argos-color-surface);
+  box-shadow: var(--argos-shadow-md);
+}
+
+.argos-executive-kpi-card__icon {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--argos-radius-md);
+  color: #fff;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 8px 16px rgba(16, 24, 40, 0.12);
+}
+
+.argos-executive-kpi-card__label {
+  display: block;
+  color: #475467;
+  font-size: 0.69rem;
+  font-weight: 780;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-executive-kpi-card__value {
+  display: block;
+  margin: 0.16rem 0 0.14rem;
+  color: var(--argos-color-primary);
+  font-size: 2.25rem;
+  line-height: 1;
+  font-weight: 820;
+}
+
+.argos-executive-kpi-card__detail {
+  color: var(--argos-color-muted);
+  font-size: 0.76rem;
+}
+
+.argos-executive-kpi-card--green .argos-executive-kpi-card__icon {
+  background: linear-gradient(145deg, #16a34a, #047857);
+}
+.argos-executive-kpi-card--green .argos-executive-kpi-card__value { color: var(--argos-color-success); }
+
+.argos-executive-kpi-card--blue .argos-executive-kpi-card__icon {
+  background: linear-gradient(145deg, #2563eb, #1d4ed8);
+}
+
+.argos-executive-kpi-card--amber .argos-executive-kpi-card__icon {
+  background: linear-gradient(145deg, #d97706, #b45309);
+}
+.argos-executive-kpi-card--amber .argos-executive-kpi-card__value { color: var(--argos-color-warning); }
+
+.argos-executive-kpi-card--red .argos-executive-kpi-card__icon {
+  background: linear-gradient(145deg, #dc2626, #b91c1c);
+}
+.argos-executive-kpi-card--red .argos-executive-kpi-card__value { color: var(--argos-color-danger); }
+
+.argos-executive-metric {
+  min-height: 104px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.26rem;
+  padding: 0.68rem 0.38rem;
+  border: 1px solid #e4e9f1;
+  border-radius: var(--argos-radius-md);
+  background: #fbfcfe;
+  text-align: center;
+}
+
+.argos-executive-metric__label {
+  color: #344054;
+  font-size: 0.62rem;
+  line-height: 1.16;
+  font-weight: 760;
+}
+
+.argos-executive-metric__value {
+  color: var(--argos-color-primary);
+  font-size: 1.52rem;
+  line-height: 1;
+  font-weight: 820;
+}
+
+.argos-executive-metric__detail {
+  color: var(--argos-color-info);
+  font-size: 0.56rem;
+}

@@ -1,0 +1,32 @@
+.argos-executive-empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  padding: 1.5rem;
+  border: 1px dashed var(--argos-color-border-strong);
+  border-radius: var(--argos-radius-md);
+  background: var(--argos-color-surface-subtle);
+  color: var(--argos-color-muted);
+  text-align: center;
+}
+
+.argos-executive-empty-state__icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--argos-radius-md);
+  background: var(--argos-color-primary-soft);
+  color: var(--argos-color-primary);
+}
+
+.argos-executive-empty-state strong {
+  color: var(--argos-color-heading);
+  font-size: 0.9rem;
+}
+
+.argos-executive-empty-state p {
+  max-width: 34rem;
+  margin: 0;
+  font-size: 0.8rem;
+}

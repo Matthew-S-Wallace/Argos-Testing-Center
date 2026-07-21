@@ -1,0 +1,55 @@
+.argos-executive-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: fit-content;
+  padding: 0.22rem 0.55rem;
+  border-radius: var(--argos-radius-pill);
+  font-size: 0.72rem;
+  line-height: 1;
+  font-weight: 780;
+}
+
+.argos-executive-badge--neutral {
+  background: var(--argos-color-surface-muted);
+  color: #344054;
+}
+
+.argos-executive-badge--blue {
+  background: var(--argos-color-primary-soft);
+  color: var(--argos-color-primary);
+}
+
+.argos-executive-badge--green {
+  background: var(--argos-color-success-soft);
+  color: var(--argos-color-success);
+}
+
+.argos-executive-badge--amber {
+  background: var(--argos-color-warning-soft);
+  color: var(--argos-color-warning);
+}
+
+.argos-executive-badge--red {
+  background: var(--argos-color-danger-soft);
+  color: var(--argos-color-danger);
+}
+
+.argos-executive-badge--teal {
+  background: var(--argos-color-info-soft);
+  color: var(--argos-color-info);
+}
+
+.argos-executive-avatar {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  border-radius: var(--argos-radius-md);
+  background: var(--argos-color-primary);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 820;
+  box-shadow: 0 6px 12px rgba(29, 78, 216, 0.18);
+}

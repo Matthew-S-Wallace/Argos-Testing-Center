@@ -1,0 +1,108 @@
+.argos-executive-stack {
+  display: grid;
+  gap: var(--argos-space-4);
+}
+
+.argos-executive-grid {
+  display: grid;
+  gap: var(--argos-space-4);
+}
+
+.argos-executive-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.argos-executive-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.argos-executive-grid--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.argos-executive-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: var(--argos-space-4);
+  padding: 1.05rem 1.15rem;
+  border: 1px solid #d8e0ea;
+  border-radius: var(--argos-radius-md);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(247, 249, 252, 0.94)),
+    linear-gradient(90deg, rgba(38, 102, 217, 0.12), rgba(20, 184, 166, 0.08));
+  box-shadow: var(--argos-shadow-lg);
+}
+
+.argos-executive-page-header__content {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 0.18rem;
+}
+
+.argos-executive-page-header__eyebrow {
+  margin: 0;
+  color: var(--argos-color-primary);
+  font-size: 0.69rem;
+  font-weight: 820;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.argos-executive-page-header__title {
+  margin: 0;
+  color: var(--argos-color-heading);
+  font-size: clamp(1.7rem, 2.1vw, 2.28rem);
+  line-height: 1.05;
+  font-weight: 820;
+}
+
+.argos-executive-page-header__subtitle {
+  margin: 0;
+  color: var(--argos-color-muted);
+  font-size: 0.96rem;
+}
+
+.argos-executive-page-header__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.argos-executive-section {
+  min-width: 0;
+}
+
+.argos-executive-section--surface {
+  padding: var(--argos-space-4);
+  border: 1px solid var(--argos-color-border);
+  border-radius: var(--argos-radius-md);
+  background: var(--argos-color-surface);
+  box-shadow: var(--argos-shadow-md);
+}
+
+@media (max-width: 980px) {
+  .argos-executive-grid--3,
+  .argos-executive-grid--4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .argos-executive-page-header {
+    flex-direction: column;
+  }
+
+  .argos-executive-page-header__actions {
+    justify-content: flex-start;
+  }
+
+  .argos-executive-grid--2,
+  .argos-executive-grid--3,
+  .argos-executive-grid--4 {
+    grid-template-columns: 1fr;
+  }
+}

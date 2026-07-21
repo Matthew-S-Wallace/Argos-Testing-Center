@@ -1,0 +1,79 @@
+.argos-executive-button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0 0.8rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 760;
+  cursor: pointer;
+  transition:
+    transform var(--argos-transition-fast),
+    border-color var(--argos-transition-fast),
+    background var(--argos-transition-fast),
+    box-shadow var(--argos-transition-fast);
+}
+
+.argos-executive-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.argos-executive-button:focus-visible {
+  outline: 3px solid rgba(29, 78, 216, 0.22);
+  outline-offset: 2px;
+}
+
+.argos-executive-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.argos-executive-button--primary {
+  background: var(--argos-color-primary);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(29, 78, 216, 0.18);
+}
+
+.argos-executive-button--primary:hover:not(:disabled) {
+  background: var(--argos-color-primary-hover);
+}
+
+.argos-executive-button--secondary {
+  border-color: var(--argos-color-border-strong);
+  background: var(--argos-color-surface);
+  color: var(--argos-color-heading);
+}
+
+.argos-executive-button--ghost {
+  background: transparent;
+  color: var(--argos-color-primary);
+}
+
+.argos-executive-button--danger {
+  background: var(--argos-color-danger);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(180, 35, 24, 0.16);
+}
+
+.argos-executive-button--dark {
+  border-color: var(--argos-color-heading);
+  background: var(--argos-color-heading);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(16, 24, 40, 0.16);
+}
+
+.argos-executive-button--sm {
+  min-height: 32px;
+  padding: 0 0.65rem;
+  font-size: 0.74rem;
+}
+
+.argos-executive-button--lg {
+  min-height: 44px;
+  padding: 0 1rem;
+  font-size: 0.86rem;
+}
