@@ -1,0 +1,35 @@
+.argos-executive-field {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.argos-executive-field label {
+  color: #344054;
+  font-size: 0.76rem;
+  font-weight: 760;
+}
+
+.argos-executive-field input,
+.argos-executive-field select,
+.argos-executive-field textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 0.62rem 0.72rem;
+  border: 1px solid var(--argos-color-border-strong);
+  border-radius: 7px;
+  background: var(--argos-color-surface);
+  color: var(--argos-color-heading);
+  font: inherit;
+}
+
+.argos-executive-field textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.argos-executive-field input:focus,
+.argos-executive-field select:focus,
+.argos-executive-field textarea:focus {
+  outline: 3px solid rgba(29, 78, 216, 0.16);
+  border-color: var(--argos-color-primary);
+}

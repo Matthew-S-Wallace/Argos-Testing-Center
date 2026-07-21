@@ -1,4 +1,4 @@
-// ARGOS Command Center v1.2 - Executive Dashboard Modernization
+// ARGOS Command Center v1.3 - Executive UI Library Integration
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
@@ -26,6 +26,12 @@ import {
   UsersRound,
   Wrench,
 } from "lucide-react";
+import {
+  ARGOSExecutiveButton,
+  ARGOSExecutiveEmptyState,
+  ARGOSExecutiveKPICard,
+  ARGOSExecutivePageHeader,
+} from "../Shared/ExecutiveUI";
 import "./ARGOS_Command_Center_Component.css";
 
 const PIPELINE_STATUSES = [
@@ -73,21 +79,6 @@ function initials(name) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("") || "NA";
-}
-
-function KpiCard({ tone, Icon, label, value, detail }) {
-  return (
-    <article className={`argos-command-kpi argos-command-kpi--${tone}`}>
-      <div className="argos-command-kpi__icon" aria-hidden="true">
-        <Icon size={24} strokeWidth={2.2} />
-      </div>
-      <div>
-        <span className="argos-command-kpi__label">{label}</span>
-        <strong>{value}</strong>
-        <small>{detail}</small>
-      </div>
-    </article>
-  );
 }
 
 export default function CommandCenter({
@@ -232,29 +223,33 @@ export default function CommandCenter({
 
   return (
     <div className="argos-command-center">
-      <header className="argos-command-hero">
-        <div className="argos-command-hero__content">
-          <p className="argos-command-hero__eyebrow">Operational Awareness</p>
-          <h2>ARGOS Fleet Command Center</h2>
-          <p>{organizationName || "Fleet Services"}</p>
-        </div>
-        <div className="argos-command-hero__actions">
-          <button className="argos-command-workspace-button" type="button">
-            <BriefcaseBusiness size={17} strokeWidth={2.1} />
-            <span>Workspace</span>
-          </button>
-          <div className="argos-command-clock" aria-label={`Current time ${timeLabel}, ${dateLabel}`}>
-            <strong><Clock3 size={16} strokeWidth={2.2} /> {timeLabel}</strong>
-            <span>{dateLabel}</span>
-          </div>
-        </div>
-      </header>
+      <ARGOSExecutivePageHeader
+        eyebrow="Operational Awareness"
+        title="ARGOS Fleet Command Center"
+        subtitle={organizationName || "Fleet Services"}
+        actions={
+          <>
+            <ARGOSExecutiveButton variant="dark" icon={BriefcaseBusiness}>
+              Workspace
+            </ARGOSExecutiveButton>
+            <div
+              className="argos-command-clock"
+              aria-label={`Current time ${timeLabel}, ${dateLabel}`}
+            >
+              <strong>
+                <Clock3 size={16} strokeWidth={2.2} /> {timeLabel}
+              </strong>
+              <span>{dateLabel}</span>
+            </div>
+          </>
+        }
+      />
 
       <section className="argos-command-kpi-grid" aria-label="Fleet readiness metrics">
-        <KpiCard tone="green" Icon={Gauge} label="Fleet Readiness" value={`${availability}%`} detail={`${readyAssets} ready of ${totalAssets}`} />
-        <KpiCard tone="blue" Icon={CheckCircle2} label="Ready" value={readyAssets} detail="Available for service" />
-        <KpiCard tone="amber" Icon={Wrench} label="Unavailable" value={unavailableAssets} detail={`${waitingParts} waiting parts`} />
-        <KpiCard tone="red" Icon={AlertTriangle} label="Critical" value={criticalAssets} detail={criticalAssets ? "Immediate attention" : "No critical units"} />
+        <ARGOSExecutiveKPICard tone="green" icon={Gauge} label="Fleet Readiness" value={`${availability}%`} detail={`${readyAssets} ready of ${totalAssets}`} />
+        <ARGOSExecutiveKPICard tone="blue" icon={CheckCircle2} label="Ready" value={readyAssets} detail="Available for service" />
+        <ARGOSExecutiveKPICard tone="amber" icon={Wrench} label="Unavailable" value={unavailableAssets} detail={`${waitingParts} waiting parts`} />
+        <ARGOSExecutiveKPICard tone="red" icon={AlertTriangle} label="Critical" value={criticalAssets} detail={criticalAssets ? "Immediate attention" : "No critical units"} />
       </section>
 
       <section className="argos-command-upper-grid">
@@ -337,7 +332,11 @@ export default function CommandCenter({
               })}
             </div>
           ) : (
-            <p className="argos-command-empty">No technician workload is available yet.</p>
+            <ARGOSExecutiveEmptyState
+              icon={UsersRound}
+              title="No technician workload available"
+              description="Technician workload will appear after active repairs are assigned."
+            />
           )}
         </article>
 
@@ -360,7 +359,11 @@ export default function CommandCenter({
               })}
             </div>
           ) : (
-            <p className="argos-command-empty">No recent status or repair activity.</p>
+            <ARGOSExecutiveEmptyState
+              icon={Activity}
+              title="No recent activity"
+              description="Status changes and completed repairs will appear here."
+            />
           )}
         </article>
 

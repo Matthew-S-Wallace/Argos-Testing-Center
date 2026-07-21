@@ -1,0 +1,59 @@
+.argos-executive-panel {
+  min-width: 0;
+  padding: 0.95rem;
+  border: 1px solid var(--argos-color-border);
+  border-radius: var(--argos-radius-md);
+  background: var(--argos-color-surface);
+  box-shadow: var(--argos-shadow-md);
+}
+
+.argos-executive-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 0.05rem 0.78rem;
+  border-bottom: 1px solid #e4e9f1;
+}
+
+.argos-executive-panel__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.52rem;
+  min-width: 0;
+}
+
+.argos-executive-panel__icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--argos-color-primary-soft);
+  color: var(--argos-color-primary);
+}
+
+.argos-executive-panel__icon--danger {
+  background: var(--argos-color-danger-soft);
+  color: var(--argos-color-danger);
+}
+
+.argos-executive-panel__title {
+  margin: 0;
+  color: var(--argos-color-heading);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-executive-panel__meta {
+  color: var(--argos-color-muted);
+  font-size: 0.72rem;
+  font-weight: 720;
+  white-space: nowrap;
+}
+
+.argos-executive-panel__body {
+  padding-top: 0.82rem;
+}
