@@ -126,7 +126,7 @@
   display: flex;
   align-items: stretch;
   gap: .35rem;
-  padding-top: .82rem;
+  padding-top: .48rem;
   overflow-x: auto;
 }
 
@@ -139,12 +139,13 @@
 
 .argos-command-pipeline__step {
   width: 100%;
-  min-height: 142px;
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: .48rem;
-  padding: .75rem .48rem;
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: .3rem;
+  padding: .48rem .42rem .18rem;
   border: 1px solid #d9e1ec;
   border-radius: 8px;
   background: linear-gradient(180deg, #fff, #f8fafc);
@@ -160,9 +161,10 @@
 }
 
 .argos-command-pipeline__step > span:nth-child(2) {
-  min-height: 2.35em;
+  min-height: 2.1em;
   display: grid;
   place-items: center;
+  margin-top: .02rem;
   text-align: center;
   font-size: .68rem;
   line-height: 1.18;
@@ -172,19 +174,26 @@
 }
 
 .argos-command-pipeline__step strong {
-  font-size: 1.72rem;
-  line-height: 1;
+  margin-top: auto;
+  margin-bottom: 0;
+  font-size: 1.95rem;
+  line-height: .92;
   font-weight: 820;
 }
 
 .argos-command-pipeline__icon {
-  width: 40px;
-  height: 40px;
+  width: 68px;
+  height: 54px;
   display: grid;
   place-items: center;
   border-radius: 8px;
   color: #fff;
   box-shadow: 0 6px 12px rgba(16, 24, 40, .12);
+}
+
+.argos-command-pipeline__icon svg {
+  width: 31px;
+  height: 31px;
 }
 
 .argos-command-pipeline__arrow {

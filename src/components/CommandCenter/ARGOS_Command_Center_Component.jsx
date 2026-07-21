@@ -1,4 +1,4 @@
-// ARGOS Command Center v1.6 - Technician Name-First Layout
+// ARGOS Command Center v1.9 - Operational Alerts Panel Integration
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
@@ -276,11 +276,12 @@ export default function CommandCenter({
           </div>
         </ARGOSExecutivePanel>
 
-        <article className="argos-command-panel">
-          <div className="argos-command-panel__header">
-            <div><span className="argos-command-panel__icon argos-command-panel__icon--alert"><AlertTriangle size={17} strokeWidth={2.2} /></span><h3>Operational Alerts</h3></div>
-            <span>Live</span>
-          </div>
+        <ARGOSExecutivePanel
+          title="Operational Alerts"
+          icon={AlertTriangle}
+          meta="Live"
+          tone="alert"
+        >
           <div className="argos-command-alert-list">
             {[
               [Flag, "High Priority Repairs", criticalAssets, "red"],
@@ -288,16 +289,25 @@ export default function CommandCenter({
               [BadgeCheck, "Warranty Opportunities", dashboardData.warrantyOpportunities, "amber"],
               [UserX, "No Technician Assigned", dashboardData.noTechnician, "blue"],
               [CalendarClock, "Missing RTS Dates", dashboardData.missingRts, "blue"],
-              [CheckCircle2, "Awaiting Approval", dashboardData.statusCount("Awaiting Approval"), "teal"],
+              [
+                CheckCircle2,
+                "Awaiting Approval",
+                dashboardData.statusCount("Awaiting Approval"),
+                "teal",
+              ],
             ].map(([Icon, label, value, tone]) => (
               <div className="argos-command-alert" key={label}>
-                <span className={`argos-command-alert__icon argos-command-alert__icon--${tone}`}><Icon size={15} strokeWidth={2.2} /></span>
+                <span
+                  className={`argos-command-alert__icon argos-command-alert__icon--${tone}`}
+                >
+                  <Icon size={15} strokeWidth={2.2} />
+                </span>
                 <span>{label}</span>
                 <strong>{value}</strong>
               </div>
             ))}
           </div>
-        </article>
+        </ARGOSExecutivePanel>
       </section>
 
       <section className="argos-command-lower-grid">
@@ -343,19 +353,27 @@ export default function CommandCenter({
           )}
         </ARGOSExecutivePanel>
 
-        <article className="argos-command-panel">
-          <div className="argos-command-panel__header">
-            <div><span className="argos-command-panel__icon"><Activity size={17} strokeWidth={2.2} /></span><h3>Recent Activity</h3></div>
-            <span>Latest</span>
-          </div>
+        <ARGOSExecutivePanel
+          title="Recent Activity"
+          icon={Activity}
+          meta="Latest"
+        >
           {dashboardData.activity.length ? (
             <div className="argos-command-activity-list">
               {dashboardData.activity.map((item) => {
                 const ActivityIcon = ACTIVITY_ICONS[item.tone] || Activity;
+
                 return (
                   <div className="argos-command-activity" key={item.id}>
-                    <span className={`argos-command-activity__marker argos-command-activity__marker--${item.tone}`}><ActivityIcon size={14} strokeWidth={2.4} /></span>
-                    <div><strong>{item.unit}</strong><span>{item.description}</span></div>
+                    <span
+                      className={`argos-command-activity__marker argos-command-activity__marker--${item.tone}`}
+                    >
+                      <ActivityIcon size={14} strokeWidth={2.4} />
+                    </span>
+                    <div>
+                      <strong>{item.unit}</strong>
+                      <span>{item.description}</span>
+                    </div>
                     <time>{timeAgo(item.occurredAt, currentTime)}</time>
                   </div>
                 );
@@ -368,22 +386,49 @@ export default function CommandCenter({
               description="Status changes and completed repairs will appear here."
             />
           )}
-        </article>
+        </ARGOSExecutivePanel>
 
-        <article className="argos-command-panel">
-          <div className="argos-command-panel__header">
-            <div><span className="argos-command-panel__icon"><HeartPulse size={17} strokeWidth={2.2} /></span><h3>Fleet Health</h3></div>
-            <span>Current</span>
-          </div>
+        <ARGOSExecutivePanel
+          title="Fleet Health"
+          icon={HeartPulse}
+          meta="Current"
+        >
           <div className="argos-command-health-grid">
-            <div><span>Fleet Availability</span><strong>{availability}%</strong><small>Current readiness</small></div>
-            <div><span>Avg. Days Down</span><strong>{dashboardData.averageDaysDown}</strong><small>Open repairs</small></div>
-            <div><span>Completed Today</span><strong>{dashboardData.todayCompleted}</strong><small>Repair events</small></div>
-            <div><span>Avg. Repair Duration</span><strong>{dashboardData.averageRepairDuration}<em> days</em></strong><small>Historical average</small></div>
-            <div><span>Warranty Repairs</span><strong>{dashboardData.warrantyOpportunities}</strong><small>Open opportunities</small></div>
-            <div><span>Open Work Orders</span><strong>{dashboardData.openWorkOrders}</strong><small>With WO number</small></div>
+            <div>
+              <span>Fleet Availability</span>
+              <strong>{availability}%</strong>
+              <small>Current readiness</small>
+            </div>
+            <div>
+              <span>Avg. Days Down</span>
+              <strong>{dashboardData.averageDaysDown}</strong>
+              <small>Open repairs</small>
+            </div>
+            <div>
+              <span>Completed Today</span>
+              <strong>{dashboardData.todayCompleted}</strong>
+              <small>Repair events</small>
+            </div>
+            <div>
+              <span>Avg. Repair Duration</span>
+              <strong>
+                {dashboardData.averageRepairDuration}
+                <em> days</em>
+              </strong>
+              <small>Historical average</small>
+            </div>
+            <div>
+              <span>Warranty Repairs</span>
+              <strong>{dashboardData.warrantyOpportunities}</strong>
+              <small>Open opportunities</small>
+            </div>
+            <div>
+              <span>Open Work Orders</span>
+              <strong>{dashboardData.openWorkOrders}</strong>
+              <small>With WO number</small>
+            </div>
           </div>
-        </article>
+        </ARGOSExecutivePanel>
       </section>
 
       <section className="status-board argos-command-status-board">
