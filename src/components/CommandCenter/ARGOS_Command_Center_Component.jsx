@@ -1,14 +1,47 @@
+// ARGOS Command Center v1.2 - Executive Dashboard Modernization
 import { useEffect, useMemo, useState } from "react";
+import {
+  Activity,
+  AlertTriangle,
+  ArrowRight,
+  BadgeCheck,
+  BriefcaseBusiness,
+  Building2,
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  Clock3,
+  Download,
+  Flag,
+  Gauge,
+  HeartPulse,
+  LayoutDashboard,
+  PackageCheck,
+  PackageSearch,
+  Plus,
+  ShieldCheck,
+  TimerReset,
+  Upload,
+  UserX,
+  UsersRound,
+  Wrench,
+} from "lucide-react";
 import "./ARGOS_Command_Center_Component.css";
 
 const PIPELINE_STATUSES = [
-  { status: "Waiting Parts", label: "Waiting Parts", tone: "green", icon: "▣" },
-  { status: "Awaiting Approval", label: "Awaiting Approval", tone: "blue", icon: "✓" },
-  { status: "In Shop", label: "In Shop", tone: "amber", icon: "◆" },
-  { status: "At 3rd Party Shop", label: "Third Party", tone: "purple", icon: "▥" },
-  { status: "Awaiting QC", label: "Awaiting QC", tone: "teal", icon: "✓" },
-  { status: "Ready for Pickup", label: "Ready Pickup", tone: "green", icon: "✓" },
+  { status: "Waiting Parts", label: "Waiting Parts", tone: "green", Icon: PackageSearch },
+  { status: "Awaiting Approval", label: "Awaiting Approval", tone: "blue", Icon: BadgeCheck },
+  { status: "In Shop", label: "In Shop", tone: "amber", Icon: Wrench },
+  { status: "At 3rd Party Shop", label: "Third Party", tone: "purple", Icon: Building2 },
+  { status: "Awaiting QC", label: "Awaiting QC", tone: "teal", Icon: ShieldCheck },
+  { status: "Ready for Pickup", label: "Ready Pickup", tone: "green", Icon: PackageCheck },
 ];
+
+const ACTIVITY_ICONS = {
+  green: CheckCircle2,
+  blue: Activity,
+  amber: Wrench,
+};
 
 function sameLocalDay(value, comparisonDate = new Date()) {
   if (!value) return false;
@@ -39,13 +72,15 @@ function initials(name) {
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
-    .join("") || "—";
+    .join("") || "NA";
 }
 
-function KpiCard({ tone, icon, label, value, detail }) {
+function KpiCard({ tone, Icon, label, value, detail }) {
   return (
     <article className={`argos-command-kpi argos-command-kpi--${tone}`}>
-      <div className="argos-command-kpi__icon" aria-hidden="true">{icon}</div>
+      <div className="argos-command-kpi__icon" aria-hidden="true">
+        <Icon size={24} strokeWidth={2.2} />
+      </div>
       <div>
         <span className="argos-command-kpi__label">{label}</span>
         <strong>{value}</strong>
@@ -198,67 +233,76 @@ export default function CommandCenter({
   return (
     <div className="argos-command-center">
       <header className="argos-command-hero">
-        <div>
+        <div className="argos-command-hero__content">
           <p className="argos-command-hero__eyebrow">Operational Awareness</p>
           <h2>ARGOS Fleet Command Center</h2>
           <p>{organizationName || "Fleet Services"}</p>
         </div>
-        <div className="argos-command-clock" aria-label={`Current time ${timeLabel}, ${dateLabel}`}>
-          <strong>◷ {timeLabel}</strong>
-          <span>{dateLabel}</span>
+        <div className="argos-command-hero__actions">
+          <button className="argos-command-workspace-button" type="button">
+            <BriefcaseBusiness size={17} strokeWidth={2.1} />
+            <span>Workspace</span>
+          </button>
+          <div className="argos-command-clock" aria-label={`Current time ${timeLabel}, ${dateLabel}`}>
+            <strong><Clock3 size={16} strokeWidth={2.2} /> {timeLabel}</strong>
+            <span>{dateLabel}</span>
+          </div>
         </div>
       </header>
 
       <section className="argos-command-kpi-grid" aria-label="Fleet readiness metrics">
-        <KpiCard tone="green" icon="✓" label="Fleet Readiness" value={`${availability}%`} detail={`${readyAssets} ready of ${totalAssets}`} />
-        <KpiCard tone="blue" icon="▣" label="Ready" value={readyAssets} detail="Available for service" />
-        <KpiCard tone="amber" icon="◆" label="Unavailable" value={unavailableAssets} detail={`${waitingParts} waiting parts`} />
-        <KpiCard tone="red" icon="!" label="Critical" value={criticalAssets} detail={criticalAssets ? "Immediate attention" : "No critical units"} />
+        <KpiCard tone="green" Icon={Gauge} label="Fleet Readiness" value={`${availability}%`} detail={`${readyAssets} ready of ${totalAssets}`} />
+        <KpiCard tone="blue" Icon={CheckCircle2} label="Ready" value={readyAssets} detail="Available for service" />
+        <KpiCard tone="amber" Icon={Wrench} label="Unavailable" value={unavailableAssets} detail={`${waitingParts} waiting parts`} />
+        <KpiCard tone="red" Icon={AlertTriangle} label="Critical" value={criticalAssets} detail={criticalAssets ? "Immediate attention" : "No critical units"} />
       </section>
 
       <section className="argos-command-upper-grid">
         <article className="argos-command-panel argos-command-panel--pipeline">
           <div className="argos-command-panel__header">
-            <div><span className="argos-command-panel__icon">⌁</span><h3>Fleet Status Pipeline</h3></div>
+            <div><span className="argos-command-panel__icon"><LayoutDashboard size={17} strokeWidth={2.2} /></span><h3>Fleet Status Pipeline</h3></div>
             <span>{unavailableAssets} active</span>
           </div>
           <div className="argos-command-pipeline">
-            {PIPELINE_STATUSES.map((item, index) => (
-              <div className="argos-command-pipeline__step-wrap" key={item.status}>
-                <button
-                  type="button"
-                  className={`argos-command-pipeline__step argos-command-tone--${item.tone}`}
-                  onClick={() => {
-                    const firstAsset = activeBoardAssets.find((asset) => asset.status === item.status);
-                    if (firstAsset) onSelectAsset(firstAsset);
-                  }}
-                >
-                  <span className="argos-command-pipeline__icon" aria-hidden="true">{item.icon}</span>
-                  <span>{item.label}</span>
-                  <strong>{dashboardData.statusCount(item.status)}</strong>
-                </button>
-                {index < PIPELINE_STATUSES.length - 1 && <span className="argos-command-pipeline__arrow">→</span>}
-              </div>
-            ))}
+            {PIPELINE_STATUSES.map((item, index) => {
+              const { Icon } = item;
+              return (
+                <div className="argos-command-pipeline__step-wrap" key={item.status}>
+                  <button
+                    type="button"
+                    className={`argos-command-pipeline__step argos-command-tone--${item.tone}`}
+                    onClick={() => {
+                      const firstAsset = activeBoardAssets.find((asset) => asset.status === item.status);
+                      if (firstAsset) onSelectAsset(firstAsset);
+                    }}
+                  >
+                    <span className="argos-command-pipeline__icon" aria-hidden="true"><Icon size={21} strokeWidth={2.2} /></span>
+                    <span>{item.label}</span>
+                    <strong>{dashboardData.statusCount(item.status)}</strong>
+                  </button>
+                  {index < PIPELINE_STATUSES.length - 1 && <span className="argos-command-pipeline__arrow"><ArrowRight size={18} strokeWidth={2.1} /></span>}
+                </div>
+              );
+            })}
           </div>
         </article>
 
         <article className="argos-command-panel">
           <div className="argos-command-panel__header">
-            <div><span className="argos-command-panel__icon argos-command-panel__icon--alert">▲</span><h3>Operational Alerts</h3></div>
+            <div><span className="argos-command-panel__icon argos-command-panel__icon--alert"><AlertTriangle size={17} strokeWidth={2.2} /></span><h3>Operational Alerts</h3></div>
             <span>Live</span>
           </div>
           <div className="argos-command-alert-list">
             {[
-              ["⚑", "High Priority Repairs", criticalAssets, "red"],
-              ["◷", "Units Down > 30 Days", dashboardData.downOverThirty, "amber"],
-              ["◇", "Warranty Opportunities", dashboardData.warrantyOpportunities, "amber"],
-              ["●", "No Technician Assigned", dashboardData.noTechnician, "blue"],
-              ["▦", "Missing RTS Dates", dashboardData.missingRts, "blue"],
-              ["✓", "Awaiting Approval", dashboardData.statusCount("Awaiting Approval"), "teal"],
-            ].map(([icon, label, value, tone]) => (
+              [Flag, "High Priority Repairs", criticalAssets, "red"],
+              [TimerReset, "Units Down > 30 Days", dashboardData.downOverThirty, "amber"],
+              [BadgeCheck, "Warranty Opportunities", dashboardData.warrantyOpportunities, "amber"],
+              [UserX, "No Technician Assigned", dashboardData.noTechnician, "blue"],
+              [CalendarClock, "Missing RTS Dates", dashboardData.missingRts, "blue"],
+              [CheckCircle2, "Awaiting Approval", dashboardData.statusCount("Awaiting Approval"), "teal"],
+            ].map(([Icon, label, value, tone]) => (
               <div className="argos-command-alert" key={label}>
-                <span className={`argos-command-alert__icon argos-command-alert__icon--${tone}`}>{icon}</span>
+                <span className={`argos-command-alert__icon argos-command-alert__icon--${tone}`}><Icon size={15} strokeWidth={2.2} /></span>
                 <span>{label}</span>
                 <strong>{value}</strong>
               </div>
@@ -270,7 +314,7 @@ export default function CommandCenter({
       <section className="argos-command-lower-grid">
         <article className="argos-command-panel">
           <div className="argos-command-panel__header">
-            <div><span className="argos-command-panel__icon">♟</span><h3>Technician Operations</h3></div>
+            <div><span className="argos-command-panel__icon"><UsersRound size={17} strokeWidth={2.2} /></span><h3>Technician Operations</h3></div>
             <span>{technicianAnalytics?.activeTechnicians || 0} active</span>
           </div>
           {dashboardData.technicianRows.length ? (
@@ -299,18 +343,21 @@ export default function CommandCenter({
 
         <article className="argos-command-panel">
           <div className="argos-command-panel__header">
-            <div><span className="argos-command-panel__icon">ϟ</span><h3>Recent Activity</h3></div>
+            <div><span className="argos-command-panel__icon"><Activity size={17} strokeWidth={2.2} /></span><h3>Recent Activity</h3></div>
             <span>Latest</span>
           </div>
           {dashboardData.activity.length ? (
             <div className="argos-command-activity-list">
-              {dashboardData.activity.map((item) => (
-                <div className="argos-command-activity" key={item.id}>
-                  <span className={`argos-command-activity__marker argos-command-activity__marker--${item.tone}`}>✓</span>
-                  <div><strong>{item.unit}</strong><span>{item.description}</span></div>
-                  <time>{timeAgo(item.occurredAt, currentTime)}</time>
-                </div>
-              ))}
+              {dashboardData.activity.map((item) => {
+                const ActivityIcon = ACTIVITY_ICONS[item.tone] || Activity;
+                return (
+                  <div className="argos-command-activity" key={item.id}>
+                    <span className={`argos-command-activity__marker argos-command-activity__marker--${item.tone}`}><ActivityIcon size={14} strokeWidth={2.4} /></span>
+                    <div><strong>{item.unit}</strong><span>{item.description}</span></div>
+                    <time>{timeAgo(item.occurredAt, currentTime)}</time>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="argos-command-empty">No recent status or repair activity.</p>
@@ -319,7 +366,7 @@ export default function CommandCenter({
 
         <article className="argos-command-panel">
           <div className="argos-command-panel__header">
-            <div><span className="argos-command-panel__icon">♥</span><h3>Fleet Health</h3></div>
+            <div><span className="argos-command-panel__icon"><HeartPulse size={17} strokeWidth={2.2} /></span><h3>Fleet Health</h3></div>
             <span>Current</span>
           </div>
           <div className="argos-command-health-grid">
@@ -336,14 +383,14 @@ export default function CommandCenter({
       <section className="status-board argos-command-status-board">
         <div className="status-board-header">
           <div>
-            <p className="eyebrow">✦ Live Status Board</p>
+            <p className="eyebrow argos-command-status-eyebrow"><ClipboardList size={13} strokeWidth={2.3} /> Live Status Board</p>
             <h3>Assets Requiring Visibility</h3>
           </div>
-          <div>
-            <button type="button" onClick={onAddAsset}>Add Asset</button>{" "}
-            <button type="button" onClick={onDownloadCSVTemplate}>Download CSV Template</button>{" "}
+          <div className="argos-command-board-actions">
+            <button type="button" onClick={onAddAsset}><Plus size={15} strokeWidth={2.2} /> Add Asset</button>{" "}
+            <button type="button" onClick={onDownloadCSVTemplate}><Download size={15} strokeWidth={2.2} /> Download CSV Template</button>{" "}
             <input ref={csvInputRef} type="file" accept=".csv,text/csv" onChange={onImportCSV} style={{ display: "none" }} />
-            <button type="button" onClick={onSelectCSV}>Import CSV</button>{" "}
+            <button type="button" onClick={onSelectCSV}><Upload size={15} strokeWidth={2.2} /> Import CSV</button>{" "}
           </div>
         </div>
 

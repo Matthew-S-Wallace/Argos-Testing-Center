@@ -1,7 +1,7 @@
 /**************************************************************************************************
  * ARGOS™ Fleet Management Platform
- * Sprint 001U
- * Operations Navigation — Blue Shield Reference Design
+ * Sprint 001V
+ * Operations Navigation — Official Brand Alignment
  *
  * Complete replacement navigation component.
  * Existing view IDs, handlers, permissions, demo behavior, and identity props are preserved.
