@@ -1,4 +1,4 @@
-// ARGOS Command Center v1.3 - Executive UI Library Integration
+// ARGOS Command Center v1.6 - Technician Name-First Layout
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
@@ -31,6 +31,7 @@ import {
   ARGOSExecutiveEmptyState,
   ARGOSExecutiveKPICard,
   ARGOSExecutivePageHeader,
+  ARGOSExecutivePanel,
 } from "../Shared/ExecutiveUI";
 import "./ARGOS_Command_Center_Component.css";
 
@@ -72,14 +73,6 @@ function timeAgo(value, now = new Date()) {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
-function initials(name) {
-  return String(name || "Unassigned")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "NA";
-}
 
 export default function CommandCenter({
   availability,
@@ -253,11 +246,12 @@ export default function CommandCenter({
       </section>
 
       <section className="argos-command-upper-grid">
-        <article className="argos-command-panel argos-command-panel--pipeline">
-          <div className="argos-command-panel__header">
-            <div><span className="argos-command-panel__icon"><LayoutDashboard size={17} strokeWidth={2.2} /></span><h3>Fleet Status Pipeline</h3></div>
-            <span>{unavailableAssets} active</span>
-          </div>
+        <ARGOSExecutivePanel
+          title="Fleet Status Pipeline"
+          icon={LayoutDashboard}
+          meta={`${unavailableAssets} active`}
+          className="argos-command-panel--pipeline"
+        >
           <div className="argos-command-pipeline">
             {PIPELINE_STATUSES.map((item, index) => {
               const { Icon } = item;
@@ -280,7 +274,7 @@ export default function CommandCenter({
               );
             })}
           </div>
-        </article>
+        </ARGOSExecutivePanel>
 
         <article className="argos-command-panel">
           <div className="argos-command-panel__header">
@@ -307,25 +301,34 @@ export default function CommandCenter({
       </section>
 
       <section className="argos-command-lower-grid">
-        <article className="argos-command-panel">
-          <div className="argos-command-panel__header">
-            <div><span className="argos-command-panel__icon"><UsersRound size={17} strokeWidth={2.2} /></span><h3>Technician Operations</h3></div>
-            <span>{technicianAnalytics?.activeTechnicians || 0} active</span>
-          </div>
+        <ARGOSExecutivePanel
+          title="Technician Operations"
+          icon={UsersRound}
+          meta={`${technicianAnalytics?.activeTechnicians || 0} active`}
+        >
           {dashboardData.technicianRows.length ? (
             <div className="argos-command-technicians">
               {dashboardData.technicianRows.map((row) => {
-                const capacity = Math.min(100, Math.round((row.activeUnits / Math.max(1, unavailableAssets)) * 400));
+                const capacity = Math.min(
+                  100,
+                  Math.round(
+                    (row.activeUnits / Math.max(1, unavailableAssets)) * 400,
+                  ),
+                );
+
                 return (
                   <div className="argos-command-technician" key={row.technicianKey}>
-                    <span className="argos-command-technician__avatar">{initials(row.technician)}</span>
-                    <strong>{row.technician}</strong>
+                    <strong className="argos-command-technician__name">
+                      {row.technician}
+                    </strong>
                     <dl>
                       <div><dt>Active Repairs</dt><dd>{row.activeUnits}</dd></div>
                       <div><dt>Waiting Parts</dt><dd>{row.waitingParts}</dd></div>
                       <div><dt>Completed Today</dt><dd>{row.completedToday}</dd></div>
                     </dl>
-                    <div className="argos-command-capacity"><span style={{ width: `${capacity}%` }} /></div>
+                    <div className="argos-command-capacity">
+                      <span style={{ width: `${capacity}%` }} />
+                    </div>
                     <small>{capacity}% workload index</small>
                   </div>
                 );
@@ -338,7 +341,7 @@ export default function CommandCenter({
               description="Technician workload will appear after active repairs are assigned."
             />
           )}
-        </article>
+        </ARGOSExecutivePanel>
 
         <article className="argos-command-panel">
           <div className="argos-command-panel__header">
