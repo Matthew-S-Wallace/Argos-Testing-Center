@@ -1179,6 +1179,19 @@ function App() {
   const [activeAdministrationSection, setActiveAdministrationSection] = useState("Organization Profile");
   const [fleetSearch, setFleetSearch] = useState("");
   const [fleetStatusFilter, setFleetStatusFilter] = useState("All Statuses");
+  const [showFleetColumnFilters, setShowFleetColumnFilters] = useState(false);
+  const [fleetSort, setFleetSort] = useState({ key: "unit", direction: "asc" });
+  const [fleetColumnFilters, setFleetColumnFilters] = useState({
+    unit: "",
+    department: "",
+    asset: "",
+    vin: "",
+    status: "",
+    reason: "",
+    priority: "",
+    technician: "",
+    details: "",
+  });
   const [importStatus, setImportStatus] = useState("");
   const csvInputRef = useRef(null);
   const vinScannerVideoRef = useRef(null);
@@ -1814,6 +1827,39 @@ useEffect(() => {
   const unitsAwaitingMeAssets = assignedToMeAssets.filter((asset) => asset.status !== "Ready");
   const awaitingQcAssets = activeBoardAssets.filter((asset) => asset.status === "Awaiting QC");
   const readyForPickupAssets = activeBoardAssets.filter((asset) => asset.status === "Ready for Pickup");
+  const hasFleetColumnFilters = Object.values(fleetColumnFilters).some((value) => value.trim());
+
+  const updateFleetColumnFilter = (key, value) => {
+    setFleetColumnFilters((currentFilters) => ({
+      ...currentFilters,
+      [key]: value,
+    }));
+  };
+
+  const clearFleetFilters = () => {
+    setFleetSearch("");
+    setFleetStatusFilter("All Statuses");
+    setFleetColumnFilters({
+      unit: "",
+      department: "",
+      asset: "",
+      vin: "",
+      status: "",
+      reason: "",
+      priority: "",
+      technician: "",
+      details: "",
+    });
+  };
+
+  const handleFleetSort = (key) => {
+    setFleetSort((currentSort) => ({
+      key,
+      direction:
+        currentSort.key === key && currentSort.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
   const filteredFleetAssets = [...assets]
     .filter((asset) => {
       const matchesUnitSearch =
@@ -1825,15 +1871,24 @@ useEffect(() => {
         fieldQueueMode === "all" ||
         (fieldQueueMode === "assigned" && isAssignedToSignedInTechnician(asset)) ||
         (fieldQueueMode === "awaiting" && isAssignedToSignedInTechnician(asset) && asset.status !== "Ready");
+      const matchesColumnFilters = Object.entries(fleetColumnFilters).every(([key, value]) => {
+        const normalizedFilter = value.trim().toLowerCase();
+        if (!normalizedFilter) return true;
+        return String(asset[key] || "").toLowerCase().includes(normalizedFilter);
+      });
 
-      return matchesUnitSearch && matchesStatusFilter && matchesFieldQueue;
+      return matchesUnitSearch && matchesStatusFilter && matchesFieldQueue && matchesColumnFilters;
     })
-    .sort((firstAsset, secondAsset) =>
-      String(firstAsset.unit || "").localeCompare(String(secondAsset.unit || ""), undefined, {
+    .sort((firstAsset, secondAsset) => {
+      const firstValue = String(firstAsset[fleetSort.key] || "");
+      const secondValue = String(secondAsset[fleetSort.key] || "");
+      const comparison = firstValue.localeCompare(secondValue, undefined, {
         numeric: true,
         sensitivity: "base",
-      })
-    );
+      });
+
+      return fleetSort.direction === "asc" ? comparison : -comparison;
+    });
 
 const validCompletedRepairEvents = completedRepairEvents.filter(
   (event) => event.status && event.status !== "Ready" && (event.finalStatus || "Ready") === "Ready"
@@ -3958,110 +4013,191 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         )}
 
         {activeView === "fleet" && (
-          <>
-            <header className="dashboard-header">
-              <div>
-                <p className="eyebrow">{fieldQueueMode === "assigned" ? "Technician Work Queue" : fieldQueueMode === "awaiting" ? "Technician Exceptions" : "Asset Roster"}</p>
+          <div className="argos-my-fleet-view">
+            <header className="argos-my-fleet-header">
+              <div className="argos-my-fleet-heading">
+                <p className="eyebrow">{fieldQueueMode === "assigned" ? "Technician Work Queue" : fieldQueueMode === "awaiting" ? "Technician Exceptions" : "Fleet Operations"}</p>
                 <h2>{fieldQueueMode === "assigned" ? "My Assigned Work" : fieldQueueMode === "awaiting" ? "Units Awaiting Me" : "My Fleet"}</h2>
+                <p className="argos-my-fleet-subtitle">
+                  {fieldQueueMode === "all"
+                    ? "Search, review, and update every established asset in the organization fleet."
+                    : "Review the vehicles currently assigned to your technician workflow."}
+                </p>
               </div>
 
-              <div className="refresh-box">
+              <div className="argos-my-fleet-count-card">
                 <span>{fieldQueueMode === "all" ? "Total Assets" : "Queue Assets"}</span>
                 <strong>{fieldQueueMode === "all" ? assets.length : filteredFleetAssets.length}</strong>
+                <small>{filteredFleetAssets.length} currently shown</small>
               </div>
             </header>
 
-            <section className="status-board">
-              <div className="status-board-header">
+            <section className="argos-my-fleet-directory">
+              <div className="argos-my-fleet-directory-header">
                 <div>
-                  <p className="eyebrow">◫ Fleet Asset Directory</p>
+                  <p className="eyebrow">Fleet Asset Directory</p>
                   <h3>Search and Update Established Assets</h3>
                 </div>
 
-                <div className="fleet-directory-toolbar">
-                  <input
-                    type="search"
-                    value={fleetSearch}
-                    onChange={(event) => setFleetSearch(event.target.value)}
-                    placeholder="Search by unit number"
-                    aria-label="Search My Fleet by unit number"
-                  />
+                <div className="argos-my-fleet-toolbar">
+                  <label className="argos-my-fleet-search-field">
+                    <span>Search assets</span>
+                    <input
+                      type="search"
+                      value={fleetSearch}
+                      onChange={(event) => setFleetSearch(event.target.value)}
+                      placeholder="Unit number"
+                      aria-label="Search My Fleet by unit number"
+                    />
+                  </label>
 
-                  <select
-                    value={fleetStatusFilter}
-                    onChange={(event) => setFleetStatusFilter(event.target.value)}
-                    aria-label="Filter My Fleet by status"
+                  <label className="argos-my-fleet-filter-field">
+                    <span>Status</span>
+                    <select
+                      value={fleetStatusFilter}
+                      onChange={(event) => setFleetStatusFilter(event.target.value)}
+                      aria-label="Filter My Fleet by status"
+                    >
+                      <option value="All Statuses">All Statuses</option>
+                      {statusOptions.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <button
+                    type="button"
+                    className={`argos-my-fleet-filter-toggle${showFleetColumnFilters ? " active" : ""}`}
+                    onClick={() => setShowFleetColumnFilters((isVisible) => !isVisible)}
+                    aria-pressed={showFleetColumnFilters}
                   >
-                    <option value="All Statuses">All Statuses</option>
-                    {statusOptions.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
+                    {showFleetColumnFilters ? "Hide Column Filters" : "Column Filters"}
+                  </button>
+
+                  {(fleetSearch.trim() || fleetStatusFilter !== "All Statuses" || hasFleetColumnFilters) && (
+                    <button
+                      type="button"
+                      className="argos-my-fleet-clear-button"
+                      onClick={clearFleetFilters}
+                    >
+                      Clear Filters
+                    </button>
+                  )}
                 </div>
               </div>
 
-              <div className="fleet-directory-guidance">
-                <p>{fieldQueueMode === "assigned" ? "This mobile queue shows vehicles assigned to your technician record. Select a vehicle to review or update it." : fieldQueueMode === "awaiting" ? "This mobile queue shows your assigned vehicles that are not Ready and currently require technician action." : "Select any asset to open its expandable vehicle record. Ready assets moved to a down status will appear on the Command Center automatically."}</p>
-                <span>{fieldQueueMode !== "all" ? "Use the ARGOS Field back button to return to the technician home." : "Mobile VIN Intake: receiving workflow foundation prepared; desktop camera scanning is no longer part of the primary interface."}</span>
+              <div className="argos-my-fleet-guidance">
+                <div>
+                  <strong>{fieldQueueMode === "all" ? "Operational directory" : "Technician queue"}</strong>
+                  <p>{fieldQueueMode === "assigned" ? "This mobile queue shows vehicles assigned to your technician record. Select a vehicle to review or update it." : fieldQueueMode === "awaiting" ? "This mobile queue shows your assigned vehicles that are not Ready and currently require technician action." : "Select any asset to open its expandable vehicle record. Ready assets moved to a down status will appear on the Command Center automatically."}</p>
+                </div>
+                <span>{fieldQueueMode !== "all" ? "Use the ARGOS Field back button to return to the technician home." : "Select a row to open the complete vehicle record."}</span>
               </div>
 
-              <table>
-                <thead>
-                  <tr>
-                    <th>Unit</th>
-                    <th>Department</th>
-                    <th>Asset</th>
-                    <th>VIN</th>
-                    <th>Status</th>
-                    <th>Reason</th>
-                    <th>Priority</th>
-                    <th>Technician</th>
-                    <th>Details</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredFleetAssets.length === 0 ? (
+              <div className="argos-my-fleet-table-shell">
+                <table className="argos-my-fleet-table">
+                  <thead>
                     <tr>
-                      <td colSpan="9">
-                        {assets.length === 0
-                          ? "No assets are currently stored in My Fleet."
-                          : fleetSearch.trim() && fleetStatusFilter !== "All Statuses"
-                            ? `No ${fleetStatusFilter} assets match unit number “${fleetSearch.trim()}”.`
-                            : fleetSearch.trim()
-                              ? `No unit numbers match “${fleetSearch.trim()}”.`
-                              : `No assets currently have the status “${fleetStatusFilter}”.`}
-                      </td>
+                      {[
+                        ["unit", "Unit"],
+                        ["department", "Department"],
+                        ["asset", "Asset"],
+                        ["vin", "VIN"],
+                        ["status", "Status"],
+                        ["reason", "Reason"],
+                        ["priority", "Priority"],
+                        ["technician", "Technician"],
+                        ["details", "Details"],
+                      ].map(([key, label]) => (
+                        <th key={key} aria-sort={fleetSort.key === key ? (fleetSort.direction === "asc" ? "ascending" : "descending") : "none"}>
+                          <button
+                            type="button"
+                            className={`argos-my-fleet-sort-button${fleetSort.key === key ? " active" : ""}`}
+                            onClick={() => handleFleetSort(key)}
+                          >
+                            <span>{label}</span>
+                            <b aria-hidden="true">
+                              {fleetSort.key === key ? (fleetSort.direction === "asc" ? "↑" : "↓") : "↕"}
+                            </b>
+                          </button>
+                        </th>
+                      ))}
                     </tr>
-                  ) : (
-                    filteredFleetAssets.map((asset) => (
-                      <tr
-                        key={asset.unit}
-                        onClick={() => handleSelectAsset(asset)}
-                        className={selectedAsset?.unit === asset.unit ? "selected-row" : ""}
-                      >
-                        <td className="unit">{asset.unit}</td>
-                        <td>{asset.department}</td>
-                        <td>{asset.asset}</td>
-                        <td>{asset.vin || "—"}</td>
-                        <td>
-                          <span className={`status-pill ${getStatusClass(asset.status)}`}>
-                            {asset.status}
+                    {showFleetColumnFilters && (
+                      <tr className="argos-my-fleet-column-filter-row">
+                        {[
+                          ["unit", "Filter units"],
+                          ["department", "Filter departments"],
+                          ["asset", "Filter assets"],
+                          ["vin", "Filter VINs"],
+                          ["status", "Filter statuses"],
+                          ["reason", "Filter reasons"],
+                          ["priority", "Filter priorities"],
+                          ["technician", "Filter technicians"],
+                          ["details", "Filter details"],
+                        ].map(([key, label]) => (
+                          <th key={key}>
+                            <input
+                              type="search"
+                              value={fleetColumnFilters[key]}
+                              onChange={(event) => updateFleetColumnFilter(key, event.target.value)}
+                              placeholder="Filter"
+                              aria-label={label}
+                            />
+                          </th>
+                        ))}
+                      </tr>
+                    )}
+                  </thead>
+
+                  <tbody>
+                    {filteredFleetAssets.length === 0 ? (
+                      <tr className="argos-my-fleet-empty-row">
+                        <td colSpan="9">
+                          <strong>No matching assets</strong>
+                          <span>
+                            {assets.length === 0
+                              ? "No assets are currently stored in My Fleet."
+                              : hasFleetColumnFilters
+                                ? "No assets match the selected column filters."
+                                : fleetSearch.trim() && fleetStatusFilter !== "All Statuses"
+                                  ? `No ${fleetStatusFilter} assets match unit number “${fleetSearch.trim()}”.`
+                                  : fleetSearch.trim()
+                                    ? `No unit numbers match “${fleetSearch.trim()}”.`
+                                    : `No assets currently have the status “${fleetStatusFilter}”.`}
                           </span>
                         </td>
-                        <td>{asset.reason}</td>
-                        <td className={asset.priority.toLowerCase()}>{asset.priority}</td>
-                        <td>{asset.technician}</td>
-                        <td>{asset.details}</td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      filteredFleetAssets.map((asset) => (
+                        <tr
+                          key={asset.unit}
+                          onClick={() => handleSelectAsset(asset)}
+                          className={selectedAsset?.unit === asset.unit ? "selected-row" : ""}
+                        >
+                          <td className="unit">{asset.unit}</td>
+                          <td>{asset.department}</td>
+                          <td className="argos-my-fleet-asset-name">{asset.asset}</td>
+                          <td className="argos-my-fleet-vin">{asset.vin || "—"}</td>
+                          <td>
+                            <span className={`status-pill ${getStatusClass(asset.status)}`}>
+                              {asset.status}
+                            </span>
+                          </td>
+                          <td>{asset.reason}</td>
+                          <td className={asset.priority.toLowerCase()}>{asset.priority}</td>
+                          <td>{asset.technician}</td>
+                          <td className="argos-my-fleet-details">{asset.details}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </section>
-          </>
+          </div>
         )}
 
         {activeView === "history" && (

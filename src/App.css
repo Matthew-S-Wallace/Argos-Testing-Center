@@ -2632,3 +2632,432 @@ button.administration-menu-item.active {
   }
 }
 
+
+
+/* Sprint 001V — My Fleet Executive UI Modernization */
+
+.argos-my-fleet-view {
+  display: grid;
+  gap: 24px;
+}
+
+.argos-my-fleet-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.argos-my-fleet-heading h2 {
+  margin: 0;
+  color: #071a33;
+  font-size: clamp(40px, 4vw, 56px);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 0.96;
+}
+
+.argos-my-fleet-subtitle {
+  max-width: 720px;
+  margin: 14px 0 0;
+  color: #5f6f82;
+  font: 15px/1.6 Inter, system-ui, sans-serif;
+}
+
+.argos-my-fleet-count-card {
+  flex: 0 0 190px;
+  padding: 18px 20px;
+  border: 1px solid #d7e0e8;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffffff, #f7fafc);
+  box-shadow: 0 12px 30px rgba(7, 26, 51, 0.08);
+}
+
+.argos-my-fleet-count-card span,
+.argos-my-fleet-count-card strong,
+.argos-my-fleet-count-card small {
+  display: block;
+}
+
+.argos-my-fleet-count-card span {
+  color: #65768a;
+  font: 800 11px Inter, system-ui, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.argos-my-fleet-count-card strong {
+  margin-top: 7px;
+  color: #0d5d9c;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.argos-my-fleet-count-card small {
+  margin-top: 8px;
+  color: #718094;
+  font: 12px Inter, system-ui, sans-serif;
+}
+
+.argos-my-fleet-directory {
+  overflow: hidden;
+  border: 1px solid #dce3ea;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(7, 26, 51, 0.09);
+}
+
+.argos-my-fleet-directory-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 26px 20px;
+  border-bottom: 1px solid #e6ebf0;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
+}
+
+.argos-my-fleet-directory-header h3 {
+  margin: 0;
+  color: #102a43;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.08;
+}
+
+.argos-my-fleet-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.argos-my-fleet-toolbar label {
+  display: grid;
+  gap: 7px;
+}
+
+.argos-my-fleet-toolbar label > span {
+  color: #5d6e80;
+  font: 800 10px Inter, system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-my-fleet-toolbar input,
+.argos-my-fleet-toolbar select {
+  height: 44px;
+  border: 1px solid #cbd6df;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #102a43;
+  padding: 0 13px;
+  font: 14px Inter, system-ui, sans-serif;
+  box-shadow: 0 3px 10px rgba(7, 26, 51, 0.04);
+}
+
+.argos-my-fleet-toolbar input {
+  min-width: 230px;
+}
+
+.argos-my-fleet-toolbar select {
+  min-width: 185px;
+}
+
+.argos-my-fleet-toolbar input:focus,
+.argos-my-fleet-toolbar select:focus {
+  outline: none;
+  border-color: #2f7fba;
+  box-shadow: 0 0 0 3px rgba(47, 127, 186, 0.14);
+}
+
+button.argos-my-fleet-clear-button {
+  height: 44px;
+  padding: 0 15px;
+  border: 1px solid #cbd6df;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #35526b;
+  box-shadow: none;
+  font-size: 11px;
+}
+
+button.argos-my-fleet-clear-button:hover {
+  border-color: #91a4b5;
+  background: #f7fafc;
+}
+
+.argos-my-fleet-guidance {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 18px 24px;
+  padding: 15px 17px;
+  border: 1px solid #dce6ee;
+  border-left: 4px solid #2374ad;
+  border-radius: 10px;
+  background: #f6f9fc;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-my-fleet-guidance strong {
+  display: block;
+  color: #173b58;
+  font-size: 13px;
+}
+
+.argos-my-fleet-guidance p {
+  margin: 4px 0 0;
+  color: #566b7c;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.argos-my-fleet-guidance > span {
+  flex: 0 0 auto;
+  color: #6d7d8c;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.argos-my-fleet-table-shell {
+  overflow-x: auto;
+  padding: 0 24px 24px;
+}
+
+.argos-my-fleet-table {
+  min-width: 1120px;
+  border-color: #dce3ea;
+  border-radius: 12px;
+}
+
+.argos-my-fleet-table thead {
+  background: #f2f6f9;
+}
+
+.argos-my-fleet-table th {
+  padding: 13px 14px;
+  border-bottom-color: #dce3ea;
+  color: #526779;
+  font-size: 10px;
+}
+
+.argos-my-fleet-table td {
+  padding: 14px;
+  color: #21384d;
+  vertical-align: middle;
+}
+
+.argos-my-fleet-table tbody tr {
+  cursor: pointer;
+  transition: background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.argos-my-fleet-table tbody tr:hover {
+  background: #f5f9fc;
+  box-shadow: inset 4px 0 0 #2f7fba;
+}
+
+.argos-my-fleet-table tbody tr.selected-row {
+  background: #edf6fc;
+  box-shadow: inset 4px 0 0 #0d67a5;
+}
+
+.argos-my-fleet-table .unit {
+  color: #0d5d9c;
+  font-size: 15px;
+}
+
+.argos-my-fleet-asset-name {
+  font-weight: 700;
+}
+
+.argos-my-fleet-vin {
+  color: #617285 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px !important;
+}
+
+.argos-my-fleet-details {
+  max-width: 270px;
+  color: #5f7081 !important;
+}
+
+.argos-my-fleet-empty-row:hover {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.argos-my-fleet-empty-row td {
+  padding: 54px 24px;
+  text-align: center;
+}
+
+.argos-my-fleet-empty-row strong,
+.argos-my-fleet-empty-row span {
+  display: block;
+}
+
+.argos-my-fleet-empty-row strong {
+  color: #173b58;
+  font-size: 18px;
+}
+
+.argos-my-fleet-empty-row span {
+  margin-top: 7px;
+  color: #6b7b8a;
+  font-size: 13px;
+}
+
+@media (max-width: 980px) {
+  .argos-my-fleet-header,
+  .argos-my-fleet-directory-header,
+  .argos-my-fleet-guidance {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .argos-my-fleet-count-card {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .argos-my-fleet-toolbar {
+    justify-content: flex-start;
+  }
+
+  .argos-my-fleet-guidance > span {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 760px) {
+  .argos-my-fleet-view {
+    gap: 18px;
+  }
+
+  .argos-my-fleet-heading h2 {
+    font-size: 36px;
+  }
+
+  .argos-my-fleet-directory-header {
+    padding: 20px;
+  }
+
+  .argos-my-fleet-toolbar,
+  .argos-my-fleet-toolbar label {
+    width: 100%;
+  }
+
+  .argos-my-fleet-toolbar input,
+  .argos-my-fleet-toolbar select,
+  button.argos-my-fleet-clear-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .argos-my-fleet-guidance {
+    margin: 14px 18px;
+  }
+
+  .argos-my-fleet-table-shell {
+    padding: 0 18px 20px;
+  }
+}
+
+
+/* Sprint 001V — My Fleet sortable and filterable directory */
+button.argos-my-fleet-filter-toggle {
+  align-self: flex-end;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid #c9d4df;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #17324d;
+  box-shadow: none;
+  font-size: 11px;
+}
+
+button.argos-my-fleet-filter-toggle:hover,
+button.argos-my-fleet-filter-toggle.active {
+  border-color: #1e5f91;
+  background: #eef6fc;
+  color: #164f7b;
+}
+
+.argos-my-fleet-table th {
+  padding: 0;
+  vertical-align: top;
+}
+
+button.argos-my-fleet-sort-button {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #3f5266;
+  box-shadow: none;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-align: left;
+}
+
+button.argos-my-fleet-sort-button:hover {
+  background: #edf4fa;
+  color: #164f7b;
+}
+
+button.argos-my-fleet-sort-button.active {
+  background: #e6f0f8;
+  color: #123f63;
+}
+
+button.argos-my-fleet-sort-button b {
+  flex: 0 0 auto;
+  color: #6d8295;
+  font-size: 14px;
+  line-height: 1;
+}
+
+button.argos-my-fleet-sort-button.active b {
+  color: #17679e;
+}
+
+.argos-my-fleet-column-filter-row th {
+  padding: 8px;
+  border-top: 1px solid #dce5ed;
+  background: #f8fbfd;
+}
+
+.argos-my-fleet-column-filter-row input {
+  width: 100%;
+  min-width: 92px;
+  padding: 8px 9px;
+  border: 1px solid #c9d4df;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #17324d;
+  font: 12px Inter, system-ui, sans-serif;
+}
+
+.argos-my-fleet-column-filter-row input:focus {
+  outline: none;
+  border-color: #2f78aa;
+  box-shadow: 0 0 0 3px rgba(47, 120, 170, 0.12);
+}
+
+@media (max-width: 760px) {
+  button.argos-my-fleet-filter-toggle {
+    width: 100%;
+  }
+}
