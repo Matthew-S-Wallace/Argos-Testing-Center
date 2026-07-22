@@ -4331,89 +4331,145 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         )}
 
         {activeView === "technicians" && (
-          <>
-            <header className="dashboard-header">
-              <div>
+          <section
+            className="argos-daily-summary-view argos-technician-analytics-view"
+            aria-label="Technician Analytics"
+          >
+            <header className="argos-daily-summary-header">
+              <div className="argos-daily-summary-heading">
                 <p className="eyebrow">Technician Analytics</p>
                 <h2>Technician Workload Dashboard</h2>
               </div>
 
-              <div className="refresh-box">
-                <span>Active Technicians</span>
-                <strong>{technicianAnalytics.activeTechnicians}</strong>
+              <div className="argos-daily-summary-header-actions">
+                <div className="argos-daily-summary-date">
+                  <span>Active Technicians</span>
+                  <strong>{technicianAnalytics.activeTechnicians}</strong>
+                </div>
               </div>
             </header>
 
-            <section className="metrics-row">
-              <div className="availability-card">
+            <section
+              className="argos-daily-summary-kpis"
+              aria-label="Technician workload key performance indicators"
+            >
+              <article className="argos-daily-summary-availability">
                 <span>Average Active Days Down</span>
                 <strong>{technicianAnalytics.averageActiveDaysDown}</strong>
-                <p>
-                  Active repair duration across all currently unavailable assigned and unassigned assets
-                </p>
-              </div>
+                <p>Active repair time across all assets</p>
+              </article>
 
-              <div className="metric-card">
+              <article>
                 <span>Active Technicians</span>
                 <strong>{technicianAnalytics.activeTechnicians}</strong>
-              </div>
-              <div className="metric-card">
+              </article>
+
+              <article>
                 <span>Assigned Active Repairs</span>
                 <strong>{technicianAnalytics.assignedActiveRepairs}</strong>
-              </div>
-              <div className="metric-card critical">
+              </article>
+
+              <article className="critical">
                 <span>Unassigned Repairs</span>
                 <strong>{technicianAnalytics.unassignedRepairs}</strong>
-              </div>
+              </article>
             </section>
 
-            <section className="status-board">
-              <div className="status-board-header">
+            <section className="argos-daily-summary-section">
+              <div className="argos-daily-summary-section-heading">
                 <div>
-                  <p className="eyebrow">👥 Workload Visibility</p>
-                  <h3>Technician / Responsible Party Analytics</h3>
+                  <h3>Technician Analytics</h3>
                 </div>
 
-                <div>
-                  <button type="button" onClick={handleExportTechnicianAnalytics}>Export Technician Analytics</button>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleExportTechnicianAnalytics}
+                >
+                  Export Technician Analytics
+                </button>
               </div>
 
-              <table>
-                <thead>
-                  <tr>
-                    <th>Technician</th>
-                    <th>Active Units</th>
-                    <th>Average Active Days Down</th>
-                    <th>Longest Open Unit</th>
-                    <th>Longest Open Days</th>
-                    <th>Completed Repairs</th>
-                    <th>Average Repair Duration</th>
-                  </tr>
-                </thead>
+              <div
+                className="argos-technician-analytics-table"
+                style={{
+                  width: "100%",
+                  maxWidth: "100%",
+                  minWidth: 0,
+                  overflow: "hidden",
+                }}
+              >
+                <table
+                  style={{
+                    width: "100%",
+                    maxWidth: "100%",
+                    minWidth: 0,
+                    tableLayout: "fixed",
+                  }}
+                >
+                  <colgroup>
+                    <col style={{ width: "18%" }} />
+                    <col style={{ width: "10%" }} />
+                    <col style={{ width: "16%" }} />
+                    <col style={{ width: "13%" }} />
+                    <col style={{ width: "12%" }} />
+                    <col style={{ width: "12%" }} />
+                    <col style={{ width: "19%" }} />
+                  </colgroup>
 
-                <tbody>
-                  {technicianAnalytics.rows.length === 0 ? (
+                  <thead>
                     <tr>
-                      <td colSpan="7">No technician analytics are currently available.</td>
+                      <th style={{ whiteSpace: "normal", overflowWrap: "anywhere" }}>Technician</th>
+                      <th style={{ whiteSpace: "normal", overflowWrap: "anywhere" }}>Active Units</th>
+                      <th style={{ whiteSpace: "normal", overflowWrap: "anywhere" }}>
+                        Average Active Days Down
+                      </th>
+                      <th style={{ whiteSpace: "normal", overflowWrap: "anywhere" }}>
+                        Longest Open Unit
+                      </th>
+                      <th style={{ whiteSpace: "normal", overflowWrap: "anywhere" }}>
+                        Longest Open Days
+                      </th>
+                      <th style={{ whiteSpace: "normal", overflowWrap: "anywhere" }}>
+                        Completed Repairs
+                      </th>
+                      <th style={{ whiteSpace: "normal", overflowWrap: "anywhere" }}>
+                        Average Repair Duration
+                      </th>
                     </tr>
-                  ) : (
-                    technicianAnalytics.rows.map((row) => (
-                      <tr key={row.technician}>
-                        <td className="unit">{row.technician}</td>
-                        <td>{row.activeUnits}</td>
-                        <td>{row.averageActiveDaysDown}</td>
-                        <td>{row.longestOpenUnit}</td>
-                        <td>{row.longestOpenDays}</td>
-                        <td>{row.completedRepairs}</td>
-                        <td>{row.averageRepairDuration}</td>
+                  </thead>
+
+                  <tbody>
+                    {technicianAnalytics.rows.length === 0 ? (
+                      <tr>
+                        <td colSpan="7">No technician analytics are currently available.</td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      technicianAnalytics.rows.map((row) => (
+                        <tr key={row.technician}>
+                          <td
+                            className="unit"
+                            style={{ whiteSpace: "normal", overflowWrap: "anywhere" }}
+                          >
+                            {row.technician}
+                          </td>
+                          <td>{row.activeUnits}</td>
+                          <td>{row.averageActiveDaysDown}</td>
+                          <td style={{ whiteSpace: "normal", overflowWrap: "anywhere" }}>
+                            {row.longestOpenUnit}
+                          </td>
+                          <td>{row.longestOpenDays}</td>
+                          <td>{row.completedRepairs}</td>
+                          <td style={{ whiteSpace: "normal", overflowWrap: "anywhere" }}>
+                            {row.averageRepairDuration}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </section>
-          </>
+          </section>
         )}
 
 
