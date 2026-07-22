@@ -3681,3 +3681,411 @@ button.argos-daily-summary-close {
   color: #9a6614;
   font-size: 10px;
 }
+
+/**************************************************************************************************
+ * Sprint 001V — My Fleet Command Center Visual Alignment
+ * Scope: My Fleet presentation only. No layout, iconography, controls, table behavior, or logic.
+ **************************************************************************************************/
+
+.argos-my-fleet-view {
+  --argos-atlas-blue: #081f3d;
+  --argos-atlas-blue-deep: #04152b;
+  --argos-atlas-gold: #b79241;
+  --argos-atlas-gold-light: #d3b66d;
+  --argos-atlas-red: #8b1e16;
+  --argos-atlas-charcoal: #6b6b6b;
+  --argos-atlas-white: #f9f9f9;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Match the Command Center executive hero without changing header structure. */
+.argos-my-fleet-header {
+  position: relative;
+  overflow: hidden;
+  min-height: 136px;
+  align-items: center;
+  padding: 26px 28px;
+  border: 1px solid rgba(8, 31, 61, 0.96);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 88% 18%, rgba(211, 182, 109, 0.09), transparent 30%),
+    linear-gradient(145deg, #0b2b53 0%, var(--argos-atlas-blue) 64%, var(--argos-atlas-blue-deep) 100%);
+  box-shadow:
+    0 12px 28px rgba(8, 31, 61, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.argos-my-fleet-header::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 1px;
+  background: rgba(183, 146, 65, 0.38);
+}
+
+.argos-my-fleet-heading {
+  position: relative;
+  z-index: 1;
+}
+
+.argos-my-fleet-heading .eyebrow {
+  margin: 0 0 8px;
+  color: var(--argos-atlas-gold) !important;
+  -webkit-text-fill-color: var(--argos-atlas-gold) !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.argos-my-fleet-heading h2 {
+  margin: 0;
+  color: #ffffff;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(34px, 3.4vw, 46px);
+  font-weight: 760;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+}
+
+.argos-my-fleet-subtitle {
+  max-width: 760px;
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  font: 500 14px/1.55 Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Match the Command Center header's right-side information treatment. */
+.argos-my-fleet-count-card {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 190px;
+  padding: 16px 18px;
+  border: 1px solid rgba(211, 182, 109, 0.38);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 20px rgba(0, 0, 0, 0.12);
+  text-align: center;
+  backdrop-filter: blur(2px);
+}
+
+.argos-my-fleet-count-card span {
+  color: rgba(255, 255, 255, 0.76);
+  font: 800 10px Inter, ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.12em;
+}
+
+.argos-my-fleet-count-card strong {
+  margin-top: 6px;
+  color: var(--argos-atlas-gold-light);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.argos-my-fleet-count-card small {
+  margin-top: 7px;
+  color: rgba(255, 255, 255, 0.68);
+  font: 500 11px Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Executive directory surface and typography. */
+.argos-my-fleet-directory {
+  border-color: rgba(8, 31, 61, 0.14);
+  border-radius: 14px;
+  box-shadow:
+    0 14px 34px rgba(8, 31, 61, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.argos-my-fleet-directory-header {
+  align-items: center;
+  padding: 22px 24px;
+  border-bottom-color: rgba(8, 31, 61, 0.10);
+  background: #ffffff;
+}
+
+.argos-my-fleet-directory-header .eyebrow {
+  margin-bottom: 7px;
+  color: var(--argos-atlas-gold) !important;
+  -webkit-text-fill-color: var(--argos-atlas-gold) !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+}
+
+.argos-my-fleet-directory-header h3 {
+  color: var(--argos-atlas-blue);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(24px, 2.3vw, 31px);
+  font-weight: 720;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+}
+
+.argos-my-fleet-toolbar label > span {
+  color: #516276;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+}
+
+.argos-my-fleet-toolbar input,
+.argos-my-fleet-toolbar select {
+  border-color: rgba(8, 31, 61, 0.20);
+  border-radius: 9px;
+  color: var(--argos-atlas-blue);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  box-shadow: 0 3px 10px rgba(8, 31, 61, 0.04);
+}
+
+.argos-my-fleet-toolbar input:focus,
+.argos-my-fleet-toolbar select:focus {
+  border-color: var(--argos-atlas-blue);
+  box-shadow: 0 0 0 3px rgba(8, 31, 61, 0.12);
+}
+
+button.argos-my-fleet-filter-toggle,
+button.argos-my-fleet-clear-button {
+  height: 44px;
+  border-radius: 9px;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+button.argos-my-fleet-filter-toggle {
+  border: 1px solid var(--argos-atlas-blue);
+  background: var(--argos-atlas-blue);
+  color: #ffffff;
+  box-shadow: 0 7px 15px rgba(8, 31, 61, 0.14);
+}
+
+button.argos-my-fleet-filter-toggle:hover,
+button.argos-my-fleet-filter-toggle.active {
+  border-color: #123b68;
+  background: #123b68;
+}
+
+button.argos-my-fleet-clear-button {
+  border-color: rgba(8, 31, 61, 0.22);
+  color: var(--argos-atlas-blue);
+}
+
+.argos-my-fleet-guidance {
+  border-color: rgba(8, 31, 61, 0.12);
+  border-left-color: var(--argos-atlas-gold);
+  background: #f7f9fb;
+}
+
+.argos-my-fleet-guidance strong {
+  color: var(--argos-atlas-blue);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+}
+
+.argos-my-fleet-guidance p,
+.argos-my-fleet-guidance > span {
+  color: #607083;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Match Command Center's clean data-panel language. */
+.argos-my-fleet-table {
+  border-color: rgba(8, 31, 61, 0.14);
+  border-radius: 10px;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.argos-my-fleet-table thead {
+  background: #f2f6f9;
+}
+
+.argos-my-fleet-table th {
+  color: #445a70;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+
+.argos-my-fleet-table td {
+  color: #20364d;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.argos-my-fleet-table tbody tr:hover {
+  background: #f6f8fb;
+  box-shadow: inset 4px 0 0 var(--argos-atlas-gold);
+}
+
+.argos-my-fleet-table tbody tr.selected-row {
+  background: #f3f6fa;
+  box-shadow: inset 4px 0 0 var(--argos-atlas-blue);
+}
+
+.argos-my-fleet-table .unit {
+  color: var(--argos-atlas-blue);
+  font-weight: 850;
+}
+
+.argos-my-fleet-sort-button {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+@media (max-width: 980px) {
+  .argos-my-fleet-header {
+    align-items: stretch;
+  }
+
+  .argos-my-fleet-count-card {
+    flex-basis: auto;
+    width: 100%;
+    text-align: left;
+  }
+}
+
+@media (max-width: 760px) {
+  .argos-my-fleet-header {
+    padding: 22px;
+  }
+
+  .argos-my-fleet-heading h2 {
+    font-size: 34px;
+  }
+}
+
+/**************************************************************************************************
+ * Sprint 001V — My Fleet Header Exact Command Center Match
+ *
+ * Corrects only the My Fleet header dimensions and field color.
+ * All other My Fleet presentation, layout, controls, and behavior remain unchanged.
+ **************************************************************************************************/
+
+.argos-my-fleet-header {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: 136px !important;
+  min-height: 136px !important;
+  max-height: 136px !important;
+  padding: 24px 22px !important;
+  border: 1px solid #081f3d !important;
+  border-radius: 10px !important;
+  background: #081f3d !important;
+  background-image: none !important;
+  box-shadow:
+    0 12px 28px rgba(8, 31, 61, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.argos-my-fleet-header::before,
+.argos-my-fleet-header::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Maintain the same vertical hierarchy used by the Command Center header. */
+.argos-my-fleet-heading .eyebrow {
+  margin: 0 0 8px !important;
+  color: #b79241 !important;
+  -webkit-text-fill-color: #b79241 !important;
+}
+
+.argos-my-fleet-heading h2 {
+  margin: 0 !important;
+  color: #ffffff !important;
+  font-size: 32px !important;
+  line-height: 1.05 !important;
+}
+
+.argos-my-fleet-subtitle {
+  margin-top: 7px !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+}
+
+/* Keep the asset count inside the fixed Command Center header height. */
+.argos-my-fleet-count-card {
+  align-self: center !important;
+  padding: 13px 18px !important;
+}
+
+/**************************************************************************************************
+ * Sprint 001V — My Fleet Header Typography and Left Alignment
+ *
+ * Exact visual alignment with the Command Center header:
+ * - heading block anchored to the upper-left
+ * - matching sans-serif title family, weight, size, line-height, and letter spacing
+ * - matching eyebrow typography and spacing
+ * - no changes to layout structure, controls, count card, or business logic
+ **************************************************************************************************/
+
+.argos-my-fleet-header {
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  text-align: left !important;
+}
+
+.argos-my-fleet-heading {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+.argos-my-fleet-heading .eyebrow {
+  width: auto !important;
+  margin: 0 0 6px !important;
+  padding: 0 !important;
+  text-align: left !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: 0.7rem !important;
+  font-weight: 850 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  color: #b79241 !important;
+  -webkit-text-fill-color: #b79241 !important;
+}
+
+.argos-my-fleet-heading h2 {
+  width: auto !important;
+  margin: 0.15rem 0 0.2rem !important;
+  padding: 0 !important;
+  text-align: left !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: clamp(1.65rem, 2.3vw, 2.35rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.035em !important;
+  color: #ffffff !important;
+}
+
+.argos-my-fleet-subtitle {
+  width: auto !important;
+  max-width: 760px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  line-height: 1.45 !important;
+  letter-spacing: normal !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+}
+
+.argos-my-fleet-count-card {
+  flex: 0 0 190px !important;
+  align-self: center !important;
+  text-align: center !important;
+}
+
