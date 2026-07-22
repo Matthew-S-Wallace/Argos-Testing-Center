@@ -4264,19 +4264,18 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
             </header>
 
             <section className="status-board">
-              <div className="status-board-header">
-                <div>
-                  <p className="eyebrow">⚒ Completed Work</p>
-                  <h3>Completed Repair Records</h3>
-                </div>
-
-                <div>
-                  <button type="button" onClick={handleExportRepairHistory}>Export Repair History</button>
-                </div>
+              <div
+                className="status-board-header"
+                style={{ justifyContent: "flex-end", marginBottom: "14px" }}
+              >
+                <button type="button" onClick={handleExportRepairHistory}>
+                  Export Repair History
+                </button>
               </div>
 
-              <table>
-                <thead>
+              <div className="argos-repair-history-table-shell">
+                <table className="argos-repair-history-table">
+                  <thead>
                   <tr>
                     <th>Unit</th>
                     <th>Department</th>
@@ -4324,8 +4323,9 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                       </tr>
                     ))
                   )}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
             </section>
           </>
         )}
