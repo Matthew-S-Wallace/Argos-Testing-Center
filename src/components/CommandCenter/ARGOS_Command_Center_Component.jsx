@@ -35,13 +35,24 @@ import {
 } from "../Shared/ExecutiveUI";
 import "./ARGOS_Command_Center_Component.css";
 
-const PIPELINE_STATUSES = [
-  { status: "Waiting Parts", label: "Waiting Parts", tone: "green", Icon: PackageSearch },
-  { status: "Awaiting Approval", label: "Awaiting Approval", tone: "blue", Icon: BadgeCheck },
-  { status: "In Shop", label: "In Shop", tone: "amber", Icon: Wrench },
-  { status: "At 3rd Party Shop", label: "Third Party", tone: "purple", Icon: Building2 },
-  { status: "Awaiting QC", label: "Awaiting QC", tone: "teal", Icon: ShieldCheck },
-  { status: "Ready for Pickup", label: "Ready Pickup", tone: "green", Icon: PackageCheck },
+const STATUS_PRESENTATION = {
+  Down: { label: "Down", tone: "amber", Icon: AlertTriangle },
+  "In Shop": { label: "In Shop", tone: "amber", Icon: Wrench },
+  "At 3rd Party Shop": { label: "Third Party", tone: "purple", Icon: Building2 },
+  "Waiting Parts": { label: "Waiting Parts", tone: "green", Icon: PackageSearch },
+  "Awaiting Approval": { label: "Awaiting Approval", tone: "blue", Icon: BadgeCheck },
+  "Awaiting QC": { label: "Awaiting QC", tone: "teal", Icon: ShieldCheck },
+  "Ready for Pickup": { label: "Ready Pickup", tone: "green", Icon: PackageCheck },
+};
+
+const FALLBACK_PIPELINE_STATUS_NAMES = [
+  "Down",
+  "In Shop",
+  "At 3rd Party Shop",
+  "Waiting Parts",
+  "Awaiting Approval",
+  "Awaiting QC",
+  "Ready for Pickup",
 ];
 
 const ACTIVITY_ICONS = {
@@ -86,6 +97,7 @@ export default function CommandCenter({
   completedRepairRecords = [],
   statusHistoryEvents = [],
   technicianAnalytics,
+  statusConfigurations = [],
   organizationName,
   selectedAsset,
   importStatus,
@@ -105,6 +117,30 @@ export default function CommandCenter({
     const timer = window.setInterval(() => setCurrentTime(new Date()), 60000);
     return () => window.clearInterval(timer);
   }, []);
+
+  const pipelineStatuses = useMemo(() => {
+    const configuredStatuses = statusConfigurations
+      .filter((status) => status?.is_active !== false && status?.status_name !== "Ready")
+      .sort(
+        (firstStatus, secondStatus) =>
+          Number(firstStatus?.display_order || 0) - Number(secondStatus?.display_order || 0)
+      )
+      .map((status) => status.status_name)
+      .filter(Boolean);
+
+    const statusNames = configuredStatuses.length
+      ? configuredStatuses
+      : FALLBACK_PIPELINE_STATUS_NAMES;
+
+    return statusNames.map((statusName) => ({
+      status: statusName,
+      ...(STATUS_PRESENTATION[statusName] || {
+        label: statusName,
+        tone: "blue",
+        Icon: Activity,
+      }),
+    }));
+  }, [statusConfigurations]);
 
   const dashboardData = useMemo(() => {
     const statusCount = (status) => activeBoardAssets.filter((asset) => asset.status === status).length;
@@ -253,7 +289,7 @@ export default function CommandCenter({
           className="argos-command-panel--pipeline"
         >
           <div className="argos-command-pipeline">
-            {PIPELINE_STATUSES.map((item, index) => {
+            {pipelineStatuses.map((item, index) => {
               const { Icon } = item;
               return (
                 <div className="argos-command-pipeline__step-wrap" key={item.status}>
@@ -269,7 +305,7 @@ export default function CommandCenter({
                     <span>{item.label}</span>
                     <strong>{dashboardData.statusCount(item.status)}</strong>
                   </button>
-                  {index < PIPELINE_STATUSES.length - 1 && <span className="argos-command-pipeline__arrow"><ArrowRight size={18} strokeWidth={2.1} /></span>}
+                  {index < pipelineStatuses.length - 1 && <span className="argos-command-pipeline__arrow"><ArrowRight size={18} strokeWidth={2.1} /></span>}
                 </div>
               );
             })}
