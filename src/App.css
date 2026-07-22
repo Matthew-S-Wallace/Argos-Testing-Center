@@ -3521,3 +3521,46 @@ button.argos-daily-summary-close {
     font-size: 11px;
   }
 }
+
+/* Sprint 001V — Technician Analytics dashboard width containment
+   Keeps the existing design while preventing viewport-based horizontal overflow. */
+.dashboard {
+  min-width: 0;
+}
+
+.argos-technician-analytics-view {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  max-height: none;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+.argos-technician-analytics-view .argos-daily-summary-header,
+.argos-technician-analytics-view .argos-daily-summary-kpis,
+.argos-technician-analytics-view .argos-daily-summary-section,
+.argos-technician-analytics-view .argos-technician-analytics-table {
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.argos-technician-analytics-view .argos-daily-summary-heading,
+.argos-technician-analytics-view .argos-daily-summary-header-actions,
+.argos-technician-analytics-view .argos-daily-summary-section-heading,
+.argos-technician-analytics-view .argos-technician-analytics-table table,
+.argos-technician-analytics-view .argos-technician-analytics-table th,
+.argos-technician-analytics-view .argos-technician-analytics-table td {
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .argos-technician-analytics-view .argos-daily-summary-header {
+    flex-wrap: wrap;
+  }
+
+  .argos-technician-analytics-view .argos-daily-summary-header-actions {
+    flex: 0 1 auto;
+  }
+}
