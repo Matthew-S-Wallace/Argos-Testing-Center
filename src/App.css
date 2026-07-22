@@ -5159,3 +5159,357 @@ button.argos-daily-summary-close:hover {
   }
 }
 
+/**************************************************************************************************
+ * Sprint 001V — Administration Executive Shell Modernization
+ **************************************************************************************************/
+
+.dashboard:has(.administration-workspace) > .dashboard-header {
+  min-height: 136px !important;
+  padding: 24px 22px !important;
+  align-items: center !important;
+  margin-bottom: 22px !important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  background: #081f3d !important;
+  background-image: none !important;
+  box-shadow: 0 12px 28px rgba(8, 31, 61, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.dashboard:has(.administration-workspace) > .dashboard-header > div:first-child {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  text-align: left !important;
+}
+
+.dashboard:has(.administration-workspace) > .dashboard-header .eyebrow {
+  margin: 0 0 6px !important;
+  color: #b79241 !important;
+  -webkit-text-fill-color: #b79241 !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.7rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+}
+
+.dashboard:has(.administration-workspace) > .dashboard-header h2 {
+  margin: 0.15rem 0 0 !important;
+  color: #ffffff !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: clamp(1.65rem, 2.3vw, 2.35rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.035em !important;
+}
+
+.dashboard:has(.administration-workspace) > .dashboard-header .refresh-box {
+  min-width: 188px !important;
+  padding: 15px 18px !important;
+  border: 1px solid rgba(183, 146, 65, 0.42) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.dashboard:has(.administration-workspace) > .dashboard-header .refresh-box span {
+  color: #d3b66d !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.68rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.09em !important;
+  text-transform: uppercase !important;
+}
+
+.dashboard:has(.administration-workspace) > .dashboard-header .refresh-box strong {
+  margin-top: 5px !important;
+  color: #ffffff !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 1.55rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+}
+
+.administration-workspace {
+  grid-template-columns: 296px minmax(0, 1fr) !important;
+  min-height: 650px !important;
+  border: 1px solid rgba(8, 31, 61, 0.13) !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 12px 30px rgba(8, 31, 61, 0.09) !important;
+}
+
+.administration-menu {
+  padding: 22px 16px 26px !important;
+  border-right: 1px solid rgba(8, 31, 61, 0.1) !important;
+  background: linear-gradient(180deg, #f7f9fb 0%, #f2f5f8 100%) !important;
+}
+
+.administration-menu-group + .administration-menu-group {
+  margin-top: 24px !important;
+  padding-top: 20px !important;
+  border-top: 1px solid rgba(8, 31, 61, 0.09) !important;
+}
+
+.administration-menu-group > p {
+  margin: 0 11px 10px !important;
+  color: #b79241 !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.67rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.115em !important;
+  text-transform: uppercase !important;
+}
+
+button.administration-menu-item {
+  min-height: 42px !important;
+  gap: 12px !important;
+  margin: 2px 0 !important;
+  padding: 11px 13px !important;
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  color: #33495f !important;
+  box-shadow: none !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.79rem !important;
+  font-weight: 750 !important;
+  letter-spacing: normal !important;
+  text-align: left !important;
+  text-transform: none !important;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease !important;
+}
+
+button.administration-menu-item:hover {
+  border-color: rgba(8, 31, 61, 0.08) !important;
+  background: #ffffff !important;
+  color: #081f3d !important;
+  transform: translateX(2px) !important;
+  box-shadow: 0 5px 14px rgba(8, 31, 61, 0.06) !important;
+}
+
+button.administration-menu-item.active {
+  border-color: #081f3d !important;
+  background: #081f3d !important;
+  color: #ffffff !important;
+  box-shadow: inset 4px 0 0 #b79241, 0 7px 16px rgba(8, 31, 61, 0.16) !important;
+}
+
+.administration-menu-item small {
+  padding: 3px 6px !important;
+  border-radius: 999px !important;
+  background: rgba(8, 31, 61, 0.06) !important;
+  color: #68798a !important;
+  font-size: 0.48rem !important;
+  font-weight: 850 !important;
+}
+
+.administration-menu-item.active small {
+  background: rgba(255, 255, 255, 0.09) !important;
+  color: #d3b66d !important;
+}
+
+.administration-content {
+  min-width: 0 !important;
+  background: #ffffff !important;
+}
+
+.administration-content-header {
+  min-height: 102px !important;
+  align-items: center !important;
+  padding: 24px 28px !important;
+  border-bottom: 1px solid rgba(8, 31, 61, 0.1) !important;
+  background: #ffffff !important;
+}
+
+.administration-content-header .eyebrow {
+  margin: 0 0 6px !important;
+  color: #b79241 !important;
+  -webkit-text-fill-color: #b79241 !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.66rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.11em !important;
+  text-transform: uppercase !important;
+}
+
+.administration-content-header h3 {
+  margin: 0 !important;
+  color: #081f3d !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: clamp(1.35rem, 2vw, 1.85rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.administration-status {
+  padding: 8px 12px !important;
+  border: 1px solid rgba(183, 146, 65, 0.32) !important;
+  border-radius: 999px !important;
+  background: #fffaf0 !important;
+  color: #7d5b18 !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.62rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.075em !important;
+}
+
+.administration-content-body {
+  min-height: 520px !important;
+  padding: 52px 42px !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%) !important;
+}
+
+.administration-placeholder-icon {
+  width: 70px !important;
+  height: 70px !important;
+  margin-bottom: 22px !important;
+  border: 1px solid rgba(183, 146, 65, 0.3) !important;
+  border-radius: 18px !important;
+  background: #081f3d !important;
+  color: #d3b66d !important;
+  font-size: 1.8rem !important;
+  box-shadow: 0 12px 26px rgba(8, 31, 61, 0.18) !important;
+}
+
+.administration-content h4 {
+  color: #081f3d !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 1.45rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.administration-content-body > p {
+  max-width: 640px !important;
+  margin-top: 14px !important;
+  color: #5b6e81 !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.88rem !important;
+  line-height: 1.65 !important;
+}
+
+.administration-foundation-note {
+  width: min(620px, 100%) !important;
+  margin-top: 28px !important;
+  padding: 18px 20px !important;
+  border: 1px solid rgba(183, 146, 65, 0.28) !important;
+  border-radius: 12px !important;
+  background: #fffaf0 !important;
+  box-shadow: 0 6px 14px rgba(8, 31, 61, 0.04) !important;
+}
+
+.organization-profile-content {
+  padding: 28px !important;
+  background: #ffffff !important;
+}
+
+.organization-profile-heading {
+  margin-bottom: 20px !important;
+  padding-bottom: 16px !important;
+  border-bottom: 1px solid rgba(8, 31, 61, 0.09) !important;
+}
+
+.organization-profile-heading .eyebrow {
+  margin: 0 0 6px !important;
+  color: #b79241 !important;
+  -webkit-text-fill-color: #b79241 !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.65rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+}
+
+.organization-profile-heading h4 {
+  color: #081f3d !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+}
+
+.organization-profile-grid {
+  gap: 14px !important;
+}
+
+.organization-profile-field {
+  padding: 16px 17px !important;
+  border: 1px solid rgba(8, 31, 61, 0.1) !important;
+  border-radius: 11px !important;
+  background: #fbfcfd !important;
+  box-shadow: 0 5px 14px rgba(8, 31, 61, 0.04) !important;
+}
+
+.organization-profile-field span {
+  color: #6a7b8d !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.62rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.07em !important;
+  text-transform: uppercase !important;
+}
+
+.organization-profile-field strong {
+  margin-top: 7px !important;
+  color: #223a51 !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.86rem !important;
+  font-weight: 750 !important;
+  line-height: 1.4 !important;
+}
+
+@media (max-width: 1100px) {
+  .administration-workspace {
+    grid-template-columns: 265px minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 950px) {
+  .administration-workspace {
+    grid-template-columns: 1fr !important;
+  }
+
+  .administration-menu {
+    border-right: 0 !important;
+    border-bottom: 1px solid rgba(8, 31, 61, 0.1) !important;
+  }
+
+  .administration-menu-group {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard:has(.administration-workspace) > .dashboard-header {
+    min-height: auto !important;
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 18px !important;
+  }
+
+  .dashboard:has(.administration-workspace) > .dashboard-header .refresh-box {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .administration-content-header {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  .administration-menu-group {
+    grid-template-columns: 1fr !important;
+  }
+
+  .administration-content-body {
+    min-height: 420px !important;
+    padding: 36px 22px !important;
+  }
+
+  .organization-profile-content {
+    padding: 20px !important;
+  }
+}
