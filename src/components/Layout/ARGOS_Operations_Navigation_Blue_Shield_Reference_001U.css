@@ -1,20 +1,19 @@
 /**************************************************************************************************
  * ARGOS™ Fleet Management Platform
  * Sprint 001V
- * Operations Navigation — Official Brand Alignment
+ * Operations Navigation — Executive Gold Alignment with Compact Header
  **************************************************************************************************/
 
 .argos-blue-navigation {
-  /* Sprint 001V — palette aligned to Argos_Logo_Official.png */
-  --argos-blue-bg-top: #011b3c;
-  --argos-blue-bg-middle: #021f45;
-  --argos-blue-bg-bottom: #01162f;
+  /* Sprint 001V — unified executive navy and Atlas gold coloration */
+  --argos-navigation-navy: #011b3c;
+  --argos-navigation-gold: #d8a93b;
+  --argos-navigation-gold-bright: #f0c75e;
+  --argos-navigation-gold-muted: rgba(216, 169, 59, 0.72);
+  --argos-navigation-line: rgba(216, 169, 59, 0.24);
   --argos-blue-primary: #257aed;
   --argos-blue-primary-bright: #4b97f7;
   --argos-blue-primary-deep: #1b65cf;
-  --argos-blue-text: #f7f9ff;
-  --argos-blue-muted: #bdcce2;
-  --argos-blue-line: rgba(121, 165, 222, 0.17);
 
   position: sticky;
   top: 0;
@@ -24,16 +23,9 @@
   height: 100vh;
   min-height: 720px;
   overflow: hidden;
-  color: var(--argos-blue-text);
-  background:
-    radial-gradient(circle at 90% 5%, rgba(75, 151, 247, 0.1), transparent 30%),
-    linear-gradient(
-      180deg,
-      var(--argos-blue-bg-top) 0%,
-      var(--argos-blue-bg-middle) 48%,
-      var(--argos-blue-bg-bottom) 100%
-    );
-  border-right: 1px solid rgba(57, 113, 184, 0.2);
+  color: var(--argos-navigation-gold);
+  background: var(--argos-navigation-navy);
+  border-right: 1px solid var(--argos-navigation-line);
   box-shadow: 14px 0 34px rgba(0, 10, 30, 0.14);
 }
 
@@ -41,14 +33,14 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px 12px 14px;
-  background: var(--argos-blue-bg-top);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 10px 10px 8px;
+  background: var(--argos-navigation-navy);
+  border-bottom: 1px solid var(--argos-navigation-line);
 }
 
 .argos-blue-navigation__logo {
   display: block;
-  width: 232px;
+  width: 190px;
   max-width: calc(100% - 8px);
   height: auto;
   object-fit: contain;
@@ -64,14 +56,14 @@
 .argos-blue-navigation__demo {
   margin: 0 10px 10px;
   padding: 7px 11px;
-  color: #dbe9ff;
+  color: var(--argos-navigation-gold);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-align: center;
   text-transform: uppercase;
-  background: rgba(37, 122, 237, 0.18);
-  border: 1px solid rgba(75, 151, 247, 0.24);
+  background: rgba(216, 169, 59, 0.08);
+  border: 1px solid var(--argos-navigation-line);
   border-radius: 9px;
 }
 
@@ -84,7 +76,7 @@
   padding: 10px 9px 20px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(75, 151, 247, 0.3) transparent;
+  scrollbar-color: rgba(216, 169, 59, 0.3) transparent;
 }
 
 .argos-blue-navigation__item {
@@ -95,7 +87,7 @@
   width: 100%;
   min-height: 48px;
   padding: 0 13px;
-  color: #f1f5ff;
+  color: var(--argos-navigation-gold);
   font: inherit;
   font-size: 15px;
   font-weight: 650;
@@ -109,27 +101,27 @@
 }
 
 .argos-blue-navigation__item svg {
-  color: #b9c7df;
+  color: var(--argos-navigation-gold);
   transition: color 150ms ease, transform 150ms ease;
 }
 
 .argos-blue-navigation__item:hover {
-  background: rgba(37, 122, 237, 0.18);
-  border-color: rgba(75, 151, 247, 0.12);
+  background: rgba(216, 169, 59, 0.09);
+  border-color: rgba(216, 169, 59, 0.22);
   transform: translateX(1px);
 }
 
 .argos-blue-navigation__item:hover svg {
-  color: #e4edff;
+  color: var(--argos-navigation-gold-bright);
 }
 
 .argos-blue-navigation__item:focus-visible {
-  outline: 2px solid var(--argos-blue-primary-bright);
+  outline: 2px solid var(--argos-navigation-gold-bright);
   outline-offset: 2px;
 }
 
 .argos-blue-navigation__item.is-active {
-  color: #fff;
+  color: var(--argos-navigation-gold-bright);
   background: linear-gradient(
     135deg,
     var(--argos-blue-primary-deep) 0%,
@@ -143,14 +135,14 @@
 }
 
 .argos-blue-navigation__item.is-active svg {
-  color: #fff;
+  color: var(--argos-navigation-gold-bright);
   filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.14));
 }
 
 .argos-blue-navigation__footer {
   margin: 0 17px;
   padding: 0 0 15px;
-  border-top: 1px solid var(--argos-blue-line);
+  border-top: 1px solid var(--argos-navigation-line);
 }
 
 .argos-blue-navigation__organization,
@@ -161,20 +153,20 @@
   gap: 10px;
   width: 100%;
   min-width: 0;
-  color: #f6f8ff;
+  color: var(--argos-navigation-gold);
 }
 
 .argos-blue-navigation__organization {
   min-height: 84px;
-  border-bottom: 1px solid var(--argos-blue-line);
+  border-bottom: 1px solid var(--argos-navigation-line);
 }
 
 .argos-blue-navigation__organization > svg:first-child {
-  color: #b9c7df;
+  color: var(--argos-navigation-gold);
 }
 
 .argos-blue-navigation__organization > svg:last-child {
-  color: rgba(75, 151, 247, 0.5);
+  color: var(--argos-navigation-gold-muted);
 }
 
 .argos-blue-navigation__organization div,
@@ -187,7 +179,7 @@
 .argos-blue-navigation__organization strong,
 .argos-blue-navigation__identity-copy strong {
   overflow: hidden;
-  color: #fff;
+  color: var(--argos-navigation-gold);
   font-size: 13px;
   font-weight: 680;
   line-height: 1.35;
@@ -199,7 +191,7 @@
 .argos-blue-navigation__identity-copy > span {
   margin-top: 2px;
   overflow: hidden;
-  color: #d7dfed;
+  color: var(--argos-navigation-gold-muted);
   font-size: 12px;
   line-height: 1.35;
   text-overflow: ellipsis;
@@ -217,17 +209,17 @@
 }
 
 .argos-blue-navigation__identity:hover strong {
-  color: var(--argos-blue-primary-bright);
+  color: var(--argos-navigation-gold-bright);
 }
 
 .argos-blue-navigation__identity:focus-visible {
-  outline: 2px solid var(--argos-blue-primary-bright);
+  outline: 2px solid var(--argos-navigation-gold-bright);
   outline-offset: 4px;
   border-radius: 8px;
 }
 
 .argos-blue-navigation__identity > svg {
-  color: #f1f5ff;
+  color: var(--argos-navigation-gold);
 }
 
 .argos-blue-navigation__avatar {
@@ -251,7 +243,7 @@
 .argos-blue-navigation__version {
   display: block;
   margin-top: -7px;
-  color: rgba(171, 192, 222, 0.46);
+  color: rgba(216, 169, 59, 0.48);
   font-size: 9px;
   letter-spacing: 0.08em;
   text-align: right;
