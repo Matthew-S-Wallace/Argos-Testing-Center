@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   ArrowRight,
   BadgeCheck,
-  BriefcaseBusiness,
   Building2,
   CalendarClock,
   CheckCircle2,
@@ -27,7 +26,6 @@ import {
   Wrench,
 } from "lucide-react";
 import {
-  ARGOSExecutiveButton,
   ARGOSExecutiveEmptyState,
   ARGOSExecutiveKPICard,
   ARGOSExecutivePageHeader,
@@ -257,20 +255,15 @@ export default function CommandCenter({
         title="ARGOS Fleet Command Center"
         subtitle={organizationName || "Fleet Services"}
         actions={
-          <>
-            <ARGOSExecutiveButton variant="dark" icon={BriefcaseBusiness}>
-              Workspace
-            </ARGOSExecutiveButton>
-            <div
-              className="argos-command-clock"
-              aria-label={`Current time ${timeLabel}, ${dateLabel}`}
-            >
-              <strong>
-                <Clock3 size={16} strokeWidth={2.2} /> {timeLabel}
-              </strong>
-              <span>{dateLabel}</span>
-            </div>
-          </>
+          <div
+            className="argos-command-clock"
+            aria-label={`Current time ${timeLabel}, ${dateLabel}`}
+          >
+            <strong>
+              <Clock3 size={16} strokeWidth={2.2} /> {timeLabel}
+            </strong>
+            <span>{dateLabel}</span>
+          </div>
         }
       />
 
