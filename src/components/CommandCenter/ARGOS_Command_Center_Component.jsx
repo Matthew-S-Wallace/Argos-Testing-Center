@@ -252,7 +252,7 @@ export default function CommandCenter({
     <div className="argos-command-center">
       <ARGOSExecutivePageHeader
         eyebrow="Operational Awareness"
-        title="ARGOS Fleet Command Center"
+        title="Command Center"
         subtitle={organizationName || "Fleet Services"}
         actions={
           <div
@@ -348,12 +348,6 @@ export default function CommandCenter({
           {dashboardData.technicianRows.length ? (
             <div className="argos-command-technicians">
               {dashboardData.technicianRows.map((row) => {
-                const capacity = Math.min(
-                  100,
-                  Math.round(
-                    (row.activeUnits / Math.max(1, unavailableAssets)) * 400,
-                  ),
-                );
 
                 return (
                   <div className="argos-command-technician" key={row.technicianKey}>
@@ -365,10 +359,6 @@ export default function CommandCenter({
                       <div><dt>Waiting Parts</dt><dd>{row.waitingParts}</dd></div>
                       <div><dt>Completed Today</dt><dd>{row.completedToday}</dd></div>
                     </dl>
-                    <div className="argos-command-capacity">
-                      <span style={{ width: `${capacity}%` }} />
-                    </div>
-                    <small>{capacity}% workload index</small>
                   </div>
                 );
               })}

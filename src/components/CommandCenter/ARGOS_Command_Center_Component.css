@@ -174,3 +174,777 @@
 .argos-command-kpi--blue .argos-command-kpi__icon,
 .argos-command-kpi--amber .argos-command-kpi__icon,
 .argos-command-kpi--red .argos-command-kpi__icon { color: #1454c4; }
+
+/**************************************************************************************************
+ * ARGOS™ Fleet Operations Platform
+ * Sprint 001V — Command Center Executive Brand Refinement
+ *
+ * Appearance-only refinement.
+ * Existing component structure, responsive behavior, dimensions, and business logic are preserved.
+ *
+ * Official ARGOS / Atlas palette:
+ * Navy       #081F3D
+ * Warm Gray  #B0AFA9
+ * Gold       #B79241
+ * Critical   #8B1E16
+ * Charcoal   #6B6B6B
+ * White      #F9F9F9
+ **************************************************************************************************/
+
+.argos-command-center {
+  --argos-brand-navy: #081f3d;
+  --argos-brand-navy-deep: #04152b;
+  --argos-brand-navy-soft: #173654;
+  --argos-brand-gold: #b79241;
+  --argos-brand-gold-bright: #d3b66d;
+  --argos-brand-gold-soft: #f4ecdc;
+  --argos-brand-red: #8b1e16;
+  --argos-brand-red-bright: #b62d22;
+  --argos-brand-red-soft: #f8e8e5;
+  --argos-brand-gray: #6b6b6b;
+  --argos-brand-warm-gray: #b0afa9;
+  --argos-brand-surface: #f9f9f9;
+  --argos-brand-white: #ffffff;
+  --argos-brand-line: #d9d6ce;
+  --argos-brand-line-soft: #e9e6df;
+  --argos-brand-text: #10233f;
+  --argos-brand-muted: #667184;
+
+  color: var(--argos-brand-text);
+}
+
+/* Executive page header */
+.argos-command-center .argos-executive-page-header {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(183, 146, 65, 0.10), transparent 32%),
+    linear-gradient(135deg, #ffffff 0%, #fbfaf7 100%);
+  border-color: rgba(8, 31, 61, 0.14);
+  box-shadow:
+    0 10px 28px rgba(8, 31, 61, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.argos-command-center .argos-executive-page-header::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: linear-gradient(
+    180deg,
+    var(--argos-brand-gold-bright) 0%,
+    var(--argos-brand-gold) 48%,
+    var(--argos-brand-navy) 100%
+  );
+}
+
+.argos-command-hero h2,
+.argos-command-center .argos-executive-page-header h1,
+.argos-command-center .argos-executive-page-header h2 {
+  color: var(--argos-brand-navy);
+}
+
+.argos-command-hero p,
+.argos-command-clock span {
+  color: var(--argos-brand-muted);
+}
+
+.argos-command-hero__eyebrow,
+.argos-command-center .argos-executive-page-header__eyebrow {
+  color: var(--argos-brand-gold) !important;
+}
+
+.argos-command-clock {
+  color: var(--argos-brand-navy);
+}
+
+.argos-command-clock strong svg {
+  color: var(--argos-brand-gold);
+}
+
+/* KPI cards */
+.argos-command-kpi {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(8, 31, 61, 0.13);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(249, 249, 249, 0.98));
+  box-shadow:
+    0 8px 22px rgba(8, 31, 61, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.argos-command-kpi::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: var(--argos-brand-gold);
+  opacity: 0.92;
+}
+
+.argos-command-kpi__label {
+  color: var(--argos-brand-navy-soft);
+}
+
+.argos-command-kpi small {
+  color: var(--argos-brand-muted);
+}
+
+.argos-command-kpi__icon {
+  border-color: rgba(183, 146, 65, 0.42);
+  background:
+    linear-gradient(145deg, #fffdf8 0%, var(--argos-brand-gold-soft) 100%) !important;
+  color: var(--argos-brand-navy);
+  box-shadow:
+    0 7px 16px rgba(8, 31, 61, 0.10),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.78);
+}
+
+.argos-command-kpi--green strong {
+  color: var(--argos-brand-gold);
+}
+
+.argos-command-kpi--blue strong {
+  color: var(--argos-brand-navy);
+}
+
+.argos-command-kpi--amber strong {
+  color: #8a681f;
+}
+
+.argos-command-kpi--red strong {
+  color: var(--argos-brand-red);
+}
+
+.argos-command-kpi--green::before {
+  background: linear-gradient(90deg, var(--argos-brand-gold), var(--argos-brand-gold-bright));
+}
+
+.argos-command-kpi--blue::before {
+  background: linear-gradient(90deg, var(--argos-brand-navy), #24527c);
+}
+
+.argos-command-kpi--amber::before {
+  background: linear-gradient(90deg, #8a681f, var(--argos-brand-gold));
+}
+
+.argos-command-kpi--red::before {
+  background: linear-gradient(90deg, var(--argos-brand-red), var(--argos-brand-red-bright));
+}
+
+.argos-command-kpi--blue .argos-command-kpi__icon {
+  border-color: rgba(8, 31, 61, 0.26);
+  background: linear-gradient(145deg, #f8fbff 0%, #e9eff6 100%) !important;
+  color: var(--argos-brand-navy);
+}
+
+.argos-command-kpi--red .argos-command-kpi__icon {
+  border-color: rgba(139, 30, 22, 0.24);
+  background: linear-gradient(145deg, #fffafa 0%, var(--argos-brand-red-soft) 100%) !important;
+  color: var(--argos-brand-red);
+}
+
+/* Executive panels */
+.argos-command-panel,
+.argos-command-center .argos-executive-panel {
+  border-color: rgba(8, 31, 61, 0.13);
+  background:
+    linear-gradient(180deg, #ffffff 0%, #fdfcf9 100%);
+  box-shadow:
+    0 8px 22px rgba(8, 31, 61, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.argos-command-panel__header {
+  border-bottom-color: var(--argos-brand-line-soft);
+}
+
+.argos-command-panel__header h3 {
+  color: var(--argos-brand-navy);
+}
+
+.argos-command-panel__header > span {
+  color: var(--argos-brand-gray);
+}
+
+.argos-command-panel__icon {
+  color: var(--argos-brand-gold);
+}
+
+.argos-command-panel__icon--alert {
+  color: var(--argos-brand-red);
+}
+
+/* Fleet status pipeline */
+.argos-command-pipeline__step {
+  border-color: rgba(8, 31, 61, 0.13);
+  background: linear-gradient(180deg, #ffffff 0%, #faf9f6 100%);
+  color: var(--argos-brand-navy);
+  box-shadow:
+    0 5px 14px rgba(8, 31, 61, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.argos-command-pipeline__step:hover {
+  border-color: rgba(183, 146, 65, 0.46);
+  box-shadow:
+    0 10px 20px rgba(8, 31, 61, 0.10),
+    0 0 0 1px rgba(183, 146, 65, 0.10);
+}
+
+.argos-command-pipeline__arrow {
+  color: var(--argos-brand-warm-gray);
+}
+
+.argos-command-tone--green .argos-command-pipeline__icon {
+  background: linear-gradient(145deg, #d5bc7d, var(--argos-brand-gold));
+}
+.argos-command-tone--green strong {
+  color: #8a681f;
+}
+
+.argos-command-tone--blue .argos-command-pipeline__icon {
+  background: linear-gradient(145deg, #214d78, var(--argos-brand-navy));
+}
+.argos-command-tone--blue strong {
+  color: var(--argos-brand-navy);
+}
+
+.argos-command-tone--amber .argos-command-pipeline__icon {
+  background: linear-gradient(145deg, var(--argos-brand-gold-bright), #9a7428);
+}
+.argos-command-tone--amber strong {
+  color: #8a681f;
+}
+
+.argos-command-tone--purple .argos-command-pipeline__icon {
+  background: linear-gradient(145deg, #7f8790, var(--argos-brand-gray));
+}
+.argos-command-tone--purple strong {
+  color: var(--argos-brand-gray);
+}
+
+.argos-command-tone--teal .argos-command-pipeline__icon {
+  background: linear-gradient(145deg, #315b72, var(--argos-brand-navy-soft));
+}
+.argos-command-tone--teal strong {
+  color: var(--argos-brand-navy-soft);
+}
+
+/* Operational alerts */
+.argos-command-alert {
+  border-bottom-color: var(--argos-brand-line-soft);
+  color: var(--argos-brand-text);
+}
+
+.argos-command-alert__icon--red {
+  color: var(--argos-brand-red);
+}
+
+.argos-command-alert__icon--amber {
+  color: var(--argos-brand-gold);
+}
+
+.argos-command-alert__icon--blue,
+.argos-command-alert__icon--teal {
+  color: var(--argos-brand-navy);
+}
+
+.argos-command-alert strong {
+  background: var(--argos-brand-red-soft);
+  color: var(--argos-brand-red);
+  border: 1px solid rgba(139, 30, 22, 0.10);
+}
+
+/* Technician operations */
+.argos-command-technician {
+  border-right-color: var(--argos-brand-line-soft);
+}
+
+.argos-command-technician__avatar {
+  background: linear-gradient(145deg, #214d78, var(--argos-brand-navy));
+  box-shadow: 0 5px 12px rgba(8, 31, 61, 0.16);
+}
+
+.argos-command-technician dt,
+.argos-command-technician small {
+  color: var(--argos-brand-muted);
+}
+
+.argos-command-technician dd {
+  color: var(--argos-brand-navy);
+}
+
+.argos-command-capacity {
+  background: #e6e3dc;
+}
+
+.argos-command-capacity span {
+  background: linear-gradient(
+    90deg,
+    var(--argos-brand-navy) 0%,
+    var(--argos-brand-gold) 100%
+  );
+}
+
+/* Recent activity */
+.argos-command-activity {
+  border-bottom-color: var(--argos-brand-line-soft);
+}
+
+.argos-command-activity__marker--green {
+  background: var(--argos-brand-gold);
+}
+
+.argos-command-activity__marker--blue {
+  background: var(--argos-brand-navy);
+}
+
+.argos-command-activity__marker--amber {
+  background: #8a681f;
+}
+
+.argos-command-activity div span,
+.argos-command-activity time {
+  color: var(--argos-brand-muted);
+}
+
+/* Fleet health */
+.argos-command-health-grid > div {
+  border-color: rgba(8, 31, 61, 0.12);
+  background:
+    radial-gradient(circle at 85% 12%, rgba(183, 146, 65, 0.08), transparent 35%),
+    linear-gradient(180deg, #ffffff 0%, #faf9f6 100%);
+}
+
+.argos-command-health-grid span {
+  color: var(--argos-brand-navy-soft);
+}
+
+.argos-command-health-grid strong {
+  color: var(--argos-brand-navy);
+}
+
+.argos-command-health-grid small {
+  color: #8a681f;
+}
+
+/* Live status board */
+.argos-command-status-board {
+  border-color: rgba(8, 31, 61, 0.14);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfaf7 100%);
+  box-shadow: 0 8px 22px rgba(8, 31, 61, 0.065);
+}
+
+.argos-command-status-board .status-board-header {
+  border-bottom-color: var(--argos-brand-line-soft);
+}
+
+.argos-command-status-board .status-board-header h3 {
+  color: var(--argos-brand-navy);
+}
+
+.argos-command-status-eyebrow {
+  color: var(--argos-brand-gold) !important;
+}
+
+.argos-command-status-board table thead th {
+  color: var(--argos-brand-navy);
+  background: #f1efe9;
+  border-bottom-color: rgba(8, 31, 61, 0.14);
+}
+
+.argos-command-status-board table tbody tr {
+  border-bottom-color: var(--argos-brand-line-soft);
+}
+
+.argos-command-status-board table tbody tr:hover {
+  background: rgba(183, 146, 65, 0.075);
+}
+
+.argos-command-status-board table tbody tr.selected-row {
+  background: rgba(8, 31, 61, 0.065);
+  box-shadow: inset 4px 0 0 var(--argos-brand-gold);
+}
+
+.argos-command-board-actions button {
+  border-color: rgba(8, 31, 61, 0.20);
+  background: linear-gradient(180deg, #ffffff 0%, #f4f2ed 100%);
+  color: var(--argos-brand-navy);
+}
+
+.argos-command-board-actions button:hover {
+  border-color: var(--argos-brand-gold);
+  background: var(--argos-brand-gold-soft);
+  color: var(--argos-brand-navy-deep);
+}
+
+/* Empty states and supporting copy */
+.argos-command-empty,
+.argos-command-center .argos-executive-empty-state p {
+  color: var(--argos-brand-muted);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .argos-command-kpi,
+  .argos-command-panel,
+  .argos-command-center .argos-executive-panel,
+  .argos-command-pipeline__step,
+  .argos-command-board-actions button {
+    transition:
+      border-color 160ms ease,
+      background 160ms ease,
+      box-shadow 160ms ease,
+      color 160ms ease,
+      transform 160ms ease;
+  }
+}
+
+/**************************************************************************************************
+ * Sprint 001V.2 — Command Center Brand Corrections
+ *
+ * Final authority rules for:
+ * 1. Solid Atlas Blue executive header
+ * 2. Rebuilt KPI presentation
+ * 3. Primary Fleet Readiness KPI in Atlas Blue with white and gold typography
+ **************************************************************************************************/
+
+/* Solid Atlas Blue header — no fade, light field, or multicolor strip */
+.argos-command-center .argos-executive-page-header,
+.argos-command-center .argos-command-hero {
+  background: #081f3d !important;
+  border: 1px solid #081f3d !important;
+  box-shadow:
+    0 12px 28px rgba(8, 31, 61, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.argos-command-center .argos-executive-page-header::before,
+.argos-command-center .argos-command-hero::before {
+  display: none !important;
+  content: none !important;
+}
+
+.argos-command-center .argos-executive-page-header h1,
+.argos-command-center .argos-executive-page-header h2,
+.argos-command-center .argos-command-hero h1,
+.argos-command-center .argos-command-hero h2 {
+  color: #ffffff !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+}
+
+.argos-command-center .argos-executive-page-header p,
+.argos-command-center .argos-command-hero p,
+.argos-command-center .argos-command-clock span {
+  color: rgba(255, 255, 255, 0.78) !important;
+}
+
+.argos-command-center .argos-executive-page-header__eyebrow,
+.argos-command-center .argos-command-hero__eyebrow {
+  color: #d3b66d !important;
+}
+
+.argos-command-center .argos-command-clock,
+.argos-command-center .argos-command-clock strong {
+  color: #ffffff !important;
+}
+
+.argos-command-center .argos-command-clock strong svg {
+  color: #d3b66d !important;
+}
+
+/* Rebuild all KPI cards with stronger component-level specificity */
+.argos-command-center .argos-command-kpi-grid > *,
+.argos-command-center .argos-command-kpi {
+  position: relative;
+  min-height: 126px;
+  overflow: hidden;
+  border: 1px solid rgba(8, 31, 61, 0.14) !important;
+  border-radius: 14px !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%) !important;
+  box-shadow:
+    0 9px 22px rgba(8, 31, 61, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.argos-command-center .argos-command-kpi-grid > *::before,
+.argos-command-center .argos-command-kpi::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 4px;
+  background: #b79241;
+}
+
+/* KPI typography */
+.argos-command-center .argos-command-kpi-grid > * [class*="label"],
+.argos-command-center .argos-command-kpi__label {
+  color: #173654 !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.055em !important;
+}
+
+.argos-command-center .argos-command-kpi-grid > * strong,
+.argos-command-center .argos-command-kpi strong {
+  color: #081f3d !important;
+}
+
+.argos-command-center .argos-command-kpi-grid > * small,
+.argos-command-center .argos-command-kpi small {
+  color: #667184 !important;
+}
+
+/* KPI icon containers */
+.argos-command-center .argos-command-kpi-grid > * [class*="icon"],
+.argos-command-center .argos-command-kpi__icon {
+  width: 58px !important;
+  height: 58px !important;
+  flex: 0 0 58px !important;
+  border: 1px solid rgba(183, 146, 65, 0.42) !important;
+  border-radius: 13px !important;
+  background: linear-gradient(145deg, #fffdf8 0%, #f4ecdc 100%) !important;
+  color: #081f3d !important;
+  box-shadow:
+    0 7px 16px rgba(8, 31, 61, 0.11),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.76) !important;
+}
+
+.argos-command-center .argos-command-kpi-grid > * [class*="icon"] svg,
+.argos-command-center .argos-command-kpi__icon svg {
+  width: 34px !important;
+  height: 34px !important;
+}
+
+/* Primary KPI — Fleet Readiness */
+.argos-command-center .argos-command-kpi-grid > :first-child,
+.argos-command-center .argos-command-kpi--green {
+  border-color: #081f3d !important;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(211, 182, 109, 0.15), transparent 35%),
+    linear-gradient(145deg, #0b2b53 0%, #081f3d 62%, #04152b 100%) !important;
+  box-shadow:
+    0 12px 26px rgba(8, 31, 61, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+}
+
+.argos-command-center .argos-command-kpi-grid > :first-child::before,
+.argos-command-center .argos-command-kpi--green::before {
+  background: linear-gradient(90deg, #d3b66d 0%, #b79241 100%) !important;
+}
+
+.argos-command-center .argos-command-kpi-grid > :first-child [class*="label"],
+.argos-command-center .argos-command-kpi--green .argos-command-kpi__label {
+  color: #ffffff !important;
+}
+
+.argos-command-center .argos-command-kpi-grid > :first-child strong,
+.argos-command-center .argos-command-kpi--green strong {
+  color: #d3b66d !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.20);
+}
+
+.argos-command-center .argos-command-kpi-grid > :first-child small,
+.argos-command-center .argos-command-kpi--green small {
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.argos-command-center .argos-command-kpi-grid > :first-child [class*="icon"],
+.argos-command-center .argos-command-kpi--green .argos-command-kpi__icon {
+  border-color: rgba(211, 182, 109, 0.74) !important;
+  background: linear-gradient(145deg, #d3b66d 0%, #b79241 100%) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 8px 18px rgba(0, 0, 0, 0.20),
+    inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+}
+
+/* Ready KPI */
+.argos-command-center .argos-command-kpi-grid > :nth-child(2)::before,
+.argos-command-center .argos-command-kpi--blue::before {
+  background: linear-gradient(90deg, #081f3d 0%, #24527c 100%) !important;
+}
+
+.argos-command-center .argos-command-kpi-grid > :nth-child(2) strong,
+.argos-command-center .argos-command-kpi--blue strong {
+  color: #0b4fa4 !important;
+}
+
+.argos-command-center .argos-command-kpi-grid > :nth-child(2) [class*="icon"],
+.argos-command-center .argos-command-kpi--blue .argos-command-kpi__icon {
+  border-color: rgba(8, 31, 61, 0.28) !important;
+  background: linear-gradient(145deg, #214d78 0%, #081f3d 100%) !important;
+  color: #ffffff !important;
+}
+
+/* Unavailable KPI */
+.argos-command-center .argos-command-kpi-grid > :nth-child(3)::before,
+.argos-command-center .argos-command-kpi--amber::before {
+  background: linear-gradient(90deg, #8a681f 0%, #b79241 100%) !important;
+}
+
+.argos-command-center .argos-command-kpi-grid > :nth-child(3) strong,
+.argos-command-center .argos-command-kpi--amber strong {
+  color: #8a681f !important;
+}
+
+.argos-command-center .argos-command-kpi-grid > :nth-child(3) [class*="icon"],
+.argos-command-center .argos-command-kpi--amber .argos-command-kpi__icon {
+  border-color: rgba(183, 146, 65, 0.56) !important;
+  background: linear-gradient(145deg, #d3b66d 0%, #a77d2e 100%) !important;
+  color: #ffffff !important;
+}
+
+/* Critical KPI */
+.argos-command-center .argos-command-kpi-grid > :nth-child(4)::before,
+.argos-command-center .argos-command-kpi--red::before {
+  background: linear-gradient(90deg, #8b1e16 0%, #b62d22 100%) !important;
+}
+
+.argos-command-center .argos-command-kpi-grid > :nth-child(4) strong,
+.argos-command-center .argos-command-kpi--red strong {
+  color: #8b1e16 !important;
+}
+
+.argos-command-center .argos-command-kpi-grid > :nth-child(4) [class*="icon"],
+.argos-command-center .argos-command-kpi--red .argos-command-kpi__icon {
+  border-color: rgba(139, 30, 22, 0.34) !important;
+  background: linear-gradient(145deg, #b62d22 0%, #8b1e16 100%) !important;
+  color: #ffffff !important;
+}
+
+/**************************************************************************************************
+ * Sprint 001V.3 — Command Center Targeted Brand Corrections
+ *
+ * 1. Remove the gold top highlight from Fleet Readiness.
+ * 2. Force "Operational Awareness" to Atlas Gold.
+ * 3. Standardize Fleet Status Pipeline icons:
+ *      - Down: Atlas Red
+ *      - Ready / Ready Pickup: Atlas Gold
+ *      - All remaining statuses: Atlas Blue
+ **************************************************************************************************/
+
+/* Fleet Readiness — remove top gold highlight */
+.argos-command-center .argos-command-kpi-grid > :first-child::before,
+.argos-command-center .argos-command-kpi--green::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* Command Center header eyebrow — Atlas Gold */
+.argos-command-center .argos-executive-page-header__eyebrow,
+.argos-command-center .argos-command-hero__eyebrow,
+.argos-command-center .argos-command-hero .eyebrow,
+.argos-command-center .argos-executive-page-header .eyebrow {
+  color: #b79241 !important;
+}
+
+/* Fleet Status Pipeline — Atlas Blue is the standard icon treatment */
+.argos-command-center .argos-command-pipeline__step .argos-command-pipeline__icon,
+.argos-command-center .argos-command-pipeline__step.argos-command-tone--green .argos-command-pipeline__icon,
+.argos-command-center .argos-command-pipeline__step.argos-command-tone--blue .argos-command-pipeline__icon,
+.argos-command-center .argos-command-pipeline__step.argos-command-tone--amber .argos-command-pipeline__icon,
+.argos-command-center .argos-command-pipeline__step.argos-command-tone--purple .argos-command-pipeline__icon,
+.argos-command-center .argos-command-pipeline__step.argos-command-tone--teal .argos-command-pipeline__icon {
+  border: 1px solid rgba(8, 31, 61, 0.28) !important;
+  background: linear-gradient(145deg, #214d78 0%, #081f3d 100%) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 6px 14px rgba(8, 31, 61, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+/* DOWN — Atlas Red */
+.argos-command-center
+  .argos-command-pipeline__step-wrap:first-child
+  .argos-command-pipeline__icon {
+  border-color: rgba(139, 30, 22, 0.36) !important;
+  background: linear-gradient(145deg, #b62d22 0%, #8b1e16 100%) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 6px 14px rgba(139, 30, 22, 0.20),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+/* READY / READY PICKUP — Atlas Gold */
+.argos-command-center
+  .argos-command-pipeline__step-wrap:last-child
+  .argos-command-pipeline__icon {
+  border-color: rgba(183, 146, 65, 0.58) !important;
+  background: linear-gradient(145deg, #d3b66d 0%, #b79241 100%) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 6px 14px rgba(183, 146, 65, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+
+/**************************************************************************************************
+ * Sprint 001V.4 — Final Header Eyebrow and Workload Index Corrections
+ *
+ * 1. Technician workload index uses Atlas Blue only.
+ * 2. "Operational Awareness" is forced to Atlas Gold across shared header implementations.
+ **************************************************************************************************/
+
+/* Technician Operations workload index — solid Atlas Blue, no gold fade */
+.argos-command-center .argos-command-capacity span {
+  background: #081f3d !important;
+  background-image: none !important;
+}
+
+/* Operational Awareness — force Atlas Gold against shared ExecutiveUI selectors */
+.argos-command-center .argos-executive-page-header__eyebrow,
+.argos-command-center .argos-executive-page-header .argos-executive-page-header__eyebrow,
+.argos-command-center .argos-executive-page-header .eyebrow,
+.argos-command-center .argos-command-hero__eyebrow,
+.argos-command-center .argos-command-hero .argos-command-hero__eyebrow,
+.argos-command-center .argos-command-hero .eyebrow,
+.argos-command-center [class*="page-header"] [class*="eyebrow"],
+.argos-command-center [class*="hero"] [class*="eyebrow"] {
+  color: #b79241 !important;
+  -webkit-text-fill-color: #b79241 !important;
+}
+
+/**************************************************************************************************
+ * Sprint 001V.5 — Pipeline Number Identity and Technician Workload Removal Support
+ *
+ * Pipeline values now match their icon colors:
+ *   - Down: Atlas Red
+ *   - Ready Pickup: Atlas Gold
+ *   - All remaining pipeline statuses: Atlas Blue
+ **************************************************************************************************/
+
+/* Default pipeline number treatment — Atlas Blue */
+.argos-command-center
+  .argos-command-pipeline__step-wrap
+  .argos-command-pipeline__step
+  strong {
+  color: #081f3d !important;
+}
+
+/* DOWN number — Atlas Red */
+.argos-command-center
+  .argos-command-pipeline__step-wrap:first-child
+  .argos-command-pipeline__step
+  strong {
+  color: #8b1e16 !important;
+}
+
+/* READY / READY PICKUP number — Atlas Gold */
+.argos-command-center
+  .argos-command-pipeline__step-wrap:last-child
+  .argos-command-pipeline__step
+  strong {
+  color: #b79241 !important;
+}
+
+/* Defensive removal in case stale markup remains during hot reload */
+.argos-command-center .argos-command-capacity,
+.argos-command-center .argos-command-technician > small {
+  display: none !important;
+}
+
