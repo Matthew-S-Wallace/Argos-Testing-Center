@@ -3564,3 +3564,120 @@ button.argos-daily-summary-close {
     flex: 0 1 auto;
   }
 }
+
+
+/* Sprint 001V — Reports duration clarity and compact KPI presentation */
+.argos-reports-metrics {
+  grid-template-columns: 1.25fr 0.75fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.argos-reports-metrics .availability-card,
+.argos-reports-metrics .metric-card {
+  min-height: 124px;
+}
+
+.argos-reports-bottleneck-card {
+  padding: 22px 24px;
+}
+
+.argos-reports-bottleneck-card strong {
+  margin-top: 8px;
+  font-size: clamp(28px, 2.4vw, 40px);
+  line-height: 1.05;
+}
+
+.argos-reports-bottleneck-card p {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.argos-reports-metric-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 18px;
+  text-align: left;
+}
+
+.argos-reports-metric-card strong {
+  margin-top: 10px;
+  font-size: clamp(24px, 2vw, 34px);
+  line-height: 1.08;
+}
+
+.argos-reports-metric-card strong::after {
+  width: 34px;
+  margin: 11px 0 0;
+}
+
+.argos-reports-metric-card small {
+  display: block;
+  margin-top: 10px;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.argos-reports-status-board-header {
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 1200px) {
+  .argos-reports-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .argos-reports-bottleneck-card {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .argos-reports-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Sprint 001V — Reports sortable analytics table */
+.argos-reports-analytics-table th {
+  vertical-align: top;
+}
+
+.argos-reports-sort-button {
+  width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #071a33;
+  box-shadow: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.argos-reports-sort-button:hover,
+.argos-reports-sort-button:focus-visible {
+  color: #9a6614;
+  background: transparent;
+  box-shadow: none;
+}
+
+.argos-reports-sort-button b {
+  flex: 0 0 auto;
+  color: #9a6614;
+  font-size: 10px;
+}

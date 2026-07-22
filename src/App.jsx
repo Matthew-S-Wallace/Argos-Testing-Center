@@ -1173,10 +1173,12 @@ function buildStatusDurationAnalytics(assets, statusHistoryEvents, statusOptions
       status,
       currentUnits,
       completedStatusEvents,
+      averageDurationDays: completedStatusEvents > 0 ? totalDuration / completedStatusEvents : 0,
       averageDuration:
         completedStatusEvents > 0
           ? formatStatusDuration(totalDuration / completedStatusEvents)
           : "0 minutes",
+      longestDurationDays: longestDuration,
       longestDuration: formatStatusDuration(longestDuration),
       totalDuration,
       percentageOfRecordedDowntime:
@@ -1185,23 +1187,35 @@ function buildStatusDurationAnalytics(assets, statusHistoryEvents, statusOptions
   });
 
   const trackedStatusTransitions = normalizedHistoryEvents.length;
-  const averageRecordedStatusDuration =
-    trackedStatusTransitions > 0
-      ? formatStatusDuration(totalRecordedDuration / trackedStatusTransitions)
-      : "0 minutes";
-  const longestRecordedStatusDuration =
+  const averageRecordedDurationDays =
+    trackedStatusTransitions > 0 ? totalRecordedDuration / trackedStatusTransitions : 0;
+  const averageRecordedStatusDuration = formatStatusDuration(averageRecordedDurationDays);
+  const averageRecordedStatusEvent =
     normalizedHistoryEvents.length > 0
-      ? formatStatusDuration(
-          Math.max(...normalizedHistoryEvents.map((event) => event.durationDays))
-        )
-      : "0 minutes";
+      ? [...normalizedHistoryEvents].sort(
+          (firstEvent, secondEvent) =>
+            Math.abs(firstEvent.durationDays - averageRecordedDurationDays) -
+            Math.abs(secondEvent.durationDays - averageRecordedDurationDays)
+        )[0]
+      : null;
+  const longestRecordedStatusEvent =
+    normalizedHistoryEvents.length > 0
+      ? [...normalizedHistoryEvents].sort(
+          (firstEvent, secondEvent) => secondEvent.durationDays - firstEvent.durationDays
+        )[0]
+      : null;
+  const longestRecordedStatusDuration = longestRecordedStatusEvent
+    ? formatStatusDuration(longestRecordedStatusEvent.durationDays)
+    : "0 minutes";
   const currentLargestBottleneck = [...rows].sort((a, b) => b.currentUnits - a.currentUnits)[0];
 
   return {
     rows,
     trackedStatusTransitions,
     averageRecordedStatusDuration,
+    averageRecordedStatusEvent,
     longestRecordedStatusDuration,
+    longestRecordedStatusEvent,
     currentLargestBottleneck:
       currentLargestBottleneck && currentLargestBottleneck.currentUnits > 0
         ? currentLargestBottleneck
@@ -1239,6 +1253,7 @@ function App() {
     technician: "",
     details: "",
   });
+  const [reportSort, setReportSort] = useState({ key: "currentUnits", direction: "desc" });
   const [importStatus, setImportStatus] = useState("");
   const csvInputRef = useRef(null);
   const vinScannerVideoRef = useRef(null);
@@ -1986,6 +2001,32 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
   const technicianAnalytics = buildTechnicianAnalytics(assets, completedRepairRecords);
 
   const statusDurationAnalytics = buildStatusDurationAnalytics(assets, statusHistoryEvents, statusOptions);
+  const reportRows = [...statusDurationAnalytics.rows]
+    .sort((firstRow, secondRow) => {
+      const numericSortKeys = {
+        currentUnits: "currentUnits",
+        completedStatusEvents: "completedStatusEvents",
+        averageDuration: "averageDurationDays",
+        longestDuration: "longestDurationDays",
+        percentageOfRecordedDowntime: "percentageOfRecordedDowntime",
+      };
+      const sortKey = numericSortKeys[reportSort.key] || reportSort.key;
+      const firstValue = firstRow[sortKey];
+      const secondValue = secondRow[sortKey];
+      const comparison =
+        typeof firstValue === "number" || !Number.isNaN(Number(firstValue))
+          ? Number(firstValue) - Number(secondValue)
+          : String(firstValue || "").localeCompare(String(secondValue || ""));
+      return reportSort.direction === "asc" ? comparison : -comparison;
+    });
+
+  function handleReportSort(key) {
+    setReportSort((currentSort) => ({
+      key,
+      direction: currentSort.key === key && currentSort.direction === "asc" ? "desc" : "asc",
+    }));
+  }
+
 
   function handleSelectAsset(asset) {
     const liveAsset = assets.find((currentAsset) => currentAsset.unit === asset.unit) || asset;
@@ -4499,8 +4540,8 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
               </div>
             </header>
 
-            <section className="metrics-row">
-              <div className="availability-card">
+            <section className="metrics-row argos-reports-metrics">
+              <div className="availability-card argos-reports-bottleneck-card">
                 <span>Current Largest Bottleneck</span>
                 <strong>
                   {statusDurationAnalytics.currentLargestBottleneck
@@ -4516,52 +4557,73 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 </p>
               </div>
 
-              <div className="metric-card">
+              <div className="metric-card argos-reports-metric-card">
                 <span>Tracked Status Transitions</span>
                 <strong>{statusDurationAnalytics.trackedStatusTransitions}</strong>
               </div>
-              <div className="metric-card">
+              <div className="metric-card argos-reports-metric-card">
                 <span>Average Recorded Status Duration</span>
                 <strong>{statusDurationAnalytics.averageRecordedStatusDuration}</strong>
+                <small>
+                  {statusDurationAnalytics.averageRecordedStatusEvent
+                    ? `Unit ${statusDurationAnalytics.averageRecordedStatusEvent.unit} · ${statusDurationAnalytics.averageRecordedStatusEvent.previousStatus}`
+                    : "No recorded unit available"}
+                </small>
               </div>
-              <div className="metric-card critical">
+              <div className="metric-card critical argos-reports-metric-card">
                 <span>Longest Recorded Status Duration</span>
                 <strong>{statusDurationAnalytics.longestRecordedStatusDuration}</strong>
+                <small>
+                  {statusDurationAnalytics.longestRecordedStatusEvent
+                    ? `Unit ${statusDurationAnalytics.longestRecordedStatusEvent.unit} · ${statusDurationAnalytics.longestRecordedStatusEvent.previousStatus}`
+                    : "No recorded unit available"}
+                </small>
               </div>
             </section>
 
-            <section className="status-board">
-              <div className="status-board-header">
-                <div>
-                  <p className="eyebrow">▥ Bottleneck Visibility</p>
-                  <h3>Status Duration Analytics</h3>
-                </div>
-
+            <section className="status-board argos-reports-status-board">
+              <div className="status-board-header argos-reports-status-board-header">
                 <div>
                   <button type="button" onClick={handleExportUnitsDown}>Export Units Down</button>{" "}
                   <button type="button" onClick={handleExportStatusDurationAnalytics}>Export Status Duration Analytics</button>
                 </div>
               </div>
 
-              <table>
+              <table className="argos-reports-analytics-table">
                 <thead>
                   <tr>
-                    <th>Status</th>
-                    <th>Current Units</th>
-                    <th>Completed Status Events</th>
-                    <th>Average Duration</th>
-                    <th>Longest Duration</th>
-                    <th>Percentage of Recorded Downtime</th>
+                    {[
+                      ["status", "Status"],
+                      ["currentUnits", "Current Units"],
+                      ["completedStatusEvents", "Completed Status Events"],
+                      ["averageDuration", "Average Duration"],
+                      ["longestDuration", "Longest Duration"],
+                      ["percentageOfRecordedDowntime", "Percentage of Recorded Downtime"],
+                    ].map(([key, label]) => (
+                      <th key={key}>
+                        <button
+                          type="button"
+                          className="argos-reports-sort-button"
+                          onClick={() => handleReportSort(key)}
+                          aria-label={`Sort by ${label}`}
+                        >
+                          <span>{label}</span>
+                          <b aria-hidden="true">
+                            {reportSort.key === key ? (reportSort.direction === "asc" ? "▲" : "▼") : ""}
+                          </b>
+                        </button>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
 
                 <tbody>
-                  {statusDurationAnalytics.rows.length === 0 ? (
+                  {reportRows.length === 0 ? (
                     <tr>
                       <td colSpan="6">No status duration analytics are currently available.</td>
                     </tr>
                   ) : (
-                    statusDurationAnalytics.rows.map((row) => (
+                    reportRows.map((row) => (
                       <tr key={row.status}>
                         <td>
                           <span className={`status-pill ${getStatusClass(row.status)}`}>

@@ -48,7 +48,6 @@ const ORGANIZATION_PROFILE_FIELDS = [
 ];
 
 function OrganizationProfileWorkspace({
-  isDemoMode,
   organizationProfile,
   organizationProfileLoading,
   organizationProfileError,
@@ -59,14 +58,7 @@ function OrganizationProfileWorkspace({
         <div>
           <p className="eyebrow">Organization Record</p>
           <h4>Agency and Fleet Information</h4>
-          <p>
-            This information is loaded from the signed-in user’s organization in Supabase.
-            Update access will be activated with controlled role security.
-          </p>
         </div>
-        <span className="organization-profile-mode">
-          {isDemoMode ? "Demo Record" : "Read Only"}
-        </span>
       </div>
 
       {organizationProfileLoading ? (
@@ -74,24 +66,14 @@ function OrganizationProfileWorkspace({
       ) : organizationProfileError ? (
         <div className="organization-profile-state error">{organizationProfileError}</div>
       ) : organizationProfile ? (
-        <>
-          <div className="organization-profile-grid">
-            {ORGANIZATION_PROFILE_FIELDS.map(([label, field]) => (
-              <div className="organization-profile-field" key={field}>
-                <span>{label}</span>
-                <strong>{organizationProfile[field] || "Not configured"}</strong>
-              </div>
-            ))}
-          </div>
-
-          <div className="organization-profile-security-note">
-            <strong>Database connection confirmed</strong>
-            <span>
-              ARGOS is reading this organization through the existing tenant-scoped RLS policy.
-              Editing remains disabled until an administrator-only update policy is added and verified.
-            </span>
-          </div>
-        </>
+        <div className="organization-profile-grid">
+          {ORGANIZATION_PROFILE_FIELDS.map(([label, field]) => (
+            <div className="organization-profile-field" key={field}>
+              <span>{label}</span>
+              <strong>{organizationProfile[field] || "Not configured"}</strong>
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="organization-profile-state">
           No organization profile is available for this account.
@@ -175,7 +157,7 @@ export default function AdministrationModule({
       item === "Status Configuration" ||
       item === "Technicians"
     ) {
-      return "Active";
+      return null;
     }
 
     return "Planned";
@@ -211,19 +193,6 @@ export default function AdministrationModule({
         </div>
       </header>
 
-      <section className="administration-intro">
-        <div>
-          <p className="eyebrow">Version 1.0 Foundation</p>
-          <h3>Central Configuration</h3>
-          <p>
-            Select an Administration area to view its dedicated workspace. Each future
-            configuration feature will plug into this framework without changing ARGOS operational
-            screens.
-          </p>
-        </div>
-        <span className="administration-sprint-badge">Sprint 001M</span>
-      </section>
-
       <section className="administration-workspace">
         <aside className="administration-menu" aria-label="Administration sections">
           {ADMINISTRATION_GROUPS.map((group) => (
@@ -237,7 +206,7 @@ export default function AdministrationModule({
                   onClick={() => onSelectSection(item)}
                 >
                   <span>{item}</span>
-                  <small>{getSectionLabel(item)}</small>
+                  {getSectionLabel(item) && <small>{getSectionLabel(item)}</small>}
                 </button>
               ))}
             </div>
@@ -257,7 +226,6 @@ export default function AdministrationModule({
             <AdministrationAccessDenied message="You do not have permission to access this Administration workspace." />
           ) : isOrganizationProfile ? (
             <OrganizationProfileWorkspace
-              isDemoMode={isDemoMode}
               organizationProfile={organizationProfile}
               organizationProfileLoading={organizationProfileLoading}
               organizationProfileError={organizationProfileError}
