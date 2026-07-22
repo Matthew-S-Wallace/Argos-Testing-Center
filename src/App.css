@@ -4457,3 +4457,705 @@ button.argos-daily-summary-close:hover {
   color: #2f4358 !important;
 }
 
+/**************************************************************************************************
+ * Sprint 001V — Repair History Executive UI Alignment
+ *
+ * Presentation-only modernization aligned with the approved Command Center visual language.
+ * Existing repair-history data, table columns, export behavior, width containment, and business
+ * logic remain unchanged.
+ **************************************************************************************************/
+
+/* Repair History page header — scoped through the repair-history table */
+.dashboard:has(.argos-repair-history-table) > .dashboard-header {
+  min-height: 136px !important;
+  padding: 24px 22px !important;
+  align-items: center !important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  background: #081f3d !important;
+  background-image: none !important;
+  box-shadow:
+    0 12px 28px rgba(8, 31, 61, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.dashboard:has(.argos-repair-history-table) > .dashboard-header > div:first-child {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  text-align: left !important;
+}
+
+.dashboard:has(.argos-repair-history-table) > .dashboard-header .eyebrow {
+  margin: 0 0 6px !important;
+  color: #b79241 !important;
+  -webkit-text-fill-color: #b79241 !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: 0.7rem !important;
+  font-weight: 850 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+}
+
+.dashboard:has(.argos-repair-history-table) > .dashboard-header h2 {
+  margin: 0.15rem 0 0 !important;
+  color: #ffffff !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: clamp(1.65rem, 2.3vw, 2.35rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.035em !important;
+}
+
+/* Historical record count */
+.dashboard:has(.argos-repair-history-table) > .dashboard-header .refresh-box {
+  min-width: 188px !important;
+  padding: 15px 18px !important;
+  border: 1px solid rgba(183, 146, 65, 0.42) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.dashboard:has(.argos-repair-history-table) > .dashboard-header .refresh-box span {
+  color: #d3b66d !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.68rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.09em !important;
+  text-transform: uppercase !important;
+}
+
+.dashboard:has(.argos-repair-history-table) > .dashboard-header .refresh-box strong {
+  margin-top: 5px !important;
+  color: #ffffff !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 1.55rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+}
+
+/* Main archive board */
+.dashboard:has(.argos-repair-history-table) > .status-board {
+  margin-top: 22px !important;
+  padding: 22px !important;
+  border: 1px solid rgba(8, 31, 61, 0.13) !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 26px rgba(8, 31, 61, 0.07) !important;
+}
+
+.dashboard:has(.argos-repair-history-table) .status-board-header {
+  padding: 0 !important;
+}
+
+/* Export action */
+.dashboard:has(.argos-repair-history-table) .status-board-header button {
+  min-height: 42px !important;
+  padding: 0 18px !important;
+  border: 1px solid #081f3d !important;
+  border-radius: 10px !important;
+  background: #081f3d !important;
+  color: #ffffff !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
+  box-shadow: 0 7px 16px rgba(8, 31, 61, 0.16) !important;
+}
+
+.dashboard:has(.argos-repair-history-table) .status-board-header button:hover {
+  border-color: #0d315b !important;
+  background: #0d315b !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Table shell */
+.argos-repair-history-table-shell {
+  border: 1px solid rgba(8, 31, 61, 0.13) !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: 0 6px 18px rgba(8, 31, 61, 0.05) !important;
+}
+
+/* Table typography and header */
+.argos-repair-history-table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+.argos-repair-history-table thead {
+  background: #edf4f9 !important;
+}
+
+.argos-repair-history-table th {
+  border-bottom: 1px solid rgba(8, 31, 61, 0.16) !important;
+  color: #173654 !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.055em !important;
+  text-transform: uppercase !important;
+}
+
+.argos-repair-history-table th:first-child {
+  border-top-left-radius: 11px !important;
+}
+
+.argos-repair-history-table th:last-child {
+  border-top-right-radius: 11px !important;
+}
+
+.argos-repair-history-table td {
+  border-bottom-color: rgba(8, 31, 61, 0.08) !important;
+  color: #34495e !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+}
+
+.argos-repair-history-table tbody tr:nth-child(even) {
+  background: #fafcfd !important;
+}
+
+.argos-repair-history-table tbody tr:hover {
+  background: #f2f6f9 !important;
+}
+
+.argos-repair-history-table tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+/* Primary record identifiers */
+.argos-repair-history-table td.unit {
+  color: #081f3d !important;
+  font-weight: 850 !important;
+}
+
+/* Priority hierarchy */
+.argos-repair-history-table td.critical {
+  color: #8b1e16 !important;
+  font-weight: 850 !important;
+}
+
+.argos-repair-history-table td.high {
+  color: #8a681f !important;
+  font-weight: 800 !important;
+}
+
+.argos-repair-history-table td.normal,
+.argos-repair-history-table td.low {
+  color: #52657a !important;
+  font-weight: 700 !important;
+}
+
+/* Status chips — retain operational colors while improving executive consistency */
+.argos-repair-history-table .status-pill {
+  min-height: 26px !important;
+  padding: 5px 8px !important;
+  border-radius: 999px !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.64rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.025em !important;
+  box-shadow: inset 0 0 0 1px rgba(8, 31, 61, 0.08) !important;
+}
+
+/* Responsive header preservation */
+@media (max-width: 900px) {
+  .dashboard:has(.argos-repair-history-table) > .dashboard-header {
+    min-height: auto !important;
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 18px !important;
+  }
+
+  .dashboard:has(.argos-repair-history-table) > .dashboard-header .refresh-box {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard:has(.argos-repair-history-table) > .status-board {
+    padding: 14px !important;
+  }
+}
+
+/**************************************************************************************************
+ * Sprint 001V — Reports Executive UI Alignment
+ *
+ * Presentation-only modernization aligned with the approved ARGOS Command Center visual language.
+ * Existing report calculations, sorting, export actions, status analytics, and business logic remain
+ * unchanged.
+ **************************************************************************************************/
+
+/* Reports page header — scoped through the reports analytics table */
+.dashboard:has(.argos-reports-analytics-table) > .dashboard-header {
+  min-height: 136px !important;
+  padding: 24px 22px !important;
+  align-items: center !important;
+  margin-bottom: 22px !important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  background: #081f3d !important;
+  background-image: none !important;
+  box-shadow:
+    0 12px 28px rgba(8, 31, 61, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.dashboard:has(.argos-reports-analytics-table) > .dashboard-header > div:first-child {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  text-align: left !important;
+}
+
+.dashboard:has(.argos-reports-analytics-table) > .dashboard-header .eyebrow {
+  margin: 0 0 6px !important;
+  color: #b79241 !important;
+  -webkit-text-fill-color: #b79241 !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: 0.7rem !important;
+  font-weight: 850 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+}
+
+.dashboard:has(.argos-reports-analytics-table) > .dashboard-header h2 {
+  margin: 0.15rem 0 0 !important;
+  color: #ffffff !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: clamp(1.65rem, 2.3vw, 2.35rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.035em !important;
+}
+
+/* Tracked transition summary */
+.dashboard:has(.argos-reports-analytics-table) > .dashboard-header .refresh-box {
+  min-width: 188px !important;
+  padding: 15px 18px !important;
+  border: 1px solid rgba(183, 146, 65, 0.42) !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+.dashboard:has(.argos-reports-analytics-table) > .dashboard-header .refresh-box span {
+  color: #d3b66d !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.68rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.09em !important;
+  text-transform: uppercase !important;
+}
+
+.dashboard:has(.argos-reports-analytics-table) > .dashboard-header .refresh-box strong {
+  margin-top: 5px !important;
+  color: #ffffff !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 1.55rem !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+}
+
+/* Executive KPI row */
+.argos-reports-metrics {
+  gap: 16px !important;
+  margin-bottom: 22px !important;
+}
+
+.argos-reports-metrics .availability-card,
+.argos-reports-metrics .metric-card {
+  min-height: 132px !important;
+  border: 1px solid rgba(8, 31, 61, 0.13) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 9px 22px rgba(8, 31, 61, 0.07) !important;
+}
+
+.argos-reports-bottleneck-card {
+  padding: 22px 24px !important;
+  border-color: rgba(183, 146, 65, 0.35) !important;
+  background: #081f3d !important;
+  background-image: none !important;
+}
+
+.argos-reports-bottleneck-card span {
+  color: #ffffff !important;
+  font-size: 0.7rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.1em !important;
+}
+
+.argos-reports-bottleneck-card strong {
+  margin-top: 10px !important;
+  color: #d3b66d !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: clamp(1.55rem, 2.2vw, 2.25rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.argos-reports-bottleneck-card p {
+  margin-top: 12px !important;
+  color: rgba(255, 255, 255, 0.86) !important;
+  font-size: 0.78rem !important;
+  line-height: 1.45 !important;
+}
+
+.argos-reports-metric-card {
+  justify-content: center !important;
+  padding: 20px 18px !important;
+  background: #ffffff !important;
+  text-align: left !important;
+}
+
+.argos-reports-metric-card span {
+  color: #52657a !important;
+  font-size: 0.67rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.085em !important;
+}
+
+.argos-reports-metric-card strong {
+  margin-top: 10px !important;
+  color: #081f3d !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: clamp(1.45rem, 2vw, 2.05rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.argos-reports-metric-card strong::after {
+  width: 34px !important;
+  height: 2px !important;
+  margin: 11px 0 0 !important;
+  background: #b79241 !important;
+}
+
+.argos-reports-metric-card small {
+  margin-top: 10px !important;
+  color: #607186 !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+}
+
+.argos-reports-metric-card.critical {
+  border-color: rgba(139, 30, 22, 0.26) !important;
+  background: #fffdfd !important;
+}
+
+.argos-reports-metric-card.critical strong {
+  color: #8b1e16 !important;
+}
+
+/* Main reports workspace */
+.argos-reports-status-board {
+  padding: 22px !important;
+  border: 1px solid rgba(8, 31, 61, 0.13) !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 26px rgba(8, 31, 61, 0.07) !important;
+}
+
+.argos-reports-status-board-header {
+  justify-content: flex-end !important;
+  margin-bottom: 16px !important;
+}
+
+.argos-reports-status-board-header > div {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+}
+
+/* Export actions */
+.argos-reports-status-board-header button {
+  min-height: 42px !important;
+  margin: 0 !important;
+  padding: 0 17px !important;
+  border: 1px solid #081f3d !important;
+  border-radius: 10px !important;
+  background: #081f3d !important;
+  color: #ffffff !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.025em !important;
+  box-shadow: 0 7px 16px rgba(8, 31, 61, 0.15) !important;
+}
+
+.argos-reports-status-board-header button:hover {
+  border-color: #0d315b !important;
+  background: #0d315b !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Analytics table */
+.argos-reports-analytics-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed !important;
+  border: 1px solid rgba(8, 31, 61, 0.13) !important;
+  border-radius: 12px !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  background: #ffffff !important;
+  overflow: hidden !important;
+  box-shadow: 0 6px 18px rgba(8, 31, 61, 0.05) !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+}
+
+.argos-reports-analytics-table thead {
+  background: #edf4f9 !important;
+}
+
+.argos-reports-analytics-table th {
+  height: 58px !important;
+  padding: 0 !important;
+  border-bottom: 1px solid rgba(8, 31, 61, 0.16) !important;
+  vertical-align: middle !important;
+}
+
+.argos-reports-sort-button {
+  width: 100% !important;
+  min-height: 58px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  padding: 10px 13px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #173654 !important;
+  box-shadow: none !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.64rem !important;
+  font-weight: 850 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0.055em !important;
+  text-align: left !important;
+  text-transform: uppercase !important;
+}
+
+.argos-reports-sort-button:hover {
+  background: rgba(8, 31, 61, 0.05) !important;
+  transform: none !important;
+}
+
+.argos-reports-sort-button b {
+  flex: 0 0 auto !important;
+  color: #b79241 !important;
+  font-size: 0.7rem !important;
+}
+
+.argos-reports-analytics-table td {
+  min-width: 0 !important;
+  padding: 14px 13px !important;
+  border-bottom: 1px solid rgba(8, 31, 61, 0.08) !important;
+  color: #34495e !important;
+  font-size: 0.78rem !important;
+  line-height: 1.4 !important;
+  vertical-align: middle !important;
+  overflow-wrap: anywhere !important;
+}
+
+.argos-reports-analytics-table tbody tr:nth-child(even) {
+  background: #fafcfd !important;
+}
+
+.argos-reports-analytics-table tbody tr:hover {
+  background: #f2f6f9 !important;
+  box-shadow: none !important;
+}
+
+.argos-reports-analytics-table tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+.argos-reports-analytics-table td:not(:first-child) {
+  color: #263d54 !important;
+  font-weight: 700 !important;
+}
+
+.argos-reports-analytics-table .status-pill {
+  max-width: 100% !important;
+  min-height: 27px !important;
+  justify-content: center !important;
+  padding: 5px 9px !important;
+  border-radius: 999px !important;
+  white-space: normal !important;
+  text-align: center !important;
+  font-size: 0.64rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.025em !important;
+  box-shadow: inset 0 0 0 1px rgba(8, 31, 61, 0.08) !important;
+}
+
+/* Empty-state guidance */
+.argos-reports-status-board > .eyebrow {
+  margin: 18px 0 0 !important;
+  padding: 13px 15px !important;
+  border: 1px solid rgba(183, 146, 65, 0.28) !important;
+  border-radius: 10px !important;
+  background: #fffaf0 !important;
+  color: #7a5b1c !important;
+  -webkit-text-fill-color: #7a5b1c !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.72rem !important;
+  font-weight: 750 !important;
+  line-height: 1.5 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+
+/* Responsive preservation */
+@media (max-width: 1100px) {
+  .dashboard:has(.argos-reports-analytics-table) > .dashboard-header {
+    flex-wrap: wrap !important;
+  }
+
+  .argos-reports-analytics-table th,
+  .argos-reports-analytics-table td {
+    font-size: 0.7rem !important;
+  }
+
+  .argos-reports-sort-button {
+    padding: 8px 9px !important;
+    font-size: 0.58rem !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .dashboard:has(.argos-reports-analytics-table) > .dashboard-header {
+    min-height: auto !important;
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 18px !important;
+  }
+
+  .dashboard:has(.argos-reports-analytics-table) > .dashboard-header .refresh-box {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .argos-reports-status-board {
+    padding: 14px !important;
+    overflow-x: auto !important;
+  }
+
+  .argos-reports-analytics-table {
+    min-width: 820px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .argos-reports-status-board-header > div {
+    width: 100% !important;
+    flex-direction: column !important;
+  }
+
+  .argos-reports-status-board-header button {
+    width: 100% !important;
+  }
+}
+
+/**************************************************************************************************
+ * Sprint 001V — Reports KPI Unification Correction
+ *
+ * Aligns all four Reports KPI cards to the top and applies a unified typography system.
+ **************************************************************************************************/
+
+.argos-reports-metrics .availability-card,
+.argos-reports-metrics .metric-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  min-height: 148px !important;
+  padding: 22px 22px !important;
+  text-align: left !important;
+}
+
+.argos-reports-metrics .availability-card span,
+.argos-reports-metrics .metric-card span {
+  display: block !important;
+  margin: 0 !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: 0.68rem !important;
+  font-weight: 850 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0.085em !important;
+  text-transform: uppercase !important;
+}
+
+.argos-reports-metrics .availability-card strong,
+.argos-reports-metrics .metric-card strong {
+  display: block !important;
+  margin: 12px 0 0 !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: clamp(1.55rem, 2vw, 2.05rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.025em !important;
+  text-align: left !important;
+}
+
+.argos-reports-metrics .availability-card p,
+.argos-reports-metrics .metric-card small {
+  display: block !important;
+  margin: 12px 0 0 !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  line-height: 1.45 !important;
+  text-align: left !important;
+}
+
+.argos-reports-metrics .metric-card strong::after {
+  width: 34px !important;
+  height: 2px !important;
+  margin: 11px 0 0 !important;
+}
+
+/* Keep the dark bottleneck card visually consistent without altering hierarchy */
+.argos-reports-metrics .argos-reports-bottleneck-card strong {
+  color: #d3b66d !important;
+}
+
+.argos-reports-metrics .argos-reports-bottleneck-card p {
+  color: rgba(255, 255, 255, 0.86) !important;
+}
+
+/* Standard KPI cards */
+.argos-reports-metrics .argos-reports-metric-card span {
+  color: #52657a !important;
+}
+
+.argos-reports-metrics .argos-reports-metric-card strong {
+  color: #081f3d !important;
+}
+
+.argos-reports-metrics .argos-reports-metric-card small {
+  color: #607186 !important;
+}
+
+.argos-reports-metrics .argos-reports-metric-card.critical strong {
+  color: #8b1e16 !important;
+}
+
+@media (max-width: 760px) {
+  .argos-reports-metrics .availability-card,
+  .argos-reports-metrics .metric-card {
+    min-height: 138px !important;
+    padding: 20px !important;
+  }
+}
+
