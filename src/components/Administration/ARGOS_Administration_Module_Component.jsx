@@ -152,6 +152,10 @@ export default function AdministrationModule({
   const isAPWAMappingSection = activeSection === "APWA Mapping";
   const isVMRSConfigurationSection = activeSection === "VMRS Configuration";
 
+  function getSectionDisplayName(item) {
+    return item === "VMRS Configuration" ? "VMRS Catalog Management" : item;
+  }
+
   function getSectionLabel(item) {
     if (
       item === "Organization Profile" ||
@@ -177,7 +181,7 @@ export default function AdministrationModule({
     if (isStatusConfigurationSection) return "Live Status Configuration";
     if (isTechniciansSection) return "Live Technicians";
     if (isAPWAMappingSection) return "Live APWA Mapping";
-    if (isVMRSConfigurationSection) return "Live VMRS Configuration";
+    if (isVMRSConfigurationSection) return "Live VMRS Catalog";
     return "Framework Ready";
   }
 
@@ -213,7 +217,7 @@ export default function AdministrationModule({
                   key={item}
                   onClick={() => onSelectSection(item)}
                 >
-                  <span>{item}</span>
+                  <span>{getSectionDisplayName(item)}</span>
                   {getSectionLabel(item) && <small>{getSectionLabel(item)}</small>}
                 </button>
               ))}
@@ -225,7 +229,7 @@ export default function AdministrationModule({
           <div className="administration-content-header">
             <div>
               <p className="eyebrow">Administration Workspace</p>
-              <h3>{activeSection}</h3>
+              <h3>{getSectionDisplayName(activeSection)}</h3>
             </div>
             <span className="administration-status">{getWorkspaceStatus()}</span>
           </div>

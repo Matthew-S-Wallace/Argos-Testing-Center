@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
+import ARGOSVMRSImportDialog from "./ARGOS_VMRS_Import_Dialog";
 import "./ARGOS_VMRS_Configuration_Administration_Module.css";
 
 const CODE_TYPES = [
@@ -18,7 +19,7 @@ const DEMO_CODES = [
     code: "013",
     description: "Brakes",
     code_type: "SYSTEM",
-    parent_code_id: null,
+    parent_id: null,
     is_active: true,
   },
   {
@@ -26,7 +27,7 @@ const DEMO_CODES = [
     code: "013-001",
     description: "Foundation Brake",
     code_type: "ASSEMBLY",
-    parent_code_id: "demo-system",
+    parent_id: "demo-system",
     is_active: true,
   },
   {
@@ -34,7 +35,7 @@ const DEMO_CODES = [
     code: "013-001-015",
     description: "Brake Pad / Lining",
     code_type: "COMPONENT",
-    parent_code_id: "demo-assembly",
+    parent_id: "demo-assembly",
     is_active: true,
   },
   {
@@ -42,7 +43,7 @@ const DEMO_CODES = [
     code: "REASON-WORN",
     description: "Worn",
     code_type: "REASON",
-    parent_code_id: null,
+    parent_id: null,
     is_active: true,
   },
   {
@@ -50,7 +51,7 @@ const DEMO_CODES = [
     code: "WORK-REPLACE",
     description: "Replace",
     code_type: "WORK_ACCOMPLISHED",
-    parent_code_id: null,
+    parent_id: null,
     is_active: true,
   },
 ];
@@ -112,6 +113,7 @@ export default function ARGOSVMRSConfigurationAdministrationModule({ isDemoMode 
   const [savingCodeId, setSavingCodeId] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const canManage =
     isDemoMode || ["admin", "administrator", "manager"].includes(
@@ -225,6 +227,7 @@ export default function ARGOSVMRSConfigurationAdministrationModule({ isDemoMode 
         supabase
           .from("vmrs_codes")
           .select("*")
+          .eq("organization_id", resolvedOrganizationId)
           .order("code_type", { ascending: true })
           .order("code", { ascending: true }),
         supabase
@@ -366,8 +369,8 @@ export default function ARGOSVMRSConfigurationAdministrationModule({ isDemoMode 
   }
 
   function getParentLabel(code) {
-    if (!code.parent_code_id) return "Top Level";
-    const parent = codes.find((item) => item.id === code.parent_code_id);
+    if (!code.parent_id) return "Top Level";
+    const parent = codes.find((item) => item.id === code.parent_id);
     return parent ? `${parent.code} — ${parent.description}` : "Parent unavailable";
   }
 
@@ -383,10 +386,11 @@ export default function ARGOSVMRSConfigurationAdministrationModule({ isDemoMode 
       <div className="argos-vmrs-heading">
         <div>
           <p className="eyebrow">Maintenance Classification Intelligence</p>
-          <h4>VMRS Configuration</h4>
+          <h4>VMRS Catalog Management</h4>
           <p>
-            Review the licensed VMRS catalog and enable the codes your organization will use to
-            standardize repair reasons and completed-work reporting in ARGOS.
+            Import and manage your organization’s licensed VMRS catalog. ARGOS uses the
+            organization-supplied reference data to support repair classification and operational
+            reporting. VMRS reference data is not distributed with ARGOS.
           </p>
         </div>
         <span className="argos-vmrs-mode">
@@ -397,7 +401,7 @@ export default function ARGOSVMRSConfigurationAdministrationModule({ isDemoMode 
       <div className="argos-vmrs-summary">
         <div><span>Catalog Codes</span><strong>{codes.length}</strong></div>
         <div><span>Active Catalog</span><strong>{activeCatalogCount}</strong></div>
-        <div><span>Organization Enabled</span><strong>{enabledCount}</strong></div>
+        <div><span>Codes Enabled</span><strong>{enabledCount}</strong></div>
         <div><span>Import Batches</span><strong>{importBatches.length}</strong></div>
       </div>
 
@@ -434,10 +438,11 @@ export default function ARGOSVMRSConfigurationAdministrationModule({ isDemoMode 
 
       {!isLoading && !errorMessage && codes.length === 0 && (
         <div className="argos-vmrs-catalog-warning">
-          <strong>Licensed VMRS catalog required</strong>
+          <strong>No VMRS Catalog Imported</strong>
           <span>
-            The configuration workspace is operational, but no VMRS catalog records are loaded.
-            Import an appropriately licensed VMRS dataset before enabling organization codes.
+            This organization has not imported a VMRS catalog. Organizations that maintain a
+            licensed VMRS catalog may import their own reference data to enable VMRS repair
+            classification and reporting. ARGOS does not distribute VMRS reference data.
           </span>
         </div>
       )}
@@ -449,17 +454,28 @@ export default function ARGOSVMRSConfigurationAdministrationModule({ isDemoMode 
         </div>
         <p>
           {latestImport
-            ? `Latest batch: ${latestImport.file_name || latestImport.source_name || latestImport.id}`
-            : "VMRS catalog imports remain administrator-controlled and are audited through the Sprint 001X import tables."}
+            ? `Latest batch: ${latestImport.original_filename || latestImport.source_name || latestImport.id}`
+            : "Import VMRS reference data supplied and licensed by your organization. ARGOS does not include or distribute VMRS catalog content."}
         </p>
+        <button
+          className="argos-vmrs-import-button"
+          type="button"
+          disabled={!canManage}
+          onClick={() => {
+            setActionMessage("");
+            setIsImportDialogOpen(true);
+          }}
+        >
+          Import VMRS Catalog
+        </button>
       </div>
 
       {isLoading ? (
-        <VMRSState>Loading VMRS Configuration…</VMRSState>
+        <VMRSState>Loading VMRS Catalog…</VMRSState>
       ) : errorMessage ? (
         <VMRSState error>{errorMessage}</VMRSState>
       ) : codes.length === 0 ? (
-        <VMRSState>No VMRS catalog records are currently available.</VMRSState>
+        <VMRSState>No organization-supplied VMRS catalog records are currently available.</VMRSState>
       ) : visibleCodes.length === 0 ? (
         <VMRSState>No VMRS codes match the selected search and filters.</VMRSState>
       ) : (
@@ -519,12 +535,26 @@ export default function ARGOSVMRSConfigurationAdministrationModule({ isDemoMode 
         </div>
       )}
 
+      <ARGOSVMRSImportDialog
+        isOpen={isImportDialogOpen}
+        organizationId={organizationId}
+        currentUserId={currentUserId}
+        onClose={() => setIsImportDialogOpen(false)}
+        onValidated={(importRequest) => {
+          setIsImportDialogOpen(false);
+          setActionMessage(
+            `${importRequest.originalFilename} passed initial file validation. CSV row parsing and database staging are the next Sprint 001Y implementation step.`,
+          );
+        }}
+      />
+
       <div className="argos-vmrs-foundation-note">
-        <strong>Sprint 001X operational boundary</strong>
+        <strong>ARGOS VMRS operating boundary</strong>
         <span>
-          VMRS Configuration controls standardized visibility and reporting codes only. It does not
-          introduce work orders, parts, labor costing, preventive maintenance scheduling, or other
-          FMIS functions into ARGOS.
+          ARGOS uses organization-supplied VMRS reference data for standardized repair
+          classification and reporting only. ARGOS does not distribute VMRS content or introduce
+          work orders, parts, labor costing, preventive maintenance scheduling, or other FMIS
+          functions.
         </span>
       </div>
     </div>
