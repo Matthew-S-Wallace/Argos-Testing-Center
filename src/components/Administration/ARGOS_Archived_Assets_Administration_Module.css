@@ -1,0 +1,483 @@
+.argos-archive-module {
+  display: grid;
+  gap: 22px;
+  padding: 24px;
+}
+
+.argos-archive-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.argos-archive-heading h4 {
+  margin: 4px 0 8px;
+  font-size: 1.45rem;
+  line-height: 1.2;
+  color: #172033;
+}
+
+.argos-archive-heading p {
+  margin: 0;
+  max-width: 720px;
+  color: #667085;
+  line-height: 1.6;
+}
+
+.argos-archive-refresh-button,
+.argos-archive-restore-button,
+.argos-archive-confirm-button,
+.argos-archive-cancel-button {
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.argos-archive-refresh-button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #c7d2e0;
+  background: #ffffff;
+  color: #27415f;
+}
+
+.argos-archive-refresh-button:hover:not(:disabled) {
+  border-color: #6f8fb5;
+  background: #f5f8fc;
+}
+
+.argos-archive-refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.argos-archive-notice,
+.argos-archive-alert,
+.argos-archive-restore-warning {
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.argos-archive-notice {
+  border: 1px solid #d8e2ef;
+  background: #f4f7fb;
+  color: #40546d;
+}
+
+.argos-archive-alert {
+  display: grid;
+  gap: 4px;
+}
+
+.argos-archive-alert strong {
+  font-size: 0.92rem;
+}
+
+.argos-archive-alert span {
+  line-height: 1.5;
+}
+
+.argos-archive-alert-error {
+  border: 1px solid #efb4b4;
+  background: #fff5f5;
+  color: #8f2020;
+}
+
+.argos-archive-alert-success {
+  border: 1px solid #a9d7b6;
+  background: #f2fbf5;
+  color: #24663a;
+}
+
+.argos-archive-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.argos-archive-summary-grid article {
+  display: grid;
+  gap: 7px;
+  min-height: 132px;
+  padding: 18px;
+  border: 1px solid #dfe5ec;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(29, 48, 72, 0.06);
+}
+
+.argos-archive-summary-grid span,
+.argos-archive-result-count span {
+  color: #667085;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.argos-archive-summary-grid strong {
+  align-self: center;
+  color: #172033;
+  font-size: 1.45rem;
+  line-height: 1.25;
+}
+
+.argos-archive-summary-grid small {
+  color: #7b8797;
+  line-height: 1.4;
+}
+
+.argos-archive-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px;
+  border: 1px solid #dfe5ec;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.argos-archive-search {
+  display: grid;
+  flex: 1;
+  gap: 7px;
+}
+
+.argos-archive-search span {
+  color: #344054;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.argos-archive-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 13px;
+  border: 1px solid #cfd8e3;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172033;
+  font: inherit;
+  outline: none;
+}
+
+.argos-archive-search input:focus {
+  border-color: #4d76a5;
+  box-shadow: 0 0 0 3px rgba(77, 118, 165, 0.14);
+}
+
+.argos-archive-result-count {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  min-width: 90px;
+}
+
+.argos-archive-result-count strong {
+  color: #172033;
+  font-size: 1.45rem;
+}
+
+.argos-archive-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #dfe5ec;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.argos-archive-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+}
+
+.argos-archive-table th,
+.argos-archive-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e8edf3;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.argos-archive-table th {
+  background: #f6f8fb;
+  color: #526174;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.argos-archive-table td {
+  color: #344054;
+  line-height: 1.45;
+}
+
+.argos-archive-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.argos-archive-table tbody tr:hover {
+  background: #fbfcfe;
+}
+
+.argos-archive-unit {
+  color: #163f6a !important;
+  font-weight: 800;
+}
+
+.argos-archive-action-cell {
+  text-align: right !important;
+}
+
+.argos-archive-restore-button {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid #3e6f9f;
+  background: #ffffff;
+  color: #245b8a;
+}
+
+.argos-archive-restore-button:hover {
+  background: #eef5fb;
+}
+
+.argos-archive-empty-state,
+.argos-archive-loading {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  min-height: 260px;
+  padding: 48px 24px;
+  border: 1px dashed #cfd8e3;
+  border-radius: 12px;
+  background: #fafbfd;
+  text-align: center;
+}
+
+.argos-archive-empty-state div {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #eaf0f7;
+  color: #355f89;
+  font-size: 1.45rem;
+}
+
+.argos-archive-empty-state h5 {
+  margin: 2px 0 0;
+  color: #172033;
+  font-size: 1.05rem;
+}
+
+.argos-archive-empty-state p,
+.argos-archive-loading span {
+  max-width: 520px;
+  margin: 0;
+  color: #667085;
+  line-height: 1.55;
+}
+
+.argos-archive-spinner {
+  width: 34px;
+  height: 34px;
+  border: 4px solid #d9e3ee;
+  border-top-color: #315f8d;
+  border-radius: 50%;
+  animation: argos-archive-spin 0.8s linear infinite;
+}
+
+@keyframes argos-archive-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.argos-archive-dialog-backdrop {
+  position: fixed;
+  z-index: 1500;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.56);
+}
+
+.argos-archive-dialog {
+  width: min(620px, 100%);
+  overflow: hidden;
+  border: 1px solid #d8e0ea;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+}
+
+.argos-archive-dialog-header,
+.argos-archive-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 22px;
+}
+
+.argos-archive-dialog-header {
+  border-bottom: 1px solid #e4e9ef;
+}
+
+.argos-archive-dialog-header h4 {
+  margin: 3px 0 0;
+  color: #172033;
+  font-size: 1.25rem;
+}
+
+.argos-archive-dialog-close {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 8px;
+  background: #f1f4f8;
+  color: #475467;
+  font-size: 1.55rem;
+  cursor: pointer;
+}
+
+.argos-archive-dialog-close:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.argos-archive-dialog-body {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+}
+
+.argos-archive-dialog-body > p {
+  margin: 0;
+  color: #526174;
+  line-height: 1.6;
+}
+
+.argos-archive-dialog-body dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.argos-archive-dialog-body dl div {
+  padding: 12px;
+  border: 1px solid #e0e6ed;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.argos-archive-dialog-body dt {
+  margin-bottom: 5px;
+  color: #667085;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.argos-archive-dialog-body dd {
+  margin: 0;
+  color: #172033;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.argos-archive-restore-warning {
+  border: 1px solid #ead49c;
+  background: #fff9e9;
+  color: #755714;
+  line-height: 1.5;
+}
+
+.argos-archive-dialog-actions {
+  justify-content: flex-end;
+  border-top: 1px solid #e4e9ef;
+  background: #f8fafc;
+}
+
+.argos-archive-cancel-button,
+.argos-archive-confirm-button {
+  min-height: 42px;
+  padding: 0 17px;
+}
+
+.argos-archive-cancel-button {
+  border: 1px solid #c8d1dc;
+  background: #ffffff;
+  color: #475467;
+}
+
+.argos-archive-confirm-button {
+  border: 1px solid #1e5c8f;
+  background: #245b8a;
+  color: #ffffff;
+}
+
+.argos-archive-confirm-button:hover:not(:disabled) {
+  background: #1d4f79;
+}
+
+.argos-archive-confirm-button:disabled,
+.argos-archive-cancel-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+@media (max-width: 1100px) {
+  .argos-archive-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .argos-archive-module {
+    padding: 18px;
+  }
+
+  .argos-archive-heading,
+  .argos-archive-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .argos-archive-refresh-button {
+    width: 100%;
+  }
+
+  .argos-archive-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .argos-archive-result-count {
+    justify-items: start;
+  }
+
+  .argos-archive-dialog-body dl {
+    grid-template-columns: 1fr;
+  }
+
+  .argos-archive-dialog-actions {
+    flex-direction: column-reverse;
+  }
+
+  .argos-archive-cancel-button,
+  .argos-archive-confirm-button {
+    width: 100%;
+  }
+}

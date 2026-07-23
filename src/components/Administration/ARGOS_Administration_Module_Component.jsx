@@ -7,6 +7,7 @@ import ARGOSReasonConfigurationAdministrationModule from "./ARGOS_Reason_Configu
 import ARGOSTechniciansAdministrationModule from "./ARGOS_Technicians_Administration_Module";
 import ARGOSAPWAMappingAdministrationModule from "./ARGOS_APWA_Mapping_Administration_Module";
 import ARGOSVMRSConfigurationAdministrationModule from "./ARGOS_VMRS_Configuration_Administration_Module";
+import ARGOSArchivedAssetsAdministrationModule from "./ARGOS_Archived_Assets_Administration_Module";
 import {
   canViewAdministration,
   canViewAdministrationSection,
@@ -145,6 +146,13 @@ export default function AdministrationModule({
     isDemoMode
   );
 
+  const organizationId =
+    organizationProfile?.id ||
+    organizationProfile?.organization_id ||
+    authorizationUser?.organization_id ||
+    authorizationUser?.organizationId ||
+    null;
+
   const isOrganizationProfile = activeSection === "Organization Profile";
   const isUsersSection = activeSection === "Users";
   const isRolesSection = activeSection === "Roles";
@@ -155,6 +163,7 @@ export default function AdministrationModule({
   const isTechniciansSection = activeSection === "Technicians";
   const isAPWAMappingSection = activeSection === "APWA Mapping";
   const isVMRSConfigurationSection = activeSection === "VMRS Configuration";
+  const isArchivedAssetsSection = activeSection === "Archived Assets";
 
   function getSectionDisplayName(item) {
     return item === "VMRS Configuration" ? "VMRS Catalog Management" : item;
@@ -171,7 +180,8 @@ export default function AdministrationModule({
       item === "Reason Configuration" ||
       item === "Technicians" ||
       item === "APWA Mapping" ||
-      item === "VMRS Configuration"
+      item === "VMRS Configuration" ||
+      item === "Archived Assets"
     ) {
       return null;
     }
@@ -190,6 +200,7 @@ export default function AdministrationModule({
     if (isTechniciansSection) return "Live Technicians";
     if (isAPWAMappingSection) return "Live APWA Mapping";
     if (isVMRSConfigurationSection) return "Live VMRS Catalog";
+    if (isArchivedAssetsSection) return "Live Archive";
     return "Framework Ready";
   }
 
@@ -268,6 +279,11 @@ export default function AdministrationModule({
             <ARGOSAPWAMappingAdministrationModule isDemoMode={isDemoMode} />
           ) : isVMRSConfigurationSection ? (
             <ARGOSVMRSConfigurationAdministrationModule isDemoMode={isDemoMode} />
+          ) : isArchivedAssetsSection ? (
+            <ARGOSArchivedAssetsAdministrationModule
+              organizationId={organizationId}
+              isDemoMode={isDemoMode}
+            />
           ) : (
             <PlannedAdministrationWorkspace section={activeSection} />
           )}
