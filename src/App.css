@@ -5513,3 +5513,86 @@ button.administration-menu-item.active {
     padding: 20px !important;
   }
 }
+
+/* Sprint 001W Phase 3 — APWA Asset Assignment */
+.apwa-assignment-card {
+  display: grid;
+  gap: 12px;
+  padding: 17px 18px;
+  border: 1px dashed #b8c2cc;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #31415a;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.apwa-assignment-card.is-assigned {
+  border-style: solid;
+  border-color: rgba(154, 102, 20, 0.34);
+  background: linear-gradient(135deg, #fffaf0 0%, #ffffff 100%);
+}
+
+.apwa-assignment-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.apwa-assignment-heading span,
+.apwa-assignment-heading small,
+.apwa-assignment-heading strong {
+  display: block;
+}
+
+.apwa-assignment-heading small {
+  margin-bottom: 5px;
+  color: #82550f;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.apwa-assignment-heading strong {
+  color: #071a33;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.apwa-assignment-card p {
+  margin: 0;
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.apwa-source-badge {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.apwa-source-badge.recommended {
+  border: 1px solid rgba(32, 87, 125, 0.25);
+  background: #eaf3f8;
+  color: #20577d;
+}
+
+.apwa-source-badge.manual {
+  border: 1px solid rgba(154, 102, 20, 0.3);
+  background: #fff3d7;
+  color: #82550f;
+}
+
+@media (max-width: 760px) {
+  .apwa-assignment-heading {
+    flex-direction: column;
+  }
+}

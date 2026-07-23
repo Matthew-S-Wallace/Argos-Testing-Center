@@ -3,6 +3,7 @@ import ARGOSDepartmentsAdministrationModule from "./ARGOS_Departments_Administra
 import ARGOSAssetTypesAdministrationModule from "./ARGOS_Asset_Types_Administration_Module";
 import ARGOSStatusConfigurationAdministrationModule from "./ARGOS_Status_Configuration_Administration_Module";
 import ARGOSTechniciansAdministrationModule from "./ARGOS_Technicians_Administration_Module";
+import ARGOSAPWAMappingAdministrationModule from "./ARGOS_APWA_Mapping_Administration_Module";
 import {
   canViewAdministration,
   canViewAdministrationSection,
@@ -147,6 +148,7 @@ export default function AdministrationModule({
   const isAssetTypesSection = activeSection === "Asset Types";
   const isStatusConfigurationSection = activeSection === "Status Configuration";
   const isTechniciansSection = activeSection === "Technicians";
+  const isAPWAMappingSection = activeSection === "APWA Mapping";
 
   function getSectionLabel(item) {
     if (
@@ -155,7 +157,8 @@ export default function AdministrationModule({
       item === "Departments" ||
       item === "Asset Types" ||
       item === "Status Configuration" ||
-      item === "Technicians"
+      item === "Technicians" ||
+      item === "APWA Mapping"
     ) {
       return null;
     }
@@ -170,6 +173,7 @@ export default function AdministrationModule({
     if (isAssetTypesSection) return "Live Asset Types";
     if (isStatusConfigurationSection) return "Live Status Configuration";
     if (isTechniciansSection) return "Live Technicians";
+    if (isAPWAMappingSection) return "Live APWA Mapping";
     return "Framework Ready";
   }
 
@@ -240,6 +244,8 @@ export default function AdministrationModule({
             <ARGOSStatusConfigurationAdministrationModule isDemoMode={isDemoMode} />
           ) : isTechniciansSection ? (
             <ARGOSTechniciansAdministrationModule isDemoMode={isDemoMode} />
+          ) : isAPWAMappingSection ? (
+            <ARGOSAPWAMappingAdministrationModule isDemoMode={isDemoMode} />
           ) : (
             <PlannedAdministrationWorkspace section={activeSection} />
           )}

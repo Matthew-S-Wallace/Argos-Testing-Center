@@ -469,6 +469,19 @@ const DEMO_ASSET_TYPES = [
   { id: "demo-other", asset_type_name: "Other", asset_type_code: "OTHER", is_active: true },
 ];
 
+const DEMO_APWA_CODES = [
+  { id: "demo-apwa-1", code: "0100", description: "Passenger Vehicles", category: "Vehicles", is_active: true },
+  { id: "demo-apwa-2", code: "0200", description: "Light Trucks", category: "Vehicles", is_active: true },
+  { id: "demo-apwa-3", code: "0500", description: "Refuse Collection Equipment", category: "Solid Waste", is_active: true },
+];
+
+const DEMO_APWA_RULES = [
+  { id: "demo-rule-police-suv", department_id: "demo-police", asset_type_id: "demo-suv", recommended_apwa_code_id: "demo-apwa-1", priority: 10, is_active: true },
+  { id: "demo-rule-pickup", department_id: null, asset_type_id: "demo-pickup", recommended_apwa_code_id: "demo-apwa-2", priority: 50, is_active: true },
+  { id: "demo-rule-refuse", department_id: "demo-solid-waste", asset_type_id: "demo-refuse", recommended_apwa_code_id: "demo-apwa-3", priority: 10, is_active: true },
+];
+
+
 
 function normalizeDepartmentLookupValue(value) {
   return String(value || "")
@@ -597,8 +610,14 @@ function createBlankAsset() {
     driveType: "",
     gvwrClass: "",
     manufacturer: "",
+    apwaCodeId: "",
     apwaCode: "",
     apwaDescription: "",
+    apwaAssignmentSource: "",
+    apwaMappingRuleId: "",
+    apwaAssignedAt: "",
+    apwaAssignedBy: "",
+    apwaRecommendationMatchType: "",
     currentMileage: "",
     currentEngineHours: "",
     workOrderNumber: "",
@@ -656,8 +675,14 @@ function normalizeAsset(asset) {
     driveType: asset.driveType || "",
     gvwrClass: asset.gvwrClass || "",
     manufacturer: asset.manufacturer || "",
+    apwaCodeId: asset.apwaCodeId || "",
     apwaCode: asset.apwaCode || "",
     apwaDescription: asset.apwaDescription || "",
+    apwaAssignmentSource: asset.apwaAssignmentSource || "",
+    apwaMappingRuleId: asset.apwaMappingRuleId || "",
+    apwaAssignedAt: asset.apwaAssignedAt || "",
+    apwaAssignedBy: asset.apwaAssignedBy || "",
+    apwaRecommendationMatchType: asset.apwaRecommendationMatchType || "",
     currentMileage: asset.currentMileage ?? "",
     currentEngineHours: asset.currentEngineHours ?? "",
     workOrderNumber: asset.workOrderNumber || "",
@@ -751,8 +776,14 @@ function mapSupabaseAsset(row) {
     driveType: row.drive_type || "",
     gvwrClass: row.gvwr_class || "",
     manufacturer: row.manufacturer || "",
+    apwaCodeId: row.apwa_code_id || "",
     apwaCode: row.apwa_code || "",
     apwaDescription: row.apwa_description || "",
+    apwaAssignmentSource: row.apwa_assignment_source || "",
+    apwaMappingRuleId: row.apwa_mapping_rule_id || "",
+    apwaAssignedAt: row.apwa_assigned_at || "",
+    apwaAssignedBy: row.apwa_assigned_by || "",
+    apwaRecommendationMatchType: "",
     currentMileage: row.current_mileage ?? "",
     currentEngineHours: row.current_engine_hours ?? "",
     workOrderNumber: row.work_order_number || "",
@@ -1296,6 +1327,9 @@ function App() {
   const [assetTypes, setAssetTypes] = useState([]);
   const [assetTypesLoading, setAssetTypesLoading] = useState(false);
   const [assetTypesError, setAssetTypesError] = useState("");
+  const [apwaCodes, setApwaCodes] = useState([]);
+  const [apwaCodesLoading, setApwaCodesLoading] = useState(false);
+  const [apwaCodesError, setApwaCodesError] = useState("");
   const [statusConfigurations, setStatusConfigurations] = useState(FALLBACK_STATUS_CONFIGURATIONS);
   const [statusConfigurationsLoading, setStatusConfigurationsLoading] = useState(false);
   const [statusConfigurationsError, setStatusConfigurationsError] = useState("");
@@ -1618,6 +1652,51 @@ useEffect(() => {
   return () => {
     isMounted = false;
   };
+}, [session, organizationId, isDemoMode]);
+
+useEffect(() => {
+  let isMounted = true;
+
+  if (isDemoMode) {
+    setApwaCodes(DEMO_APWA_CODES);
+    setApwaCodesLoading(false);
+    setApwaCodesError("");
+    return undefined;
+  }
+
+  if (!session || !organizationId) {
+    setApwaCodes([]);
+    setApwaCodesLoading(false);
+    setApwaCodesError("");
+    return undefined;
+  }
+
+  async function loadAPWACodes() {
+    setApwaCodesLoading(true);
+    setApwaCodesError("");
+
+    const { data, error } = await supabase
+      .from("apwa_codes")
+      .select("id, code, description, category, subcategory, is_active")
+      .eq("is_active", true)
+      .order("code", { ascending: true });
+
+    if (!isMounted) return;
+
+    if (error) {
+      console.error("ARGOS APWA catalog load failed:", error);
+      setApwaCodes([]);
+      setApwaCodesError("ARGOS could not load the active APWA catalog.");
+      setApwaCodesLoading(false);
+      return;
+    }
+
+    setApwaCodes(data || []);
+    setApwaCodesLoading(false);
+  }
+
+  loadAPWACodes();
+  return () => { isMounted = false; };
 }, [session, organizationId, isDemoMode]);
 
 useEffect(() => {
@@ -2067,6 +2146,13 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
       assetTypeId: assetFields.assetTypeId || "",
       assetTypeName: String(assetFields.assetTypeName || "").trim(),
       asset: assetFields.asset.trim(),
+      apwaCodeId: assetFields.apwaCodeId || "",
+      apwaCode: String(assetFields.apwaCode || "").trim(),
+      apwaDescription: String(assetFields.apwaDescription || "").trim(),
+      apwaAssignmentSource: assetFields.apwaAssignmentSource || "",
+      apwaMappingRuleId: assetFields.apwaMappingRuleId || "",
+      apwaAssignedAt: assetFields.apwaAssignedAt || "",
+      apwaAssignedBy: assetFields.apwaAssignedBy || "",
       workOrderNumber: String(assetFields.workOrderNumber || "").trim(),
       vendorShop: String(assetFields.vendorShop || "").trim(),
       primaryVmrs: String(assetFields.primaryVmrs || "").trim(),
@@ -2106,16 +2192,92 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     };
   }
 
+  async function resolveAPWARecommendation(assetDraft) {
+    if (!assetDraft?.departmentId && !assetDraft?.assetTypeId) return null;
+
+    if (isDemoMode) {
+      const candidates = DEMO_APWA_RULES
+        .filter((rule) => rule.is_active)
+        .filter((rule) =>
+          (rule.department_id === assetDraft.departmentId && rule.asset_type_id === assetDraft.assetTypeId) ||
+          (!rule.department_id && rule.asset_type_id === assetDraft.assetTypeId) ||
+          (rule.department_id === assetDraft.departmentId && !rule.asset_type_id)
+        )
+        .map((rule) => ({
+          ...rule,
+          confidence_rank: rule.department_id && rule.asset_type_id ? 1 : rule.asset_type_id ? 2 : 3,
+        }))
+        .sort((a, b) => a.confidence_rank - b.confidence_rank || Number(a.priority) - Number(b.priority));
+      const rule = candidates[0];
+      if (!rule) return null;
+      const code = DEMO_APWA_CODES.find((item) => item.id === rule.recommended_apwa_code_id);
+      return code ? {
+        mapping_rule_id: rule.id,
+        apwa_code_id: code.id,
+        apwa_code: code.code,
+        apwa_description: code.description,
+        match_type: rule.confidence_rank === 1 ? "exact_match" : rule.confidence_rank === 2 ? "asset_type_match" : "department_match",
+      } : null;
+    }
+
+    if (!organizationId) return null;
+    const { data, error } = await supabase.rpc("argos_resolve_apwa_recommendation", {
+      requested_organization_id: organizationId,
+      requested_department_id: assetDraft.departmentId || null,
+      requested_asset_type_id: assetDraft.assetTypeId || null,
+    });
+    if (error) {
+      console.error("ARGOS APWA recommendation failed:", error);
+      return null;
+    }
+    return data?.[0] || null;
+  }
+
+  async function applyRecommendedAPWA(setter, assetDraft) {
+    const recommendation = await resolveAPWARecommendation(assetDraft);
+    setter((currentAsset) => {
+      if (!currentAsset || currentAsset.departmentId !== assetDraft.departmentId || currentAsset.assetTypeId !== assetDraft.assetTypeId) return currentAsset;
+      if (!recommendation) {
+        return {
+          ...currentAsset,
+          apwaCodeId: "",
+          apwaCode: "",
+          apwaDescription: "",
+          apwaAssignmentSource: "",
+          apwaMappingRuleId: "",
+          apwaRecommendationMatchType: "",
+        };
+      }
+      return {
+        ...currentAsset,
+        apwaCodeId: recommendation.apwa_code_id || "",
+        apwaCode: recommendation.apwa_code || "",
+        apwaDescription: recommendation.apwa_description || "",
+        apwaAssignmentSource: "recommended",
+        apwaMappingRuleId: recommendation.mapping_rule_id || "",
+        apwaAssignedAt: new Date().toISOString(),
+        apwaAssignedBy: session?.user?.id || currentAsset.apwaAssignedBy || "",
+        apwaRecommendationMatchType: recommendation.match_type || "",
+      };
+    });
+  }
+
   function handleDepartmentChange(event) {
-    setEditAsset((currentAsset) =>
-      applyDepartmentSelection(currentAsset, event.target.value)
-    );
+    const departmentId = event.target.value;
+    setEditAsset((currentAsset) => {
+      const nextAsset = applyDepartmentSelection(currentAsset, departmentId);
+      void applyRecommendedAPWA(setEditAsset, nextAsset);
+      return nextAsset;
+    });
   }
 
   function handleNewAssetDepartmentChange(event) {
-    setNewAsset((currentAsset) =>
-      applyDepartmentSelection(currentAsset, event.target.value)
-    );
+    const departmentId = event.target.value;
+    setNewAsset((currentAsset) => {
+      const nextAsset = applyDepartmentSelection(currentAsset, departmentId);
+      void applyRecommendedAPWA(setNewAsset, nextAsset);
+      return nextAsset;
+    });
   }
 
   function applyAssetTypeSelection(currentAsset, assetTypeId) {
@@ -2128,15 +2290,44 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
   }
 
   function handleAssetTypeChange(event) {
-    setEditAsset((currentAsset) =>
-      applyAssetTypeSelection(currentAsset, event.target.value)
-    );
+    const assetTypeId = event.target.value;
+    setEditAsset((currentAsset) => {
+      const nextAsset = applyAssetTypeSelection(currentAsset, assetTypeId);
+      void applyRecommendedAPWA(setEditAsset, nextAsset);
+      return nextAsset;
+    });
   }
 
   function handleNewAssetTypeChange(event) {
-    setNewAsset((currentAsset) =>
-      applyAssetTypeSelection(currentAsset, event.target.value)
-    );
+    const assetTypeId = event.target.value;
+    setNewAsset((currentAsset) => {
+      const nextAsset = applyAssetTypeSelection(currentAsset, assetTypeId);
+      void applyRecommendedAPWA(setNewAsset, nextAsset);
+      return nextAsset;
+    });
+  }
+
+  function applyManualAPWASelection(currentAsset, apwaCodeId) {
+    const selectedCode = apwaCodes.find((code) => code.id === apwaCodeId);
+    return {
+      ...currentAsset,
+      apwaCodeId: selectedCode?.id || "",
+      apwaCode: selectedCode?.code || "",
+      apwaDescription: selectedCode?.description || "",
+      apwaAssignmentSource: selectedCode ? "manual" : "",
+      apwaMappingRuleId: "",
+      apwaAssignedAt: selectedCode ? new Date().toISOString() : "",
+      apwaAssignedBy: selectedCode ? session?.user?.id || currentAsset.apwaAssignedBy || "" : "",
+      apwaRecommendationMatchType: "",
+    };
+  }
+
+  function handleAPWAChange(event) {
+    setEditAsset((currentAsset) => applyManualAPWASelection(currentAsset, event.target.value));
+  }
+
+  function handleNewAssetAPWAChange(event) {
+    setNewAsset((currentAsset) => applyManualAPWASelection(currentAsset, event.target.value));
   }
 
   function resolveDepartmentValue(value) {
@@ -2406,6 +2597,11 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     manufacturer: returnedAsset.manufacturer || null,
     apwa_code: returnedAsset.apwaCode || null,
     apwa_description: returnedAsset.apwaDescription || null,
+    apwa_code_id: returnedAsset.apwaCodeId || null,
+    apwa_assignment_source: returnedAsset.apwaAssignmentSource || null,
+    apwa_mapping_rule_id: returnedAsset.apwaMappingRuleId || null,
+    apwa_assigned_at: returnedAsset.apwaCodeId ? returnedAsset.apwaAssignedAt || new Date().toISOString() : null,
+    apwa_assigned_by: returnedAsset.apwaCodeId ? returnedAsset.apwaAssignedBy || session?.user?.id || null : null,
     current_mileage: returnedAsset.currentMileage === "" ? null : Number(returnedAsset.currentMileage),
     current_engine_hours: returnedAsset.currentEngineHours === "" ? null : Number(returnedAsset.currentEngineHours),
     work_order_number: returnedAsset.workOrderNumber || null,
@@ -2635,6 +2831,11 @@ return;
     manufacturer: updatedAsset.manufacturer || null,
     apwa_code: updatedAsset.apwaCode || null,
     apwa_description: updatedAsset.apwaDescription || null,
+    apwa_code_id: updatedAsset.apwaCodeId || null,
+    apwa_assignment_source: updatedAsset.apwaAssignmentSource || null,
+    apwa_mapping_rule_id: updatedAsset.apwaMappingRuleId || null,
+    apwa_assigned_at: updatedAsset.apwaCodeId ? updatedAsset.apwaAssignedAt || new Date().toISOString() : null,
+    apwa_assigned_by: updatedAsset.apwaCodeId ? updatedAsset.apwaAssignedBy || session?.user?.id || null : null,
     current_mileage: updatedAsset.currentMileage === "" ? null : Number(updatedAsset.currentMileage),
     current_engine_hours: updatedAsset.currentEngineHours === "" ? null : Number(updatedAsset.currentEngineHours),
     work_order_number: updatedAsset.workOrderNumber || null,
@@ -2739,6 +2940,11 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
       manufacturer: cleanedAsset.manufacturer || null,
       apwa_code: cleanedAsset.apwaCode || null,
       apwa_description: cleanedAsset.apwaDescription || null,
+      apwa_code_id: cleanedAsset.apwaCodeId || null,
+      apwa_assignment_source: cleanedAsset.apwaAssignmentSource || null,
+      apwa_mapping_rule_id: cleanedAsset.apwaMappingRuleId || null,
+      apwa_assigned_at: cleanedAsset.apwaCodeId ? cleanedAsset.apwaAssignedAt || new Date().toISOString() : null,
+      apwa_assigned_by: cleanedAsset.apwaCodeId ? cleanedAsset.apwaAssignedBy || session?.user?.id || null : null,
       current_mileage: cleanedAsset.currentMileage === "" ? null : Number(cleanedAsset.currentMileage),
       current_engine_hours: cleanedAsset.currentEngineHours === "" ? null : Number(cleanedAsset.currentEngineHours),
       work_order_number: cleanedAsset.workOrderNumber || null,
@@ -3219,6 +3425,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     onChange,
     onDepartmentChange,
     onAssetTypeChange,
+    onAPWAChange,
     onStatusChange,
     onRTSTypeChange,
     onTechnicianChange
@@ -3345,15 +3552,50 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
               {assetTypesError && <span className="department-field-error">{assetTypesError}</span>}
             </label>
 
-            <label>
-              APWA Code
-              <input type="text" name="apwaCode" value={asset.apwaCode || ""} onChange={onChange} placeholder="Controlled code" />
+            <label className="vehicle-field-wide">
+              APWA Equipment Classification
+              <select
+                name="apwaCodeId"
+                value={asset.apwaCodeId || ""}
+                onChange={onAPWAChange}
+                disabled={apwaCodesLoading || apwaCodes.length === 0}
+              >
+                <option value="">
+                  {apwaCodesLoading
+                    ? "Loading APWA catalog…"
+                    : apwaCodes.length === 0
+                      ? "No active APWA codes configured"
+                      : "Select APWA Classification"}
+                </option>
+                {apwaCodes.map((code) => (
+                  <option key={code.id} value={code.id}>
+                    {code.code} — {code.description}
+                  </option>
+                ))}
+              </select>
+              {apwaCodesError && <span className="department-field-error">{apwaCodesError}</span>}
             </label>
 
-            <label>
-              APWA Description
-              <input type="text" name="apwaDescription" value={asset.apwaDescription || ""} onChange={onChange} placeholder="Equipment classification" />
-            </label>
+            <div className={`vehicle-field-wide apwa-assignment-card${asset.apwaCodeId ? " is-assigned" : ""}`}>
+              <div className="apwa-assignment-heading">
+                <span>
+                  <small>APWA Assignment</small>
+                  <strong>{asset.apwaCode ? `${asset.apwaCode} — ${asset.apwaDescription}` : "No APWA classification assigned"}</strong>
+                </span>
+                {asset.apwaAssignmentSource && (
+                  <b className={`apwa-source-badge ${asset.apwaAssignmentSource}`}>
+                    {asset.apwaAssignmentSource === "manual" ? "Manual Override" : "Recommended"}
+                  </b>
+                )}
+              </div>
+              <p>
+                {asset.apwaAssignmentSource === "recommended"
+                  ? `ARGOS selected this classification from the active ${String(asset.apwaRecommendationMatchType || "mapping").replaceAll("_", " ")} rule.`
+                  : asset.apwaAssignmentSource === "manual"
+                    ? "This classification was selected manually and will be preserved until Department or Asset Type changes."
+                    : "Select Department and Asset Type to receive an APWA recommendation, or choose a classification manually."}
+              </p>
+            </div>
           </div>
         </details>
 
@@ -4924,6 +5166,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 handleNewAssetChange,
                 handleNewAssetDepartmentChange,
                 handleNewAssetTypeChange,
+                handleNewAssetAPWAChange,
                 handleNewAssetStatusChange,
                 handleNewAssetRTSTypeChange,
                 handleNewAssetTechnicianChange
@@ -5020,6 +5263,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                   handleChange,
                   handleDepartmentChange,
                   handleAssetTypeChange,
+                  handleAPWAChange,
                   handleStatusChange,
                   handleRTSTypeChange,
                   handleTechnicianChange
