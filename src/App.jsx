@@ -7,6 +7,12 @@ import ARGOSReportsModule from "./components/Reports/ARGOS_Reports_Module_001Z3"
 import ARGOSRepairHistoryModule from "./components/RepairHistory/ARGOS_Repair_History_Module";
 import ARGOSOperationsNavigation from "./components/Layout/ARGOS_Operations_Navigation_Blue_Shield_Reference_001U";
 import { canViewAdministration } from "./utils/ARGOS_Permission_Resolver";
+import {
+  downloadAssetCSVTemplate,
+  exportCSVReportFile,
+  readCSVFile,
+  validateImportedAssetRows,
+} from "./services/ARGOS_CSV_Data_Management_Service";
 import "./App.css";
 
 
@@ -65,104 +71,6 @@ function normalizeOperationalStatus(value) {
     String(value || "Ready").trim() ||
     "Ready"
   );
-}
-
-const CSV_COLUMNS = [
-  "unit",
-  "vin",
-  "department",
-  "asset",
-  "status",
-  "reason",
-  "priority",
-  "downSince",
-  "technician",
-  "rtsType",
-  "rtsDate",
-  "details",
-];
-
-function getFieldGreeting(date = new Date()) {
-  const hour = date.getHours();
-
-  if (hour >= 5 && hour < 12) return "Good morning";
-  if (hour >= 12 && hour < 17) return "Good afternoon";
-  return "Good evening";
-}
-
-function getTodayDateString() {
-  const today = new Date();
-  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
-    today.getDate()
-  ).padStart(2, "0")}`;
-}
-
-function escapeCSVValue(value) {
-  const stringValue = String(value ?? "");
-  if (stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")) {
-    return `"${stringValue.replaceAll('"', '""')}"`;
-  }
-  return stringValue;
-}
-
-function downloadFile(filename, content, type) {
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
-function parseCSVLine(line) {
-  const values = [];
-  let currentValue = "";
-  let isInsideQuotes = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const character = line[index];
-    const nextCharacter = line[index + 1];
-
-    if (character === '"' && isInsideQuotes && nextCharacter === '"') {
-      currentValue += '"';
-      index += 1;
-    } else if (character === '"') {
-      isInsideQuotes = !isInsideQuotes;
-    } else if (character === "," && !isInsideQuotes) {
-      values.push(currentValue.trim());
-      currentValue = "";
-    } else {
-      currentValue += character;
-    }
-  }
-
-  values.push(currentValue.trim());
-  return values;
-}
-
-function parseCSVText(text) {
-  const lines = text
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  if (lines.length < 2) return [];
-
-  const headers = parseCSVLine(lines[0]).map((header) => header.trim());
-
-  return lines.slice(1).map((line) => {
-    const values = parseCSVLine(line);
-    return headers.reduce((row, header, index) => {
-      row[header] = values[index] || "";
-      return row;
-    }, {});
-  });
 }
 
 function findOptionMatch(value, options) {
@@ -3111,81 +3019,21 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 }
 
   function handleDownloadCSVTemplate() {
-    const exampleRow = {
-      unit: "9001",
-      vin: "1FTEXAMPLE0009001",
-      department: "Public Works",
-      asset: "Ford F-150",
-      status: "Ready",
-      reason: "Available",
-      priority: "Normal",
-      downSince: "",
-      technician: "Unassigned",
-      rtsType: "No RTS Established",
-      rtsDate: "",
-      details: "Available",
-    };
-
-    const csvContent = [
-      CSV_COLUMNS.join(","),
-      CSV_COLUMNS.map((column) => escapeCSVValue(exampleRow[column])).join(","),
-    ].join("\n");
-
-    downloadFile("argos-csv-template.csv", `\uFEFF${csvContent}`, "text/csv;charset=utf-8");
+    downloadAssetCSVTemplate();
   }
 
   function handleImportCSV(event) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-
-    reader.onload = async (readerEvent) => {
-      const rows = parseCSVText(String(readerEvent.target?.result || ""));
-      const existingUnits = new Set(assets.map((asset) => asset.unit.toLowerCase()));
-      const existingVins = new Set(
-        assets.map((asset) => (asset.vin || "").toLowerCase()).filter(Boolean)
-      );
-      const importedUnits = new Set();
-      const importedVins = new Set();
-      const validImportedAssets = [];
-      const rejectedRows = [];
-
-      rows.forEach((row, index) => {
-        const importedAsset = normalizeImportedAsset(row, statusOptions);
-        const resolvedDepartment = resolveDepartmentValue(importedAsset.department);
-        const rowNumber = index + 2;
-        const rowErrors = [];
-        const unitKey = importedAsset.unit.toLowerCase();
-        const vinKey = importedAsset.vin.toLowerCase();
-
-        if (!importedAsset.unit) rowErrors.push("missing Unit");
-        if (!importedAsset.department) {
-          rowErrors.push("missing Department");
-        } else if (!resolvedDepartment) {
-          rowErrors.push(
-            `Department "${importedAsset.department}" is not configured as an active department, code, or alias`
-          );
-        }
-        if (!importedAsset.asset) rowErrors.push("missing Asset");
-        if (unitKey && existingUnits.has(unitKey)) rowErrors.push("duplicate Unit already exists");
-        if (unitKey && importedUnits.has(unitKey)) rowErrors.push("duplicate Unit inside CSV");
-        if (vinKey && existingVins.has(vinKey)) rowErrors.push("duplicate VIN already exists");
-        if (vinKey && importedVins.has(vinKey)) rowErrors.push("duplicate VIN inside CSV");
-
-        if (rowErrors.length > 0) {
-          rejectedRows.push(`Row ${rowNumber}: ${rowErrors.join(", ")}`);
-          return;
-        }
-
-        importedUnits.add(unitKey);
-        if (vinKey) importedVins.add(vinKey);
-        validImportedAssets.push({
-          ...importedAsset,
-          departmentId: resolvedDepartment.id,
-          department: resolvedDepartment.department_name,
+    readCSVFile(file)
+      .then(async (rows) => {
+        const { validImportedAssets, rejectedRows } = validateImportedAssetRows({
+          rows,
+          existingAssets: assets,
+          normalizeRow: (row) => normalizeImportedAsset(row, statusOptions),
+          resolveDepartment: resolveDepartmentValue,
         });
-      });
 
       if (validImportedAssets.length === 0) {
         if (rejectedRows.length === 0) {
@@ -3263,15 +3111,13 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         );
       }
 
-      event.target.value = "";
-    };
-
-    reader.onerror = () => {
-      setImportStatus("ARGOS could not read that CSV file. Please try again.");
-      event.target.value = "";
-    };
-
-    reader.readAsText(file);
+        event.target.value = "";
+      })
+      .catch((error) => {
+        console.error("ARGOS CSV file read failed:", error);
+        setImportStatus("ARGOS could not read that CSV file. Please try again.");
+        event.target.value = "";
+      });
   }
 
   function exportCSVReport(filename, columns, rows, emptyMessage, successMessage) {
@@ -3280,19 +3126,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
       return;
     }
 
-    const csvContent = [
-      columns.map((column) => escapeCSVValue(column.header)).join(","),
-      ...rows.map((row) =>
-        columns
-          .map((column) => {
-            const value = typeof column.value === "function" ? column.value(row) : row[column.value];
-            return escapeCSVValue(value);
-          })
-          .join(",")
-      ),
-    ].join("\n");
-
-    downloadFile(filename, `\uFEFF${csvContent}`, "text/csv;charset=utf-8");
+    exportCSVReportFile({ filename, columns, rows });
     setImportStatus(successMessage);
   }
 
