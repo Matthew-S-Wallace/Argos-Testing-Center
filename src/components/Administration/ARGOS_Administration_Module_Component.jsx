@@ -3,6 +3,7 @@ import ARGOSRolesAdministrationModule from "./ARGOS_Roles_Administration_Module"
 import ARGOSDepartmentsAdministrationModule from "./ARGOS_Departments_Administration_Module";
 import "./ARGOS_VMRS_Configuration_Administration_Module.css";
 import ARGOSStatusConfigurationAdministrationModule from "./ARGOS_Status_Configuration_Administration_Module";
+import ARGOSReasonConfigurationAdministrationModule from "./ARGOS_Reason_Configuration_Administration_Module";
 import ARGOSTechniciansAdministrationModule from "./ARGOS_Technicians_Administration_Module";
 import ARGOSAPWAMappingAdministrationModule from "./ARGOS_APWA_Mapping_Administration_Module";
 import ARGOSVMRSConfigurationAdministrationModule from "./ARGOS_VMRS_Configuration_Administration_Module";
@@ -150,6 +151,7 @@ export default function AdministrationModule({
   const isDepartmentsSection = activeSection === "Departments";
   const isAssetTypesSection = activeSection === "Asset Types";
   const isStatusConfigurationSection = activeSection === "Status Configuration";
+  const isReasonConfigurationSection = activeSection === "Reason Configuration";
   const isTechniciansSection = activeSection === "Technicians";
   const isAPWAMappingSection = activeSection === "APWA Mapping";
   const isVMRSConfigurationSection = activeSection === "VMRS Configuration";
@@ -166,6 +168,7 @@ export default function AdministrationModule({
       item === "Departments" ||
       item === "Asset Types" ||
       item === "Status Configuration" ||
+      item === "Reason Configuration" ||
       item === "Technicians" ||
       item === "APWA Mapping" ||
       item === "VMRS Configuration"
@@ -183,6 +186,7 @@ export default function AdministrationModule({
     if (isDepartmentsSection) return "Live Departments";
     if (isAssetTypesSection) return "Live Asset Types";
     if (isStatusConfigurationSection) return "Live Status Configuration";
+    if (isReasonConfigurationSection) return "Live Reason Configuration";
     if (isTechniciansSection) return "Live Technicians";
     if (isAPWAMappingSection) return "Live APWA Mapping";
     if (isVMRSConfigurationSection) return "Live VMRS Catalog";
@@ -256,6 +260,8 @@ export default function AdministrationModule({
             <ARGOSAssetTypesAdministrationModule isDemoMode={isDemoMode} />
           ) : isStatusConfigurationSection ? (
             <ARGOSStatusConfigurationAdministrationModule isDemoMode={isDemoMode} />
+          ) : isReasonConfigurationSection ? (
+            <ARGOSReasonConfigurationAdministrationModule isDemoMode={isDemoMode} />
           ) : isTechniciansSection ? (
             <ARGOSTechniciansAdministrationModule isDemoMode={isDemoMode} />
           ) : isAPWAMappingSection ? (
