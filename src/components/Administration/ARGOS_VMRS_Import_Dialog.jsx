@@ -34,6 +34,7 @@ export default function ARGOSVMRSImportDialog({
   currentUserId,
   onClose,
   onValidated,
+  isSubmitting = false,
 }) {
   const fileInputRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -78,7 +79,7 @@ export default function ARGOSVMRSImportDialog({
     acceptFile(event.dataTransfer.files?.[0]);
   }
 
-  function handleValidate() {
+  async function handleValidate() {
     const fileError = validateSelectedFile(selectedFile);
     if (fileError) {
       setValidationMessage(fileError);
@@ -91,7 +92,8 @@ export default function ARGOSVMRSImportDialog({
     }
 
     setValidationMessage("");
-    onValidated({
+    try {
+      await onValidated({
       file: selectedFile,
       originalFilename: selectedFile.name,
       fileSize: selectedFile.size,
@@ -100,7 +102,10 @@ export default function ARGOSVMRSImportDialog({
       importMode,
       organizationId,
       importedBy: currentUserId,
-    });
+      });
+    } catch (error) {
+      setValidationMessage(error?.message || "ARGOS could not import the selected VMRS catalog.");
+    }
   }
 
   return (
@@ -221,11 +226,11 @@ export default function ARGOSVMRSImportDialog({
         </div>
 
         <footer className="argos-vmrs-modal-footer">
-          <button className="argos-vmrs-secondary-button" type="button" onClick={onClose}>
+          <button className="argos-vmrs-secondary-button" type="button" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </button>
-          <button className="argos-vmrs-primary-button" type="button" onClick={handleValidate}>
-            Validate File
+          <button className="argos-vmrs-primary-button" type="button" onClick={handleValidate} disabled={isSubmitting}>
+            {isSubmitting ? "Importing…" : "Validate & Import"}
           </button>
         </footer>
       </section>

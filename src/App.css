@@ -5250,3 +5250,17 @@ button.administration-menu-item.active {
     flex-direction: column;
   }
 }
+
+
+/* ARGOS™ Sprint 001Y — VMRS optional repair-coding guidance */
+.vmrs-empty-guidance {
+  display: grid;
+  gap: 5px;
+  padding: 14px 16px;
+  border: 1px solid #e1d4b2;
+  border-radius: 9px;
+  background: #fffaf0;
+  font-family: Inter, system-ui, sans-serif;
+}
+.vmrs-empty-guidance strong { color: #82550f; font-size: 13px; }
+.vmrs-empty-guidance span { color: #526174; font-size: 12px; line-height: 1.5; }

@@ -1380,11 +1380,35 @@ function App() {
     }
     async function loadVmrsCodes() {
       setVmrsCodesLoading(true); setVmrsCodesError("");
+      const { data: enabledConfiguration, error: configurationError } = await supabase
+        .from("vmrs_organization_configuration")
+        .select("vmrs_code_id")
+        .eq("organization_id", organizationId)
+        .eq("is_enabled", true);
+
+      if (configurationError) {
+        if (!isMounted) return;
+        console.error("ARGOS VMRS configuration load failed:", configurationError);
+        setVmrsCodes([]);
+        setVmrsCodesError("ARGOS could not load this organization's enabled VMRS configuration.");
+        setVmrsCodesLoading(false);
+        return;
+      }
+
+      const enabledCodeIds = (enabledConfiguration || []).map((record) => record.vmrs_code_id).filter(Boolean);
+      if (enabledCodeIds.length === 0) {
+        if (!isMounted) return;
+        setVmrsCodes([]);
+        setVmrsCodesLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("vmrs_codes")
         .select("id, code, code_type, description, parent_id, hierarchy_level, is_active")
         .eq("organization_id", organizationId)
         .eq("is_active", true)
+        .in("id", enabledCodeIds)
         .order("code", { ascending: true });
       if (!isMounted) return;
       if (error) { console.error("ARGOS VMRS catalog load failed:", error); setVmrsCodes([]); setVmrsCodesError("ARGOS could not load this organization's VMRS catalog."); }
@@ -2572,6 +2596,10 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
         };
         const completedEvent = normalizeCompletedRepairEvent({
           ...selectedAsset,
+          ...updatedAsset,
+          status: selectedAsset.status,
+          reason: selectedAsset.reason || updatedAsset.reason,
+          details: selectedAsset.details || updatedAsset.details,
           id: `demo-completed-${Date.now()}`,
           completedDate: getTodayDateString(),
           finalDaysDown: calculateFinalDaysDown(selectedAsset.downSince),
@@ -2611,6 +2639,8 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
 
       const completedEvent = {
         ...selectedAsset,
+        ...updatedAsset,
+        status: selectedAsset.status,
         vin: updatedAsset.vin,
         reason: selectedAsset.reason || updatedAsset.reason,
         details: selectedAsset.details || updatedAsset.details,
@@ -3760,6 +3790,12 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
               </select>
             </label>
             {vmrsCodesError && <span className="vehicle-field-wide department-field-error">{vmrsCodesError}</span>}
+            {!vmrsCodesLoading && !vmrsCodesError && vmrsCodes.length === 0 && (
+              <div className="vehicle-field-wide vmrs-empty-guidance">
+                <strong>VMRS coding is optional</strong>
+                <span>No enabled organization VMRS catalog is available. This repair can still be completed and returned to Ready.</span>
+              </div>
+            )}
             <label>
               Repair Opened
               <input type="date" name="repairOpenedAt" value={asset.repairOpenedAt || ""} onChange={onChange} />

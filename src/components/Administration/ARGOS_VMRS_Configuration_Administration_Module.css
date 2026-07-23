@@ -36,3 +36,5 @@
 .argos-vmrs-primary-button{border:1px solid #071a33;background:#071a33;color:#fff}
 .argos-vmrs-primary-button:hover{filter:brightness(1.08)}
 @media(max-width:760px){.argos-vmrs-modal-backdrop{align-items:flex-end;padding:0}.argos-vmrs-modal{max-height:92vh;border-radius:14px 14px 0 0}.argos-vmrs-modal-header,.argos-vmrs-modal-body,.argos-vmrs-modal-footer{padding-left:20px;padding-right:20px}.argos-vmrs-import-fields{grid-template-columns:1fr}.argos-vmrs-import-fields label:last-child{grid-column:auto}.argos-vmrs-modal-footer{display:grid;grid-template-columns:1fr 1fr}.argos-vmrs-dropzone{min-height:190px;padding:22px 18px}}
+
+.argos-vmrs-primary-button:disabled,.argos-vmrs-secondary-button:disabled{opacity:.55;cursor:not-allowed}

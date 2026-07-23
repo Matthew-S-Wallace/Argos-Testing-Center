@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import ARGOSVMRSImportDialog from "./ARGOS_VMRS_Import_Dialog";
+import { parseVMRSCatalogFile } from "./ARGOS_VMRS_CSV_Parser";
+import { validateVMRSCatalog } from "./ARGOS_VMRS_Import_Validator";
+import { importVMRSCatalog } from "./ARGOS_VMRS_Import_Service";
 import "./ARGOS_VMRS_Configuration_Administration_Module.css";
 
 const CODE_TYPES = [
@@ -114,6 +117,7 @@ export default function ARGOSVMRSConfigurationAdministrationModule({ isDemoMode 
   const [errorMessage, setErrorMessage] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const canManage =
     isDemoMode || ["admin", "administrator", "manager"].includes(
@@ -374,6 +378,80 @@ export default function ARGOSVMRSConfigurationAdministrationModule({ isDemoMode 
     return parent ? `${parent.code} — ${parent.description}` : "Parent unavailable";
   }
 
+  async function refreshVMRSData(resolvedOrganizationId = organizationId) {
+    if (!resolvedOrganizationId || isDemoMode) return;
+
+    const [codesResult, configurationResult, importResult] = await Promise.all([
+      supabase
+        .from("vmrs_codes")
+        .select("*")
+        .eq("organization_id", resolvedOrganizationId)
+        .order("code_type", { ascending: true })
+        .order("code", { ascending: true }),
+      supabase
+        .from("vmrs_organization_configuration")
+        .select("*")
+        .eq("organization_id", resolvedOrganizationId)
+        .order("display_order", { ascending: true }),
+      supabase
+        .from("vmrs_import_batches")
+        .select("*")
+        .eq("organization_id", resolvedOrganizationId)
+        .order("created_at", { ascending: false })
+        .limit(10),
+    ]);
+
+    const refreshError = codesResult.error || configurationResult.error || importResult.error;
+    if (refreshError) throw refreshError;
+
+    setCodes(codesResult.data || []);
+    setConfiguration(configurationResult.data || []);
+    setImportBatches(importResult.data || []);
+  }
+
+  async function handleValidatedImport(importRequest) {
+    if (isDemoMode) {
+      throw new Error("VMRS catalog imports are disabled in demo mode.");
+    }
+
+    setIsImporting(true);
+    setActionMessage("");
+
+    try {
+      const parsedCatalog = await parseVMRSCatalogFile(importRequest.file);
+      const validationResult = validateVMRSCatalog(parsedCatalog);
+
+      if (validationResult.summary.rejected > 0) {
+        const firstRejected = validationResult.rejectedRows[0];
+        throw new Error(
+          `${validationResult.summary.rejected} row${validationResult.summary.rejected === 1 ? "" : "s"} failed validation. ` +
+            `First issue: row ${firstRejected?.rowNumber || "unknown"} — ${firstRejected?.validationMessages?.[0] || "invalid data"}`,
+        );
+      }
+
+      const result = await importVMRSCatalog({
+        organizationId: importRequest.organizationId,
+        currentUserId: importRequest.importedBy,
+        file: importRequest.file,
+        sourceVersion: importRequest.sourceVersion,
+        effectiveDate: importRequest.effectiveDate,
+        importMode: importRequest.importMode,
+        validationResult,
+      });
+
+      await refreshVMRSData(importRequest.organizationId);
+      setIsImportDialogOpen(false);
+      setActionMessage(
+        `${importRequest.originalFilename} imported successfully: ${result.insertedCount} added, ${result.updatedCount} updated, ${result.warningCount} warning${result.warningCount === 1 ? "" : "s"}.`,
+      );
+    } catch (error) {
+      console.error("ARGOS VMRS catalog import failed:", error);
+      throw new Error(error?.message || "ARGOS could not import the VMRS catalog.");
+    } finally {
+      setIsImporting(false);
+    }
+  }
+
   function formatImportStatus(batch) {
     return String(batch?.status || batch?.import_status || "Recorded")
       .replaceAll("_", " ")
@@ -460,13 +538,13 @@ export default function ARGOSVMRSConfigurationAdministrationModule({ isDemoMode 
         <button
           className="argos-vmrs-import-button"
           type="button"
-          disabled={!canManage}
+          disabled={!canManage || isImporting}
           onClick={() => {
             setActionMessage("");
             setIsImportDialogOpen(true);
           }}
         >
-          Import VMRS Catalog
+          {isImporting ? "Importing…" : "Import VMRS Catalog"}
         </button>
       </div>
 
@@ -540,12 +618,8 @@ export default function ARGOSVMRSConfigurationAdministrationModule({ isDemoMode 
         organizationId={organizationId}
         currentUserId={currentUserId}
         onClose={() => setIsImportDialogOpen(false)}
-        onValidated={(importRequest) => {
-          setIsImportDialogOpen(false);
-          setActionMessage(
-            `${importRequest.originalFilename} passed initial file validation. CSV row parsing and database staging are the next Sprint 001Y implementation step.`,
-          );
-        }}
+        onValidated={handleValidatedImport}
+        isSubmitting={isImporting}
       />
 
       <div className="argos-vmrs-foundation-note">
