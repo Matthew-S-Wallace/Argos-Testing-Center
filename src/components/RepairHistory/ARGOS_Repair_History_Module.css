@@ -1,0 +1,311 @@
+/**************************************************************************************************
+ * ARGOS™ Sprint 001Z7 — Repair History Compact Scroll Correction
+ *
+ * Repair History now owns its complete presentation layer.
+ * Legacy Repair History rules have been removed from App.css.
+ **************************************************************************************************/
+
+.argos-repair-history-header {
+  min-width: 0;
+  min-height: 136px;
+  margin: 0 0 18px;
+  padding: 24px 22px;
+  align-items: center;
+  border: 0;
+  border-radius: 16px;
+  background: #081f3d;
+  box-shadow:
+    0 12px 28px rgba(8, 31, 61, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.argos-repair-history-header > div:first-child {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  text-align: left;
+}
+
+.argos-repair-history-header .eyebrow {
+  margin: 0 0 6px;
+  color: #d3b66d;
+  -webkit-text-fill-color: #d3b66d;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.dashboard .argos-repair-history-header h2 {
+  margin: 0.15rem 0 0;
+  color: #ffffff !important;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.65rem, 2.3vw, 2.35rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.argos-repair-history-header .refresh-box {
+  min-width: 188px;
+  padding: 15px 18px;
+  border: 1px solid rgba(211, 182, 109, 0.42);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.argos-repair-history-header .refresh-box span {
+  color: #d3b66d;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.argos-repair-history-header .refresh-box strong {
+  margin-top: 5px;
+  color: #ffffff;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.55rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.argos-repair-history-board {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(8, 31, 61, 0.13);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 26px rgba(8, 31, 61, 0.07);
+}
+
+.argos-repair-history-actions {
+  justify-content: flex-end;
+  margin: 0 0 14px;
+  padding: 0;
+}
+
+.argos-repair-history-actions button {
+  min-height: 42px;
+  padding: 0 18px;
+  border: 1px solid #081f3d;
+  border-radius: 10px;
+  background: #081f3d;
+  color: #ffffff;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: 0 7px 16px rgba(8, 31, 61, 0.16);
+}
+
+.argos-repair-history-table-shell {
+  box-sizing: border-box;
+  display: block;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  max-height: 500px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid rgba(8, 31, 61, 0.13);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(8, 31, 61, 0.05);
+}
+
+.argos-repair-history-table {
+  width: 1750px;
+  min-width: 1750px;
+  max-width: none;
+  height: max-content;
+  min-height: 0;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: visible;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.argos-repair-history-table thead {
+  background: #edf4f9;
+}
+
+.argos-repair-history-table thead,
+.argos-repair-history-table tbody {
+  height: auto;
+}
+
+.argos-repair-history-table tr {
+  height: auto;
+  min-height: 0;
+}
+
+.argos-repair-history-table th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  height: 54px;
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(8, 31, 61, 0.16);
+  background: #edf4f9;
+  color: #173654;
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: 0.055em;
+  text-align: center;
+  text-transform: uppercase;
+  vertical-align: middle;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
+.argos-repair-history-table td {
+  height: auto;
+  min-height: 0;
+  padding: 12px 10px;
+  border-bottom: 1px solid rgba(8, 31, 61, 0.08);
+  color: #34495e;
+  font-size: 12px;
+  line-height: 1.35;
+  vertical-align: middle;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.argos-repair-history-table tbody tr:nth-child(even) {
+  background: #fafcfd;
+}
+
+.argos-repair-history-table tbody tr:hover {
+  background: #f2f6f9;
+}
+
+.argos-repair-history-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.argos-repair-history-table td.unit {
+  color: #081f3d;
+  font-weight: 850;
+}
+
+.argos-repair-history-table td.critical {
+  color: #8b1e16;
+  font-weight: 850;
+}
+
+.argos-repair-history-table td.high {
+  color: #8a681f;
+  font-weight: 800;
+}
+
+.argos-repair-history-table td.normal,
+.argos-repair-history-table td.low {
+  color: #52657a;
+  font-weight: 700;
+}
+
+.argos-repair-history-table .status-pill {
+  min-height: 26px;
+  max-width: 100%;
+  justify-content: center;
+  padding: 5px 8px;
+  border-radius: 999px;
+  white-space: normal;
+  text-align: center;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.64rem;
+  font-weight: 850;
+  letter-spacing: 0.025em;
+  box-shadow: inset 0 0 0 1px rgba(8, 31, 61, 0.08);
+}
+
+.argos-repair-history-vmrs {
+  display: grid;
+  gap: 3px;
+  min-width: 205px;
+  max-width: 245px;
+}
+
+.argos-repair-history-vmrs > span,
+.argos-repair-history-vmrs small {
+  display: block;
+  line-height: 1.3;
+}
+
+.argos-repair-history-table th:nth-child(1),
+.argos-repair-history-table td:nth-child(1) { width: 88px; }
+
+.argos-repair-history-table th:nth-child(2),
+.argos-repair-history-table td:nth-child(2) { width: 128px; }
+
+.argos-repair-history-table th:nth-child(3),
+.argos-repair-history-table td:nth-child(3) { width: 130px; }
+
+.argos-repair-history-table th:nth-child(4),
+.argos-repair-history-table td:nth-child(4) { width: 128px; }
+
+.argos-repair-history-table th:nth-child(5),
+.argos-repair-history-table td:nth-child(5),
+.argos-repair-history-table th:nth-child(6),
+.argos-repair-history-table td:nth-child(6) { width: 118px; }
+
+.argos-repair-history-table th:nth-child(7),
+.argos-repair-history-table td:nth-child(7) { width: 130px; }
+
+.argos-repair-history-table th:nth-child(8),
+.argos-repair-history-table td:nth-child(8) { width: 90px; }
+
+.argos-repair-history-table th:nth-child(9),
+.argos-repair-history-table td:nth-child(9) { width: 86px; }
+
+.argos-repair-history-table th:nth-child(10),
+.argos-repair-history-table td:nth-child(10) { width: 125px; }
+
+.argos-repair-history-table th:nth-child(11),
+.argos-repair-history-table td:nth-child(11) { width: 245px; }
+
+.argos-repair-history-table th:nth-child(12),
+.argos-repair-history-table td:nth-child(12) { width: 125px; }
+
+.argos-repair-history-table th:nth-child(13),
+.argos-repair-history-table td:nth-child(13) { width: 221px; }
+
+@media (max-width: 900px) {
+  .argos-repair-history-header {
+    min-height: auto;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .argos-repair-history-header .refresh-box {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .argos-repair-history-board {
+    padding: 14px;
+  }
+
+  .argos-repair-history-table-shell {
+    max-height: 420px;
+  }
+}

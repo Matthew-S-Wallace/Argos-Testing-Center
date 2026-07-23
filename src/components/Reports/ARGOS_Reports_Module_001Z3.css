@@ -1,0 +1,61 @@
+.argos-reports-module { min-width: 0; }
+.argos-reports-module-header { min-height: 136px; padding: 24px 22px; align-items: center; margin-bottom: 16px; border-radius: 16px; background: #081f3d; box-shadow: 0 12px 28px rgba(8,31,61,.18); }
+.argos-reports-module-header h2 { color: #fff; }
+.argos-reports-module-header .eyebrow { color: #d3b66d; }
+.argos-reports-module-header .refresh-box { border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.08); box-shadow: none; }
+.argos-reports-module-header .refresh-box span { color: rgba(255,255,255,.72); }
+.argos-reports-module-header .refresh-box strong { color: #d3b66d; }
+.argos-reports-tabs { display: flex; gap: 8px; margin: 0 0 20px; padding: 6px; border: 1px solid rgba(8,31,61,.12); border-radius: 12px; background: #fff; width: fit-content; }
+.argos-reports-tabs button { min-height: 38px; padding: 0 16px; border: 0; border-radius: 8px; background: transparent; color: #53677d; box-shadow: none; font-size: .72rem; }
+.argos-reports-tabs button.active { background: #081f3d; color: #fff; }
+.argos-vmrs-filter-bar { display: grid; grid-template-columns: repeat(4,minmax(140px,1fr)) auto auto; gap: 12px; align-items: end; margin-bottom: 18px; padding: 18px; border: 1px solid rgba(8,31,61,.12); border-radius: 14px; background: #fff; }
+.argos-vmrs-filter-bar label { display: flex; flex-direction: column; gap: 7px; color: #52657a; font: 800 .68rem Inter,system-ui,sans-serif; letter-spacing: .07em; text-transform: uppercase; }
+.argos-vmrs-filter-bar select,.argos-vmrs-filter-bar input { min-height: 42px; width: 100%; padding: 0 11px; border: 1px solid #cad4de; border-radius: 9px; background: #fff; color: #173654; font: 500 .8rem Inter,system-ui,sans-serif; }
+.argos-vmrs-filter-bar button { min-height: 42px; padding: 0 14px; border-radius: 9px; font-size: .68rem; white-space: nowrap; }
+.argos-vmrs-kpis { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; margin-bottom: 18px; }
+.argos-vmrs-kpis article { min-width: 0; min-height: 135px; padding: 19px; border: 1px solid rgba(8,31,61,.12); border-radius: 14px; background: #fff; box-shadow: 0 8px 20px rgba(8,31,61,.06); }
+.argos-vmrs-kpis article.primary { background: #081f3d; }
+.argos-vmrs-kpis span,.argos-vmrs-kpis strong,.argos-vmrs-kpis small { display: block; }
+.argos-vmrs-kpis span { color: #607186; font: 850 .65rem Inter,system-ui,sans-serif; letter-spacing: .075em; text-transform: uppercase; }
+.argos-vmrs-kpis strong { margin-top: 12px; color: #081f3d; font: 800 clamp(1.5rem,2vw,2rem) Inter,system-ui,sans-serif; overflow-wrap: anywhere; }
+.argos-vmrs-kpis small { margin-top: 9px; color: #65768a; font: 650 .7rem/1.4 Inter,system-ui,sans-serif; }
+.argos-vmrs-kpis article.primary span,.argos-vmrs-kpis article.primary small { color: rgba(255,255,255,.75); }
+.argos-vmrs-kpis article.primary strong { color: #d3b66d; }
+.argos-vmrs-ranking-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.argos-vmrs-ranking-card { min-width: 0; padding: 18px; border: 1px solid rgba(8,31,61,.12); border-radius: 14px; background: #fff; box-shadow: 0 8px 20px rgba(8,31,61,.05); }
+.argos-vmrs-ranking-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 13px; border-bottom: 1px solid rgba(8,31,61,.1); }
+.argos-vmrs-ranking-header h3 { margin: 0; color: #081f3d; font-size: 1.15rem; }
+.argos-vmrs-ranking-header span { color: #8a6b28; font: 800 .65rem Inter,system-ui,sans-serif; text-transform: uppercase; }
+.argos-vmrs-ranking-list { display: grid; }
+.argos-vmrs-ranking-row { display: grid; grid-template-columns: 28px minmax(0,1fr) auto; gap: 11px; align-items: center; padding: 13px 0; border-bottom: 1px solid rgba(8,31,61,.08); }
+.argos-vmrs-ranking-row:last-child { border-bottom: 0; }
+.argos-vmrs-ranking-row > b { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; background: #edf4f9; color: #173654; font: 800 .7rem Inter,system-ui,sans-serif; }
+.argos-vmrs-ranking-row div { min-width: 0; }
+.argos-vmrs-ranking-row strong,.argos-vmrs-ranking-row span { display: block; font-family: Inter,system-ui,sans-serif; }
+.argos-vmrs-ranking-row strong { color: #081f3d; font-size: .78rem; }
+.argos-vmrs-ranking-row span { margin-top: 3px; color: #607186; font-size: .72rem; overflow-wrap: anywhere; }
+.argos-vmrs-ranking-row em { min-width: 34px; padding: 5px 9px; border-radius: 999px; background: #fff8e8; color: #7a5b1c; font: 800 .72rem Inter,system-ui,sans-serif; text-align: center; font-style: normal; }
+.argos-vmrs-empty { margin: 16px 0 0; color: #607186; font: 500 .78rem/1.5 Inter,system-ui,sans-serif; }
+@media (max-width: 1200px) { .argos-vmrs-filter-bar { grid-template-columns: repeat(2,minmax(0,1fr)); } .argos-vmrs-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 760px) { .argos-reports-module-header { align-items: flex-start; flex-direction: column; } .argos-reports-tabs { width: 100%; } .argos-reports-tabs button { flex: 1; } .argos-vmrs-filter-bar,.argos-vmrs-kpis,.argos-vmrs-ranking-grid { grid-template-columns: 1fr; } }
+
+
+/* Sprint 001Z.3 Header Color Fix */
+.argos-reports-module-header,
+.argos-reports-module-header * {
+  color: #ffffff;
+}
+
+.argos-reports-module-header h1,
+.argos-reports-module-header h2,
+.argos-reports-module-header h3 {
+  color: #ffffff !important;
+}
+
+.argos-reports-module-header p {
+  color: rgba(255,255,255,.82) !important;
+}
+
+.argos-reports-module-header .eyebrow {
+  color: #d3b66d !important;
+}

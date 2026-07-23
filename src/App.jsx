@@ -3,6 +3,8 @@ import { BrowserMultiFormatReader } from "@zxing/browser";
 import { supabase } from "./supabaseClient";
 import AdministrationModule from "./components/Administration/ARGOS_Administration_Module_Component";
 import CommandCenter from "./components/CommandCenter/ARGOS_Command_Center_Component";
+import ARGOSReportsModule from "./components/Reports/ARGOS_Reports_Module_001Z3";
+import ARGOSRepairHistoryModule from "./components/RepairHistory/ARGOS_Repair_History_Module";
 import ARGOSOperationsNavigation from "./components/Layout/ARGOS_Operations_Navigation_Blue_Shield_Reference_001U";
 import { canViewAdministration } from "./utils/ARGOS_Permission_Resolver";
 import "./App.css";
@@ -624,6 +626,13 @@ function createBlankAsset() {
     vendorShop: "",
     primaryVmrs: "",
     secondaryVmrs: "",
+    vmrsSystemCodeId: "", vmrsSystemCode: "", vmrsSystemDescription: "",
+    vmrsAssemblyCodeId: "", vmrsAssemblyCode: "", vmrsAssemblyDescription: "",
+    vmrsComponentCodeId: "", vmrsComponentCode: "", vmrsComponentDescription: "",
+    vmrsReasonCodeId: "", vmrsReasonCode: "", vmrsReasonDescription: "",
+    vmrsWorkAccomplishedCodeId: "", vmrsWorkAccomplishedCode: "", vmrsWorkAccomplishedDescription: "",
+    vmrsPositionCodeId: "", vmrsPositionCode: "", vmrsPositionDescription: "",
+    vmrsCodedAt: "", vmrsCodedBy: "",
     repairOpenedAt: "",
     repairCompletedAt: "",
     mileageAtRepair: "",
@@ -689,6 +698,13 @@ function normalizeAsset(asset) {
     vendorShop: asset.vendorShop || "",
     primaryVmrs: asset.primaryVmrs || "",
     secondaryVmrs: asset.secondaryVmrs || "",
+    vmrsSystemCodeId: asset.vmrsSystemCodeId || "", vmrsSystemCode: asset.vmrsSystemCode || "", vmrsSystemDescription: asset.vmrsSystemDescription || "",
+    vmrsAssemblyCodeId: asset.vmrsAssemblyCodeId || "", vmrsAssemblyCode: asset.vmrsAssemblyCode || "", vmrsAssemblyDescription: asset.vmrsAssemblyDescription || "",
+    vmrsComponentCodeId: asset.vmrsComponentCodeId || "", vmrsComponentCode: asset.vmrsComponentCode || "", vmrsComponentDescription: asset.vmrsComponentDescription || "",
+    vmrsReasonCodeId: asset.vmrsReasonCodeId || "", vmrsReasonCode: asset.vmrsReasonCode || "", vmrsReasonDescription: asset.vmrsReasonDescription || "",
+    vmrsWorkAccomplishedCodeId: asset.vmrsWorkAccomplishedCodeId || "", vmrsWorkAccomplishedCode: asset.vmrsWorkAccomplishedCode || "", vmrsWorkAccomplishedDescription: asset.vmrsWorkAccomplishedDescription || "",
+    vmrsPositionCodeId: asset.vmrsPositionCodeId || "", vmrsPositionCode: asset.vmrsPositionCode || "", vmrsPositionDescription: asset.vmrsPositionDescription || "",
+    vmrsCodedAt: asset.vmrsCodedAt || "", vmrsCodedBy: asset.vmrsCodedBy || "",
     repairOpenedAt: asset.repairOpenedAt || "",
     repairCompletedAt: asset.repairCompletedAt || "",
     mileageAtRepair: asset.mileageAtRepair ?? "",
@@ -790,6 +806,13 @@ function mapSupabaseAsset(row) {
     vendorShop: row.vendor_shop || "",
     primaryVmrs: row.primary_vmrs || "",
     secondaryVmrs: row.secondary_vmrs || "",
+    vmrsSystemCodeId: row.vmrs_system_code_id || "", vmrsSystemCode: row.vmrs_system_code || "", vmrsSystemDescription: row.vmrs_system_description || "",
+    vmrsAssemblyCodeId: row.vmrs_assembly_code_id || "", vmrsAssemblyCode: row.vmrs_assembly_code || "", vmrsAssemblyDescription: row.vmrs_assembly_description || "",
+    vmrsComponentCodeId: row.vmrs_component_code_id || "", vmrsComponentCode: row.vmrs_component_code || "", vmrsComponentDescription: row.vmrs_component_description || "",
+    vmrsReasonCodeId: row.vmrs_reason_code_id || "", vmrsReasonCode: row.vmrs_reason_code || "", vmrsReasonDescription: row.vmrs_reason_description || "",
+    vmrsWorkAccomplishedCodeId: row.vmrs_work_accomplished_code_id || "", vmrsWorkAccomplishedCode: row.vmrs_work_accomplished_code || "", vmrsWorkAccomplishedDescription: row.vmrs_work_accomplished_description || "",
+    vmrsPositionCodeId: row.vmrs_position_code_id || "", vmrsPositionCode: row.vmrs_position_code || "", vmrsPositionDescription: row.vmrs_position_description || "",
+    vmrsCodedAt: row.vmrs_coded_at || "", vmrsCodedBy: row.vmrs_coded_by || "",
     repairOpenedAt: row.repair_opened_at || "",
     repairCompletedAt: row.repair_completed_at || "",
     mileageAtRepair: row.mileage_at_repair ?? "",
@@ -851,6 +874,13 @@ function mapSupabaseRepairHistory(row) {
     vendorShop: row.vendor_shop || "",
     primaryVmrs: row.primary_vmrs || "",
     secondaryVmrs: row.secondary_vmrs || "",
+    vmrsSystemCodeId: row.vmrs_system_code_id || "", vmrsSystemCode: row.vmrs_system_code || "", vmrsSystemDescription: row.vmrs_system_description || "",
+    vmrsAssemblyCodeId: row.vmrs_assembly_code_id || "", vmrsAssemblyCode: row.vmrs_assembly_code || "", vmrsAssemblyDescription: row.vmrs_assembly_description || "",
+    vmrsComponentCodeId: row.vmrs_component_code_id || "", vmrsComponentCode: row.vmrs_component_code || "", vmrsComponentDescription: row.vmrs_component_description || "",
+    vmrsReasonCodeId: row.vmrs_reason_code_id || "", vmrsReasonCode: row.vmrs_reason_code || "", vmrsReasonDescription: row.vmrs_reason_description || "",
+    vmrsWorkAccomplishedCodeId: row.vmrs_work_accomplished_code_id || "", vmrsWorkAccomplishedCode: row.vmrs_work_accomplished_code || "", vmrsWorkAccomplishedDescription: row.vmrs_work_accomplished_description || "",
+    vmrsPositionCodeId: row.vmrs_position_code_id || "", vmrsPositionCode: row.vmrs_position_code || "", vmrsPositionDescription: row.vmrs_position_description || "",
+    vmrsCodedAt: row.vmrs_coded_at || "", vmrsCodedBy: row.vmrs_coded_by || "",
     mileageAtRepair: row.mileage_at_repair ?? "",
     engineHoursAtRepair: row.engine_hours_at_repair ?? "",
     warrantyStatus: row.warranty_status || "Unknown",
@@ -1338,6 +1368,32 @@ function App() {
   const [technicians, setTechnicians] = useState([]);
   const [techniciansLoading, setTechniciansLoading] = useState(false);
   const [techniciansError, setTechniciansError] = useState("");
+  const [vmrsCodes, setVmrsCodes] = useState([]);
+  const [vmrsCodesLoading, setVmrsCodesLoading] = useState(false);
+  const [vmrsCodesError, setVmrsCodesError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    if (isDemoMode || !session || !organizationId) {
+      setVmrsCodes([]); setVmrsCodesLoading(false); setVmrsCodesError("");
+      return undefined;
+    }
+    async function loadVmrsCodes() {
+      setVmrsCodesLoading(true); setVmrsCodesError("");
+      const { data, error } = await supabase
+        .from("vmrs_codes")
+        .select("id, code, code_type, description, parent_id, hierarchy_level, is_active")
+        .eq("organization_id", organizationId)
+        .eq("is_active", true)
+        .order("code", { ascending: true });
+      if (!isMounted) return;
+      if (error) { console.error("ARGOS VMRS catalog load failed:", error); setVmrsCodes([]); setVmrsCodesError("ARGOS could not load this organization's VMRS catalog."); }
+      else setVmrsCodes(data || []);
+      setVmrsCodesLoading(false);
+    }
+    loadVmrsCodes();
+    return () => { isMounted = false; };
+  }, [session, organizationId, isDemoMode]);
 
   const hasAdministrationAccess = isDemoMode || canViewAdministration(profile);
 
@@ -2157,6 +2213,8 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
       vendorShop: String(assetFields.vendorShop || "").trim(),
       primaryVmrs: String(assetFields.primaryVmrs || "").trim(),
       secondaryVmrs: String(assetFields.secondaryVmrs || "").trim(),
+      vmrsCodedAt: assetFields.vmrsSystemCodeId || assetFields.vmrsReasonCodeId ? new Date().toISOString() : "",
+      vmrsCodedBy: assetFields.vmrsSystemCodeId || assetFields.vmrsReasonCodeId ? session?.user?.id || assetFields.vmrsCodedBy || "" : "",
       warrantyStatus: calculateWarrantyAwareness(assetFields),
       repairTimeline,
       repairUpdateDraft: "",
@@ -2608,6 +2666,13 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     vendor_shop: returnedAsset.vendorShop || null,
     primary_vmrs: returnedAsset.primaryVmrs || null,
     secondary_vmrs: returnedAsset.secondaryVmrs || null,
+    vmrs_system_code_id: returnedAsset.vmrsSystemCodeId || null, vmrs_system_code: returnedAsset.vmrsSystemCode || null, vmrs_system_description: returnedAsset.vmrsSystemDescription || null,
+    vmrs_assembly_code_id: returnedAsset.vmrsAssemblyCodeId || null, vmrs_assembly_code: returnedAsset.vmrsAssemblyCode || null, vmrs_assembly_description: returnedAsset.vmrsAssemblyDescription || null,
+    vmrs_component_code_id: returnedAsset.vmrsComponentCodeId || null, vmrs_component_code: returnedAsset.vmrsComponentCode || null, vmrs_component_description: returnedAsset.vmrsComponentDescription || null,
+    vmrs_reason_code_id: returnedAsset.vmrsReasonCodeId || null, vmrs_reason_code: returnedAsset.vmrsReasonCode || null, vmrs_reason_description: returnedAsset.vmrsReasonDescription || null,
+    vmrs_work_accomplished_code_id: returnedAsset.vmrsWorkAccomplishedCodeId || null, vmrs_work_accomplished_code: returnedAsset.vmrsWorkAccomplishedCode || null, vmrs_work_accomplished_description: returnedAsset.vmrsWorkAccomplishedDescription || null,
+    vmrs_position_code_id: returnedAsset.vmrsPositionCodeId || null, vmrs_position_code: returnedAsset.vmrsPositionCode || null, vmrs_position_description: returnedAsset.vmrsPositionDescription || null,
+    vmrs_coded_at: returnedAsset.vmrsCodedAt || null, vmrs_coded_by: returnedAsset.vmrsCodedBy || null,
     repair_opened_at: returnedAsset.repairOpenedAt || null,
     repair_completed_at: returnedAsset.repairCompletedAt || getTodayDateString(),
     mileage_at_repair: returnedAsset.mileageAtRepair === "" ? null : Number(returnedAsset.mileageAtRepair),
@@ -2666,6 +2731,13 @@ const { data: savedRepairHistory, error: repairHistoryError } = await supabase
     vendor_shop: completedEvent.vendorShop || null,
     primary_vmrs: completedEvent.primaryVmrs || null,
     secondary_vmrs: completedEvent.secondaryVmrs || null,
+    vmrs_system_code_id: completedEvent.vmrsSystemCodeId || null, vmrs_system_code: completedEvent.vmrsSystemCode || null, vmrs_system_description: completedEvent.vmrsSystemDescription || null,
+    vmrs_assembly_code_id: completedEvent.vmrsAssemblyCodeId || null, vmrs_assembly_code: completedEvent.vmrsAssemblyCode || null, vmrs_assembly_description: completedEvent.vmrsAssemblyDescription || null,
+    vmrs_component_code_id: completedEvent.vmrsComponentCodeId || null, vmrs_component_code: completedEvent.vmrsComponentCode || null, vmrs_component_description: completedEvent.vmrsComponentDescription || null,
+    vmrs_reason_code_id: completedEvent.vmrsReasonCodeId || null, vmrs_reason_code: completedEvent.vmrsReasonCode || null, vmrs_reason_description: completedEvent.vmrsReasonDescription || null,
+    vmrs_work_accomplished_code_id: completedEvent.vmrsWorkAccomplishedCodeId || null, vmrs_work_accomplished_code: completedEvent.vmrsWorkAccomplishedCode || null, vmrs_work_accomplished_description: completedEvent.vmrsWorkAccomplishedDescription || null,
+    vmrs_position_code_id: completedEvent.vmrsPositionCodeId || null, vmrs_position_code: completedEvent.vmrsPositionCode || null, vmrs_position_description: completedEvent.vmrsPositionDescription || null,
+    vmrs_coded_at: completedEvent.vmrsCodedAt || null, vmrs_coded_by: completedEvent.vmrsCodedBy || null,
     mileage_at_repair: completedEvent.mileageAtRepair === "" ? null : Number(completedEvent.mileageAtRepair),
     engine_hours_at_repair: completedEvent.engineHoursAtRepair === "" ? null : Number(completedEvent.engineHoursAtRepair),
     warranty_status: completedEvent.warrantyStatus || "Unknown",
@@ -2842,6 +2914,13 @@ return;
     vendor_shop: updatedAsset.vendorShop || null,
     primary_vmrs: updatedAsset.primaryVmrs || null,
     secondary_vmrs: updatedAsset.secondaryVmrs || null,
+    vmrs_system_code_id: updatedAsset.vmrsSystemCodeId || null, vmrs_system_code: updatedAsset.vmrsSystemCode || null, vmrs_system_description: updatedAsset.vmrsSystemDescription || null,
+    vmrs_assembly_code_id: updatedAsset.vmrsAssemblyCodeId || null, vmrs_assembly_code: updatedAsset.vmrsAssemblyCode || null, vmrs_assembly_description: updatedAsset.vmrsAssemblyDescription || null,
+    vmrs_component_code_id: updatedAsset.vmrsComponentCodeId || null, vmrs_component_code: updatedAsset.vmrsComponentCode || null, vmrs_component_description: updatedAsset.vmrsComponentDescription || null,
+    vmrs_reason_code_id: updatedAsset.vmrsReasonCodeId || null, vmrs_reason_code: updatedAsset.vmrsReasonCode || null, vmrs_reason_description: updatedAsset.vmrsReasonDescription || null,
+    vmrs_work_accomplished_code_id: updatedAsset.vmrsWorkAccomplishedCodeId || null, vmrs_work_accomplished_code: updatedAsset.vmrsWorkAccomplishedCode || null, vmrs_work_accomplished_description: updatedAsset.vmrsWorkAccomplishedDescription || null,
+    vmrs_position_code_id: updatedAsset.vmrsPositionCodeId || null, vmrs_position_code: updatedAsset.vmrsPositionCode || null, vmrs_position_description: updatedAsset.vmrsPositionDescription || null,
+    vmrs_coded_at: updatedAsset.vmrsCodedAt || null, vmrs_coded_by: updatedAsset.vmrsCodedBy || null,
     repair_opened_at: updatedAsset.repairOpenedAt || null,
     repair_completed_at: updatedAsset.repairCompletedAt || null,
     mileage_at_repair: updatedAsset.mileageAtRepair === "" ? null : Number(updatedAsset.mileageAtRepair),
@@ -2951,6 +3030,13 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
       vendor_shop: cleanedAsset.vendorShop || null,
       primary_vmrs: cleanedAsset.primaryVmrs || null,
       secondary_vmrs: cleanedAsset.secondaryVmrs || null,
+    vmrs_system_code_id: cleanedAsset.vmrsSystemCodeId || null, vmrs_system_code: cleanedAsset.vmrsSystemCode || null, vmrs_system_description: cleanedAsset.vmrsSystemDescription || null,
+    vmrs_assembly_code_id: cleanedAsset.vmrsAssemblyCodeId || null, vmrs_assembly_code: cleanedAsset.vmrsAssemblyCode || null, vmrs_assembly_description: cleanedAsset.vmrsAssemblyDescription || null,
+    vmrs_component_code_id: cleanedAsset.vmrsComponentCodeId || null, vmrs_component_code: cleanedAsset.vmrsComponentCode || null, vmrs_component_description: cleanedAsset.vmrsComponentDescription || null,
+    vmrs_reason_code_id: cleanedAsset.vmrsReasonCodeId || null, vmrs_reason_code: cleanedAsset.vmrsReasonCode || null, vmrs_reason_description: cleanedAsset.vmrsReasonDescription || null,
+    vmrs_work_accomplished_code_id: cleanedAsset.vmrsWorkAccomplishedCodeId || null, vmrs_work_accomplished_code: cleanedAsset.vmrsWorkAccomplishedCode || null, vmrs_work_accomplished_description: cleanedAsset.vmrsWorkAccomplishedDescription || null,
+    vmrs_position_code_id: cleanedAsset.vmrsPositionCodeId || null, vmrs_position_code: cleanedAsset.vmrsPositionCode || null, vmrs_position_description: cleanedAsset.vmrsPositionDescription || null,
+    vmrs_coded_at: cleanedAsset.vmrsCodedAt || null, vmrs_coded_by: cleanedAsset.vmrsCodedBy || null,
       repair_opened_at: cleanedAsset.repairOpenedAt || null,
       repair_completed_at: cleanedAsset.repairCompletedAt || null,
       mileage_at_repair: cleanedAsset.mileageAtRepair === "" ? null : Number(cleanedAsset.mileageAtRepair),
@@ -3212,28 +3298,6 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     );
   }
 
-  function handleExportRepairHistory() {
-    exportCSVReport(
-      `argos-repair-history-${getTodayDateString()}.csv`,
-      [
-        { header: "Unit", value: "unit" },
-        { header: "Department", value: "department" },
-        { header: "Asset", value: "asset" },
-        { header: "Record Type", value: "recordType" },
-        { header: "Prior Status", value: "priorStatus" },
-        { header: "Final Status", value: "finalStatus" },
-        { header: "Reason", value: "reason" },
-        { header: "Priority", value: "priority" },
-        { header: "Days Down", value: "daysDownDisplay" },
-        { header: "Technician", value: "technician" },
-        { header: "Completed", value: (record) => formatDate(record.completedDisplayDate) },
-        { header: "Details", value: "details" },
-      ],
-      completedRepairRecords,
-      "There are no completed repair records to export.",
-      `Exported ${completedRepairRecords.length} repair history record${completedRepairRecords.length === 1 ? "" : "s"} successfully.`
-    );
-  }
 
   function handleExportTechnicianAnalytics() {
     exportCSVReport(
@@ -3418,6 +3482,24 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
   function handleManualVinSubmit() {
     handleVinScanResult(manualVinEntry, "manual");
+  }
+
+  function handleVmrsSelection(fieldPrefix, codeId) {
+    setEditAsset((currentAsset) => {
+      const selected = vmrsCodes.find((code) => code.id === codeId);
+      const next = { ...currentAsset };
+      const setCode = (prefix, code) => {
+        next[`vmrs${prefix}CodeId`] = code?.id || "";
+        next[`vmrs${prefix}Code`] = code?.code || "";
+        next[`vmrs${prefix}Description`] = code?.description || "";
+      };
+      setCode(fieldPrefix, selected);
+      if (fieldPrefix === "System") { setCode("Assembly", null); setCode("Component", null); }
+      if (fieldPrefix === "Assembly") setCode("Component", null);
+      next.primaryVmrs = next.vmrsComponentCode || next.vmrsAssemblyCode || next.vmrsSystemCode || "";
+      next.secondaryVmrs = next.vmrsReasonCode || next.vmrsWorkAccomplishedCode || "";
+      return next;
+    });
   }
 
   function renderAssetForm(
@@ -3636,13 +3718,48 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
               <input type="text" name="vendorShop" value={asset.vendorShop || ""} onChange={onChange} placeholder="Internal shop or third-party provider" maxLength="160" />
             </label>
             <label>
-              Primary VMRS Code
-              <input type="text" name="primaryVmrs" value={asset.primaryVmrs || ""} onChange={onChange} placeholder="Optional; controlled lookup follows later" maxLength="40" />
+              VMRS System
+              <select value={asset.vmrsSystemCodeId || ""} onChange={(event) => handleVmrsSelection("System", event.target.value)} disabled={vmrsCodesLoading || vmrsCodes.length === 0}>
+                <option value="">{vmrsCodesLoading ? "Loading VMRS catalog…" : "Select System"}</option>
+                {vmrsCodes.filter((code) => code.code_type === "SYSTEM").map((code) => <option key={code.id} value={code.id}>{code.code} — {code.description}</option>)}
+              </select>
             </label>
             <label>
-              Secondary VMRS Code
-              <input type="text" name="secondaryVmrs" value={asset.secondaryVmrs || ""} onChange={onChange} placeholder="Optional" maxLength="40" />
+              VMRS Assembly
+              <select value={asset.vmrsAssemblyCodeId || ""} onChange={(event) => handleVmrsSelection("Assembly", event.target.value)} disabled={!asset.vmrsSystemCodeId}>
+                <option value="">Select Assembly</option>
+                {vmrsCodes.filter((code) => code.code_type === "ASSEMBLY" && code.parent_id === asset.vmrsSystemCodeId).map((code) => <option key={code.id} value={code.id}>{code.code} — {code.description}</option>)}
+              </select>
             </label>
+            <label>
+              VMRS Component
+              <select value={asset.vmrsComponentCodeId || ""} onChange={(event) => handleVmrsSelection("Component", event.target.value)} disabled={!asset.vmrsAssemblyCodeId}>
+                <option value="">Select Component</option>
+                {vmrsCodes.filter((code) => code.code_type === "COMPONENT" && code.parent_id === asset.vmrsAssemblyCodeId).map((code) => <option key={code.id} value={code.id}>{code.code} — {code.description}</option>)}
+              </select>
+            </label>
+            <label>
+              Reason for Repair
+              <select value={asset.vmrsReasonCodeId || ""} onChange={(event) => handleVmrsSelection("Reason", event.target.value)} disabled={vmrsCodes.length === 0}>
+                <option value="">Select Reason</option>
+                {vmrsCodes.filter((code) => code.code_type === "REASON").map((code) => <option key={code.id} value={code.id}>{code.code} — {code.description}</option>)}
+              </select>
+            </label>
+            <label>
+              Work Accomplished
+              <select value={asset.vmrsWorkAccomplishedCodeId || ""} onChange={(event) => handleVmrsSelection("WorkAccomplished", event.target.value)} disabled={vmrsCodes.length === 0}>
+                <option value="">Select Work Accomplished</option>
+                {vmrsCodes.filter((code) => code.code_type === "WORK_ACCOMPLISHED").map((code) => <option key={code.id} value={code.id}>{code.code} — {code.description}</option>)}
+              </select>
+            </label>
+            <label>
+              Position
+              <select value={asset.vmrsPositionCodeId || ""} onChange={(event) => handleVmrsSelection("Position", event.target.value)} disabled={vmrsCodes.length === 0}>
+                <option value="">Select Position</option>
+                {vmrsCodes.filter((code) => code.code_type === "POSITION").map((code) => <option key={code.id} value={code.id}>{code.code} — {code.description}</option>)}
+              </select>
+            </label>
+            {vmrsCodesError && <span className="vehicle-field-wide department-field-error">{vmrsCodesError}</span>}
             <label>
               Repair Opened
               <input type="date" name="repairOpenedAt" value={asset.repairOpenedAt || ""} onChange={onChange} />
@@ -4533,84 +4650,9 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         )}
 
         {activeView === "history" && (
-          <>
-            <header className="dashboard-header">
-              <div>
-                <p className="eyebrow">Repair History / Archive</p>
-                <h2>Completed Repair Records</h2>
-              </div>
-
-              <div className="refresh-box">
-                <span>Historical Records</span>
-                <strong>{completedRepairRecords.length}</strong>
-              </div>
-            </header>
-
-            <section className="status-board">
-              <div
-                className="status-board-header"
-                style={{ justifyContent: "flex-end", marginBottom: "14px" }}
-              >
-                <button type="button" onClick={handleExportRepairHistory}>
-                  Export Repair History
-                </button>
-              </div>
-
-              <div className="argos-repair-history-table-shell">
-                <table className="argos-repair-history-table">
-                  <thead>
-                  <tr>
-                    <th>Unit</th>
-                    <th>Department</th>
-                    <th>Asset</th>
-                    <th>Record Type</th>
-                    <th>Prior Status</th>
-                    <th>Final Status</th>
-                    <th>Reason</th>
-                    <th>Priority</th>
-                    <th>Days Down</th>
-                    <th>Technician</th>
-                    <th>Completed</th>
-                    <th>Details</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {completedRepairRecords.length === 0 ? (
-                    <tr>
-                      <td colSpan="12">No completed repair records are currently available.</td>
-                    </tr>
-                  ) : (
-                    completedRepairRecords.map((record) => (
-                      <tr key={record.recordId}>
-                        <td className="unit">{record.unit}</td>
-                        <td>{record.department}</td>
-                        <td>{record.asset}</td>
-                        <td>{record.recordType}</td>
-                        <td>
-                          <span className={`status-pill ${getStatusClass(record.priorStatus)}`}>
-                            {record.priorStatus}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`status-pill ${getStatusClass(record.finalStatus)}`}>
-                            {record.finalStatus}
-                          </span>
-                        </td>
-                        <td>{record.reason}</td>
-                        <td className={record.priority.toLowerCase()}>{record.priority}</td>
-                        <td>{record.daysDownDisplay}</td>
-                        <td>{record.technician}</td>
-                        <td>{formatDate(record.completedDisplayDate)}</td>
-                        <td>{record.details}</td>
-                      </tr>
-                    ))
-                  )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </>
+          <ARGOSRepairHistoryModule
+            completedRepairRecords={completedRepairRecords}
+          />
         )}
 
         {activeView === "technicians" && (
@@ -4769,127 +4811,12 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         )}
 
         {activeView === "reports" && (
-          <>
-            <header className="dashboard-header">
-              <div>
-                <p className="eyebrow">Reports</p>
-                <h2>Status Duration Analytics</h2>
-              </div>
-
-              <div className="refresh-box">
-                <span>Tracked Transitions</span>
-                <strong>{statusDurationAnalytics.trackedStatusTransitions}</strong>
-              </div>
-            </header>
-
-            <section className="metrics-row argos-reports-metrics">
-              <div className="availability-card argos-reports-bottleneck-card">
-                <span>Current Largest Bottleneck</span>
-                <strong>
-                  {statusDurationAnalytics.currentLargestBottleneck
-                    ? statusDurationAnalytics.currentLargestBottleneck.status
-                    : "None"}
-                </strong>
-                <p>
-                  {statusDurationAnalytics.currentLargestBottleneck
-                    ? `${statusDurationAnalytics.currentLargestBottleneck.currentUnits} current unit${
-                        statusDurationAnalytics.currentLargestBottleneck.currentUnits === 1 ? "" : "s"
-                      } in this status`
-                    : "No unavailable assets are currently creating a status bottleneck."}
-                </p>
-              </div>
-
-              <div className="metric-card argos-reports-metric-card">
-                <span>Tracked Status Transitions</span>
-                <strong>{statusDurationAnalytics.trackedStatusTransitions}</strong>
-              </div>
-              <div className="metric-card argos-reports-metric-card">
-                <span>Average Recorded Status Duration</span>
-                <strong>{statusDurationAnalytics.averageRecordedStatusDuration}</strong>
-                <small>
-                  {statusDurationAnalytics.averageRecordedStatusEvent
-                    ? `Unit ${statusDurationAnalytics.averageRecordedStatusEvent.unit} · ${statusDurationAnalytics.averageRecordedStatusEvent.previousStatus}`
-                    : "No recorded unit available"}
-                </small>
-              </div>
-              <div className="metric-card critical argos-reports-metric-card">
-                <span>Longest Recorded Status Duration</span>
-                <strong>{statusDurationAnalytics.longestRecordedStatusDuration}</strong>
-                <small>
-                  {statusDurationAnalytics.longestRecordedStatusEvent
-                    ? `Unit ${statusDurationAnalytics.longestRecordedStatusEvent.unit} · ${statusDurationAnalytics.longestRecordedStatusEvent.previousStatus}`
-                    : "No recorded unit available"}
-                </small>
-              </div>
-            </section>
-
-            <section className="status-board argos-reports-status-board">
-              <div className="status-board-header argos-reports-status-board-header">
-                <div>
-                  <button type="button" onClick={handleExportUnitsDown}>Export Units Down</button>{" "}
-                  <button type="button" onClick={handleExportStatusDurationAnalytics}>Export Status Duration Analytics</button>
-                </div>
-              </div>
-
-              <table className="argos-reports-analytics-table">
-                <thead>
-                  <tr>
-                    {[
-                      ["status", "Status"],
-                      ["currentUnits", "Current Units"],
-                      ["completedStatusEvents", "Completed Status Events"],
-                      ["averageDuration", "Average Duration"],
-                      ["longestDuration", "Longest Duration"],
-                      ["percentageOfRecordedDowntime", "Percentage of Recorded Downtime"],
-                    ].map(([key, label]) => (
-                      <th key={key}>
-                        <button
-                          type="button"
-                          className="argos-reports-sort-button"
-                          onClick={() => handleReportSort(key)}
-                          aria-label={`Sort by ${label}`}
-                        >
-                          <span>{label}</span>
-                          <b aria-hidden="true">
-                            {reportSort.key === key ? (reportSort.direction === "asc" ? "▲" : "▼") : ""}
-                          </b>
-                        </button>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {reportRows.length === 0 ? (
-                    <tr>
-                      <td colSpan="6">No status duration analytics are currently available.</td>
-                    </tr>
-                  ) : (
-                    reportRows.map((row) => (
-                      <tr key={row.status}>
-                        <td>
-                          <span className={`status-pill ${getStatusClass(row.status)}`}>
-                            {row.status}
-                          </span>
-                        </td>
-                        <td>{row.currentUnits}</td>
-                        <td>{row.completedStatusEvents}</td>
-                        <td>{row.averageDuration}</td>
-                        <td>{row.longestDuration}</td>
-                        <td>{row.percentageOfRecordedDowntime}%</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-
-              {statusDurationAnalytics.trackedStatusTransitions === 0 && (
-                <p className="eyebrow">
-                  Status duration data will populate after assets move between unavailable statuses or return to Ready.
-                </p>
-              )}
-            </section>
-          </>
+          <ARGOSReportsModule
+            statusDurationAnalytics={statusDurationAnalytics}
+            completedRepairRecords={completedRepairRecords}
+            onExportUnitsDown={handleExportUnitsDown}
+            onExportStatusDurationAnalytics={handleExportStatusDurationAnalytics}
+          />
         )}
 
 
