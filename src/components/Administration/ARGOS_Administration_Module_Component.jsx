@@ -1,9 +1,10 @@
 import ARGOSUsersAdministrationModule from "./ARGOS_Users_Administration_Module";
 import ARGOSDepartmentsAdministrationModule from "./ARGOS_Departments_Administration_Module";
-import ARGOSAssetTypesAdministrationModule from "./ARGOS_Asset_Types_Administration_Module";
+import "./ARGOS_VMRS_Configuration_Administration_Module.css";
 import ARGOSStatusConfigurationAdministrationModule from "./ARGOS_Status_Configuration_Administration_Module";
 import ARGOSTechniciansAdministrationModule from "./ARGOS_Technicians_Administration_Module";
 import ARGOSAPWAMappingAdministrationModule from "./ARGOS_APWA_Mapping_Administration_Module";
+import ARGOSVMRSConfigurationAdministrationModule from "./ARGOS_VMRS_Configuration_Administration_Module";
 import {
   canViewAdministration,
   canViewAdministrationSection,
@@ -149,6 +150,7 @@ export default function AdministrationModule({
   const isStatusConfigurationSection = activeSection === "Status Configuration";
   const isTechniciansSection = activeSection === "Technicians";
   const isAPWAMappingSection = activeSection === "APWA Mapping";
+  const isVMRSConfigurationSection = activeSection === "VMRS Configuration";
 
   function getSectionLabel(item) {
     if (
@@ -158,7 +160,8 @@ export default function AdministrationModule({
       item === "Asset Types" ||
       item === "Status Configuration" ||
       item === "Technicians" ||
-      item === "APWA Mapping"
+      item === "APWA Mapping" ||
+      item === "VMRS Configuration"
     ) {
       return null;
     }
@@ -174,6 +177,7 @@ export default function AdministrationModule({
     if (isStatusConfigurationSection) return "Live Status Configuration";
     if (isTechniciansSection) return "Live Technicians";
     if (isAPWAMappingSection) return "Live APWA Mapping";
+    if (isVMRSConfigurationSection) return "Live VMRS Configuration";
     return "Framework Ready";
   }
 
@@ -246,6 +250,8 @@ export default function AdministrationModule({
             <ARGOSTechniciansAdministrationModule isDemoMode={isDemoMode} />
           ) : isAPWAMappingSection ? (
             <ARGOSAPWAMappingAdministrationModule isDemoMode={isDemoMode} />
+          ) : isVMRSConfigurationSection ? (
+            <ARGOSVMRSConfigurationAdministrationModule isDemoMode={isDemoMode} />
           ) : (
             <PlannedAdministrationWorkspace section={activeSection} />
           )}
