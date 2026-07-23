@@ -1,0 +1,503 @@
+/* ARGOS™ Sprint 001Z — Release Candidate Roles Administration */
+
+.argos-roles-content {
+  padding: 30px;
+}
+
+.argos-roles-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.argos-roles-heading h4 {
+  margin: 0;
+  color: #071a33;
+  font-size: 27px;
+  font-weight: 500;
+}
+
+.argos-roles-heading p:not(.eyebrow) {
+  max-width: 780px;
+  margin: 10px 0 0;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.argos-roles-mode {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border: 1px solid rgba(154, 102, 20, 0.35);
+  border-radius: 999px;
+  background: #fff8e8;
+  color: #82550f;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-roles-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+
+.argos-roles-summary > div {
+  padding: 18px 20px;
+  border: 1px solid #d8d8d2;
+  border-radius: 10px;
+  background: #fbfbf8;
+}
+
+.argos-roles-summary span,
+.argos-roles-summary strong {
+  display: block;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-roles-summary span {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-roles-summary strong {
+  margin-top: 7px;
+  color: #071a33;
+  font-size: 20px;
+}
+
+.argos-roles-state {
+  margin: 0 0 22px;
+  padding: 16px 18px;
+  border: 1px solid #d8d8d2;
+  border-radius: 10px;
+  background: #fbfbf8;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  text-align: center;
+}
+
+.argos-roles-state.error {
+  border-color: rgba(166, 27, 27, 0.3);
+  background: #fff6f6;
+  color: #8d1f1f;
+}
+
+
+.argos-roles-overview {
+  margin-bottom: 18px;
+  padding: 22px;
+  border: 1px solid #d8d8d2;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.argos-roles-section-heading p {
+  margin: 7px 0 0;
+  color: #667085;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.argos-roles-overview-table-wrap {
+  margin-top: 18px;
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.argos-roles-overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-roles-overview-table th {
+  padding: 12px 14px;
+  border-bottom: 1px solid #d8d8d2;
+  background: #f7f8fa;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.argos-roles-overview-table td {
+  padding: 14px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #344054;
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.argos-roles-overview-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.argos-roles-overview-table td:first-child {
+  min-width: 300px;
+}
+
+.argos-roles-overview-table td:first-child strong,
+.argos-roles-overview-table td:first-child span {
+  display: block;
+}
+
+.argos-roles-overview-table td:first-child strong {
+  color: #071a33;
+  font-size: 14px;
+}
+
+.argos-roles-overview-table td:first-child span {
+  max-width: 520px;
+  margin-top: 4px;
+  color: #667085;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.argos-roles-overview-table td b {
+  color: #071a33;
+  font-size: 14px;
+}
+
+.argos-role-status {
+  display: inline-flex;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #edf2f8;
+  color: #245b8a;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.argos-roles-permissions {
+  border: 1px solid #d8d8d2;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.argos-roles-overview,
+.argos-roles-permissions {
+  padding: 22px;
+}
+
+.argos-roles-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.argos-roles-section-heading h5 {
+  margin: 0;
+  color: #071a33;
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.argos-roles-section-heading > span {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #edf2f8;
+  color: #245b8a;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.argos-role-card {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #d8d8d2;
+  border-radius: 10px;
+  background: #fbfbf8;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.argos-role-card:hover {
+  border-color: #b5bcc5;
+  box-shadow: 0 8px 22px rgba(7, 26, 51, 0.08);
+  transform: translateY(-1px);
+}
+
+.argos-role-card.selected {
+  border-color: #9a6614;
+  background: #fffaf0;
+  box-shadow: 0 0 0 3px rgba(154, 102, 20, 0.1);
+}
+
+.argos-role-card-topline,
+.argos-role-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.argos-role-code {
+  color: #667085;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-role-system-badge {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #edf2f8;
+  color: #245b8a;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.argos-role-card > strong {
+  display: block;
+  margin-top: 14px;
+  color: #071a33;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 18px;
+}
+
+.argos-role-card > p {
+  min-height: 63px;
+  margin: 8px 0 16px;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.argos-role-card-meta {
+  padding-top: 13px;
+  border-top: 1px solid #e5e7eb;
+  color: #667085;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 11px;
+}
+
+.argos-role-card-meta b {
+  color: #82550f;
+  font-weight: 800;
+}
+
+.argos-role-detail {
+  padding: 22px;
+  background: #fbfbf8;
+}
+
+.argos-role-detail dl {
+  margin: 22px 0 0;
+}
+
+.argos-role-detail dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 13px 0;
+  border-bottom: 1px solid #e5e7eb;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-role-detail dt {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.argos-role-detail dd {
+  margin: 0;
+  color: #071a33;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.argos-role-detail-note {
+  margin-top: 18px;
+  padding: 13px 14px;
+  border: 1px solid #e1d4b2;
+  border-radius: 8px;
+  background: #fffaf0;
+  color: #82550f;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.argos-roles-permissions {
+  margin-top: 18px;
+}
+
+.argos-roles-table-wrap {
+  width: 100%;
+  margin-top: 20px;
+  overflow-x: auto;
+  border: 1px solid #d8d8d2;
+  border-radius: 10px;
+}
+
+.argos-roles-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+.argos-roles-table th,
+.argos-roles-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #344054;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.argos-roles-table th {
+  background: #f6f7f8;
+  color: #667085;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.argos-roles-table th:first-child,
+.argos-roles-table td:first-child {
+  min-width: 290px;
+  text-align: left;
+}
+
+.argos-roles-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.argos-roles-table td:first-child strong,
+.argos-roles-table td:first-child span {
+  display: block;
+}
+
+.argos-roles-table td:first-child strong {
+  color: #071a33;
+  font-size: 13px;
+}
+
+.argos-roles-table td:first-child span {
+  margin-top: 4px;
+  color: #667085;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.argos-role-permission {
+  display: inline-flex;
+  min-width: 74px;
+  justify-content: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.argos-role-permission.allowed {
+  background: #dff3e5;
+  color: #146c2e;
+}
+
+.argos-role-permission.restricted {
+  background: #eef1f4;
+  color: #667085;
+}
+
+.argos-roles-foundation-note {
+  margin-top: 18px;
+  padding: 18px 20px;
+  border: 1px solid #e1d4b2;
+  border-radius: 10px;
+  background: #fffaf0;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-roles-foundation-note strong,
+.argos-roles-foundation-note span {
+  display: block;
+}
+
+.argos-roles-foundation-note strong {
+  color: #82550f;
+  font-size: 13px;
+}
+
+.argos-roles-foundation-note span {
+  margin-top: 6px;
+  color: #526174;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+@media (max-width: 900px) {
+  .argos-roles-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .argos-roles-content {
+    padding: 24px 20px;
+  }
+
+  .argos-roles-heading,
+  .argos-roles-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .argos-roles-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .argos-roles-overview,
+  .argos-roles-permissions {
+    padding: 18px;
+  }
+
+  .argos-roles-overview-table,
+  .argos-roles-table {
+    min-width: 760px;
+  }
+}

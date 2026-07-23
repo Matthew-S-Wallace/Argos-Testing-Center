@@ -1,4 +1,5 @@
 import ARGOSUsersAdministrationModule from "./ARGOS_Users_Administration_Module";
+import ARGOSRolesAdministrationModule from "./ARGOS_Roles_Administration_Module";
 import ARGOSDepartmentsAdministrationModule from "./ARGOS_Departments_Administration_Module";
 import "./ARGOS_VMRS_Configuration_Administration_Module.css";
 import ARGOSStatusConfigurationAdministrationModule from "./ARGOS_Status_Configuration_Administration_Module";
@@ -145,6 +146,7 @@ export default function AdministrationModule({
 
   const isOrganizationProfile = activeSection === "Organization Profile";
   const isUsersSection = activeSection === "Users";
+  const isRolesSection = activeSection === "Roles";
   const isDepartmentsSection = activeSection === "Departments";
   const isAssetTypesSection = activeSection === "Asset Types";
   const isStatusConfigurationSection = activeSection === "Status Configuration";
@@ -160,6 +162,7 @@ export default function AdministrationModule({
     if (
       item === "Organization Profile" ||
       item === "Users" ||
+      item === "Roles" ||
       item === "Departments" ||
       item === "Asset Types" ||
       item === "Status Configuration" ||
@@ -176,6 +179,7 @@ export default function AdministrationModule({
   function getWorkspaceStatus() {
     if (isOrganizationProfile) return "Live Profile";
     if (isUsersSection) return "Live Users";
+    if (isRolesSection) return "Live Roles";
     if (isDepartmentsSection) return "Live Departments";
     if (isAssetTypesSection) return "Live Asset Types";
     if (isStatusConfigurationSection) return "Live Status Configuration";
@@ -244,6 +248,8 @@ export default function AdministrationModule({
             />
           ) : isUsersSection ? (
             <ARGOSUsersAdministrationModule isDemoMode={isDemoMode} />
+          ) : isRolesSection ? (
+            <ARGOSRolesAdministrationModule isDemoMode={isDemoMode} />
           ) : isDepartmentsSection ? (
             <ARGOSDepartmentsAdministrationModule isDemoMode={isDemoMode} />
           ) : isAssetTypesSection ? (
