@@ -6,13 +6,10 @@ import CommandCenter from "./components/CommandCenter/ARGOS_Command_Center_Compo
 import ARGOSReportsModule from "./components/Reports/ARGOS_Reports_Module_001Z3";
 import ARGOSRepairHistoryModule from "./components/RepairHistory/ARGOS_Repair_History_Module";
 import ARGOSOperationsNavigation from "./components/Layout/ARGOS_Operations_Navigation_Blue_Shield_Reference_001U";
+import ARGOSDataManagementModule from "./components/DataManagement/ARGOS_Data_Management_Module";
 import { canViewAdministration } from "./utils/ARGOS_Permission_Resolver";
-import {
-  downloadAssetCSVTemplate,
-  exportCSVReportFile,
-  readCSVFile,
-  validateImportedAssetRows,
-} from "./services/ARGOS_CSV_Data_Management_Service";
+import { exportCSVReportFile } from "./services/ARGOS_CSV_Data_Management_Service";
+import useARGOSCSVImportWorkflow from "./hooks/ARGOS_Use_CSV_Import_Workflow";
 import {
   calculateDaysDown,
   calculateFinalDaysDown,
@@ -184,8 +181,6 @@ function App() {
     details: "",
   });
   const [reportSort, setReportSort] = useState({ key: "currentUnits", direction: "desc" });
-  const [importStatus, setImportStatus] = useState("");
-  const csvInputRef = useRef(null);
   const vinScannerVideoRef = useRef(null);
   const vinScannerControlsRef = useRef(null);
   const vinScanLockedRef = useRef(false);
@@ -1261,6 +1256,16 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     ) || null;
   }
 
+  const csvImportWorkflow = useARGOSCSVImportWorkflow({
+    assets,
+    setAssets,
+    organizationId,
+    isDemoMode,
+    statusOptions,
+    resolveDepartment: resolveDepartmentValue,
+    onImportComplete: () => setActiveView("data-management"),
+  });
+
   function applyStatusChange(currentAsset, newStatus) {
     const wasReady = currentAsset.status === "Ready";
     const isNowReady = newStatus === "Ready";
@@ -1906,116 +1911,14 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
   setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 }
 
-  function handleDownloadCSVTemplate() {
-    downloadAssetCSVTemplate();
-  }
-
-  function handleImportCSV(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    readCSVFile(file)
-      .then(async (rows) => {
-        const { validImportedAssets, rejectedRows } = validateImportedAssetRows({
-          rows,
-          existingAssets: assets,
-          normalizeRow: (row) => normalizeImportedAsset(row, statusOptions),
-          resolveDepartment: resolveDepartmentValue,
-        });
-
-      if (validImportedAssets.length === 0) {
-        if (rejectedRows.length === 0) {
-          setImportStatus("No asset rows were found in that CSV file.");
-        } else {
-          setImportStatus(
-            `Imported 0 assets. Rejected ${rejectedRows.length} row${
-              rejectedRows.length === 1 ? "" : "s"
-            }: ${rejectedRows.join(" | ")}`
-          );
-        }
-
-        event.target.value = "";
-        return;
-      }
-
-      if (isDemoMode) {
-        setAssets((currentAssets) => [...currentAssets, ...validImportedAssets]);
-        setActiveView("command");
-        setImportStatus(
-          `Imported ${validImportedAssets.length} temporary demo asset${validImportedAssets.length === 1 ? "" : "s"}. These changes will disappear when the demo is exited or refreshed.${rejectedRows.length > 0 ? ` Rejected ${rejectedRows.length} row${rejectedRows.length === 1 ? "" : "s"}: ${rejectedRows.join(" | ")}` : ""}`
-        );
-        event.target.value = "";
-        return;
-      }
-
-      const cloudRows = validImportedAssets.map((asset) => ({
-        organization_id: organizationId,
-        unit: asset.unit,
-        vin: asset.vin,
-        department: asset.department,
-        department_id: asset.departmentId,
-        asset: asset.asset,
-        status: asset.status,
-        status_started_at: asset.statusStartedAt,
-        reason: asset.reason,
-        priority: asset.priority,
-        down_since: asset.downSince,
-        technician: asset.technician,
-        rts_type: asset.rtsType,
-        rts_date: asset.rtsDate,
-        details: asset.details,
-      }));
-
-      const { data, error } = await supabase
-        .from("assets")
-        .insert(cloudRows)
-        .select();
-
-      if (error) {
-        console.error("ARGOS cloud CSV import failed:", error);
-        setImportStatus("ARGOS could not save the valid CSV assets to the cloud.");
-        event.target.value = "";
-        return;
-      }
-
-      const savedImportedAssets = (data || []).map(mapSupabaseAsset);
-
-      setAssets((currentAssets) => [...currentAssets, ...savedImportedAssets]);
-      setActiveView("command");
-
-      if (rejectedRows.length > 0) {
-        setImportStatus(
-          `Imported ${savedImportedAssets.length} asset${
-            savedImportedAssets.length === 1 ? "" : "s"
-          }. Rejected ${rejectedRows.length} row${
-            rejectedRows.length === 1 ? "" : "s"
-          }: ${rejectedRows.join(" | ")}`
-        );
-      } else {
-        setImportStatus(
-          `Imported ${savedImportedAssets.length} asset${
-            savedImportedAssets.length === 1 ? "" : "s"
-          } successfully.`
-        );
-      }
-
-        event.target.value = "";
-      })
-      .catch((error) => {
-        console.error("ARGOS CSV file read failed:", error);
-        setImportStatus("ARGOS could not read that CSV file. Please try again.");
-        event.target.value = "";
-      });
-  }
-
   function exportCSVReport(filename, columns, rows, emptyMessage, successMessage) {
     if (rows.length === 0) {
-      setImportStatus(emptyMessage);
+      csvImportWorkflow.setImportStatus(emptyMessage);
       return;
     }
 
     exportCSVReportFile({ filename, columns, rows });
-    setImportStatus(successMessage);
+    csvImportWorkflow.setImportStatus(successMessage);
   }
 
   function handleExportUnitsDown() {
@@ -2769,7 +2672,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     setNewAsset(null);
     setFleetSearch("");
     setFleetStatusFilter("All Statuses");
-    setImportStatus("");
+    csvImportWorkflow.resetPreview();
     setActiveView("command");
   }
 
@@ -3201,17 +3104,12 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
             statusConfigurations={statusConfigurations}
             organizationName={organizationProfile?.fleet_name || organizationProfile?.name || "Fleet Services"}
             selectedAsset={selectedAsset}
-            importStatus={importStatus}
-            csvInputRef={csvInputRef}
             onAddAsset={() => {
               setSelectedAsset(null);
               setEditAsset(null);
               setNewAsset(createBlankAsset());
               setActiveView("command");
             }}
-            onDownloadCSVTemplate={handleDownloadCSVTemplate}
-            onImportCSV={handleImportCSV}
-            onSelectCSV={() => csvInputRef.current?.click()}
             onSelectAsset={handleSelectAsset}
             getStatusClass={getStatusClass}
             calculateDaysDown={calculateDaysDown}
@@ -3553,6 +3451,14 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
               </div>
             </section>
           </section>
+        )}
+
+
+        {activeView === "data-management" && (
+          <ARGOSDataManagementModule
+            csvImport={csvImportWorkflow}
+            isDemoMode={isDemoMode}
+          />
         )}
 
 

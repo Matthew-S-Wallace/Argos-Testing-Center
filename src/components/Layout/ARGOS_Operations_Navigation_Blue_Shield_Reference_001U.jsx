@@ -13,6 +13,7 @@ import {
   CarFront,
   ChevronDown,
   ClipboardList,
+  Database,
   Gauge,
   History,
   LogOut,
@@ -36,6 +37,7 @@ const NAVIGATION_ITEMS = [
   { id: "history", label: "Repair History", icon: History },
   { id: "technicians", label: "Technicians", icon: Users },
   { id: "reports", label: "Reports", icon: BarChart3 },
+  { id: "data-management", label: "Data Management", icon: Database },
 ];
 
 function formatRoleLabel(role) {

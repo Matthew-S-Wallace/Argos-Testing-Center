@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   ClipboardList,
   Clock3,
-  Download,
   Flag,
   Gauge,
   HeartPulse,
@@ -20,7 +19,6 @@ import {
   Plus,
   ShieldCheck,
   TimerReset,
-  Upload,
   UserX,
   UsersRound,
   Wrench,
@@ -98,12 +96,7 @@ export default function CommandCenter({
   statusConfigurations = [],
   organizationName,
   selectedAsset,
-  importStatus,
-  csvInputRef,
   onAddAsset,
-  onDownloadCSVTemplate,
-  onImportCSV,
-  onSelectCSV,
   onSelectAsset,
   getStatusClass,
   calculateDaysDown,
@@ -457,14 +450,9 @@ export default function CommandCenter({
             <h3>Assets Requiring Visibility</h3>
           </div>
           <div className="argos-command-board-actions">
-            <button type="button" onClick={onAddAsset}><Plus size={15} strokeWidth={2.2} /> Add Asset</button>{" "}
-            <button type="button" onClick={onDownloadCSVTemplate}><Download size={15} strokeWidth={2.2} /> Download CSV Template</button>{" "}
-            <input ref={csvInputRef} type="file" accept=".csv,text/csv" onChange={onImportCSV} style={{ display: "none" }} />
-            <button type="button" onClick={onSelectCSV}><Upload size={15} strokeWidth={2.2} /> Import CSV</button>{" "}
+            <button type="button" onClick={onAddAsset}><Plus size={15} strokeWidth={2.2} /> Add Asset</button>
           </div>
         </div>
-
-        {importStatus && <p className="eyebrow">{importStatus}</p>}
 
         <div className="argos-command-table-scroll">
           <table>
