@@ -13,6 +13,23 @@ import {
   readCSVFile,
   validateImportedAssetRows,
 } from "./services/ARGOS_CSV_Data_Management_Service";
+import {
+  calculateDaysDown,
+  calculateFinalDaysDown,
+  calculateStatusDurationDays,
+  formatDate,
+  formatRTS,
+  formatStatusDuration,
+  getFieldGreeting,
+  getTodayDateString,
+  isSameLocalCalendarDate,
+} from "./services/ARGOS_Date_Time_Service";
+import {
+  filterAndSortFleetAssets,
+  hasActiveFleetColumnFilters,
+  sortReportRows,
+} from "./services/ARGOS_Filtering_Search_Service";
+import { validateAssetRecord } from "./services/ARGOS_Asset_Validation_Service";
 import "./App.css";
 
 
@@ -78,83 +95,11 @@ function findOptionMatch(value, options) {
   return options.find((option) => option.toLowerCase() === cleanedValue);
 }
 
-function formatDate(dateString) {
-  if (!dateString) return "—";
 
-  const date = new Date(`${dateString}T00:00:00`);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
-function parseStatusDateTime(value) {
-  if (!value) return null;
 
-  const stringValue = String(value);
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(stringValue)
-    ? new Date(`${stringValue}T00:00:00`)
-    : new Date(stringValue);
 
-  return Number.isNaN(date.getTime()) ? null : date;
-}
 
-function calculateStatusDurationDays(startDate, endDate) {
-  const start = parseStatusDateTime(startDate);
-  const end = parseStatusDateTime(endDate);
-
-  if (!start || !end) return 0;
-
-  const millisecondsPerDay = 1000 * 60 * 60 * 24;
-  return Math.max(0, (end.getTime() - start.getTime()) / millisecondsPerDay);
-}
-
-function formatStatusDuration(durationDays) {
-  const totalMinutes = Math.max(0, Math.round(Number(durationDays || 0) * 24 * 60));
-  const days = Math.floor(totalMinutes / (24 * 60));
-  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
-  const minutes = totalMinutes % 60;
-
-  if (days > 0) {
-    const parts = [`${days} day${days === 1 ? "" : "s"}`];
-    if (hours > 0) parts.push(`${hours} hour${hours === 1 ? "" : "s"}`);
-    if (minutes > 0) parts.push(`${minutes} minute${minutes === 1 ? "" : "s"}`);
-    return parts.join(" ");
-  }
-
-  if (hours > 0) {
-    const parts = [`${hours} hour${hours === 1 ? "" : "s"}`];
-    if (minutes > 0) parts.push(`${minutes} minute${minutes === 1 ? "" : "s"}`);
-    return parts.join(" ");
-  }
-
-  return `${totalMinutes} minute${totalMinutes === 1 ? "" : "s"}`;
-}
-
-function calculateDaysDown(downSince, status) {
-  if (status === "Ready" || !downSince) return 0;
-
-  const downDate = new Date(`${downSince}T00:00:00`);
-  const today = new Date();
-
-  today.setHours(0, 0, 0, 0);
-
-  const millisecondsPerDay = 1000 * 60 * 60 * 24;
-  return Math.max(0, Math.floor((today.getTime() - downDate.getTime()) / millisecondsPerDay));
-}
-
-function calculateFinalDaysDown(downSince) {
-  if (!downSince) return 0;
-
-  const downDate = new Date(`${downSince}T00:00:00`);
-  const today = new Date();
-
-  today.setHours(0, 0, 0, 0);
-
-  const millisecondsPerDay = 1000 * 60 * 60 * 24;
-  return Math.max(0, Math.floor((today.getTime() - downDate.getTime()) / millisecondsPerDay));
-}
 
 function getStatusClass(status) {
   return String(status || "Ready").toLowerCase().replaceAll(" ", "-").replaceAll("/", "");
@@ -241,20 +186,6 @@ async function decodeVinVehicleInformation(vin) {
   }
 }
 
-function formatRTS(asset) {
-  if (asset.rtsType === "TBD") return "TBD";
-  if (asset.rtsType === "No RTS Established") return "—";
-
-  if (asset.rtsType === "Estimated Date" && asset.rtsDate) {
-    const date = new Date(`${asset.rtsDate}T00:00:00`);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-  }
-
-  return "—";
-}
 
 const initialAssets = [
   {
@@ -891,18 +822,6 @@ function createStatusHistoryEvent(previousAsset, updatedAsset, statusHistoryEven
   };
 }
 
-function isSameLocalCalendarDate(value, comparisonDate = new Date()) {
-  if (!value) return false;
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return false;
-
-  return (
-    date.getFullYear() === comparisonDate.getFullYear() &&
-    date.getMonth() === comparisonDate.getMonth() &&
-    date.getDate() === comparisonDate.getDate()
-  );
-}
 
 function buildTechnicianDailySummary({
   assets,
@@ -1934,7 +1853,6 @@ useEffect(() => {
   const statusOptions = statusConfigurations.map((status) => status.status_name);
   const activeBoardAssets = assets.filter((asset) => asset.status !== "Ready");
   const readyArchiveAssets = assets.filter((asset) => asset.status === "Ready");
-  const normalizedFleetSearch = fleetSearch.trim().toLowerCase();
   const signedInTechnicianName = normalizeTechnicianDisplayName(
     profile?.full_name || session?.user?.user_metadata?.full_name || ""
   );
@@ -1956,7 +1874,7 @@ useEffect(() => {
   const unitsAwaitingMeAssets = assignedToMeAssets.filter((asset) => asset.status !== "Ready");
   const awaitingQcAssets = activeBoardAssets.filter((asset) => asset.status === "Awaiting QC");
   const readyForPickupAssets = activeBoardAssets.filter((asset) => asset.status === "Ready for Pickup");
-  const hasFleetColumnFilters = Object.values(fleetColumnFilters).some((value) => value.trim());
+  const hasFleetColumnFilters = hasActiveFleetColumnFilters(fleetColumnFilters);
 
   const updateFleetColumnFilter = (key, value) => {
     setFleetColumnFilters((currentFilters) => ({
@@ -1989,35 +1907,15 @@ useEffect(() => {
     }));
   };
 
-  const filteredFleetAssets = [...assets]
-    .filter((asset) => {
-      const matchesUnitSearch =
-        !normalizedFleetSearch ||
-        String(asset.unit || "").toLowerCase().includes(normalizedFleetSearch);
-      const matchesStatusFilter =
-        fleetStatusFilter === "All Statuses" || asset.status === fleetStatusFilter;
-      const matchesFieldQueue =
-        fieldQueueMode === "all" ||
-        (fieldQueueMode === "assigned" && isAssignedToSignedInTechnician(asset)) ||
-        (fieldQueueMode === "awaiting" && isAssignedToSignedInTechnician(asset) && asset.status !== "Ready");
-      const matchesColumnFilters = Object.entries(fleetColumnFilters).every(([key, value]) => {
-        const normalizedFilter = value.trim().toLowerCase();
-        if (!normalizedFilter) return true;
-        return String(asset[key] || "").toLowerCase().includes(normalizedFilter);
-      });
-
-      return matchesUnitSearch && matchesStatusFilter && matchesFieldQueue && matchesColumnFilters;
-    })
-    .sort((firstAsset, secondAsset) => {
-      const firstValue = String(firstAsset[fleetSort.key] || "");
-      const secondValue = String(secondAsset[fleetSort.key] || "");
-      const comparison = firstValue.localeCompare(secondValue, undefined, {
-        numeric: true,
-        sensitivity: "base",
-      });
-
-      return fleetSort.direction === "asc" ? comparison : -comparison;
-    });
+  const filteredFleetAssets = filterAndSortFleetAssets({
+    assets,
+    fleetSearch,
+    fleetStatusFilter,
+    fieldQueueMode,
+    fleetColumnFilters,
+    fleetSort,
+    isAssignedToTechnician: isAssignedToSignedInTechnician,
+  });
 
 const validCompletedRepairEvents = completedRepairEvents.filter(
   (event) => event.status && event.status !== "Ready" && (event.finalStatus || "Ready") === "Ready"
@@ -2068,24 +1966,7 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
   const technicianAnalytics = buildTechnicianAnalytics(assets, completedRepairRecords);
 
   const statusDurationAnalytics = buildStatusDurationAnalytics(assets, statusHistoryEvents, statusOptions);
-  const reportRows = [...statusDurationAnalytics.rows]
-    .sort((firstRow, secondRow) => {
-      const numericSortKeys = {
-        currentUnits: "currentUnits",
-        completedStatusEvents: "completedStatusEvents",
-        averageDuration: "averageDurationDays",
-        longestDuration: "longestDurationDays",
-        percentageOfRecordedDowntime: "percentageOfRecordedDowntime",
-      };
-      const sortKey = numericSortKeys[reportSort.key] || reportSort.key;
-      const firstValue = firstRow[sortKey];
-      const secondValue = secondRow[sortKey];
-      const comparison =
-        typeof firstValue === "number" || !Number.isNaN(Number(firstValue))
-          ? Number(firstValue) - Number(secondValue)
-          : String(firstValue || "").localeCompare(String(secondValue || ""));
-      return reportSort.direction === "asc" ? comparison : -comparison;
-    });
+  const reportRows = sortReportRows(statusDurationAnalytics.rows, reportSort);
 
   function handleReportSort(key) {
     setReportSort((currentSort) => ({
@@ -2411,38 +2292,15 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
   }
 
   function validateAsset(updatedAsset, originalUnit = "", originalVin = "") {
-    if (
-      !updatedAsset.unit ||
-      !updatedAsset.departmentId ||
-      !updatedAsset.department ||
-      !updatedAsset.assetTypeId ||
-      !updatedAsset.asset
-    ) {
-      alert("Unit, Department, Asset Type, and Asset Description are required.");
-      return false;
-    }
+    const validationResult = validateAssetRecord({
+      updatedAsset,
+      assets,
+      originalUnit,
+      originalVin,
+    });
 
-    const unitAlreadyExists = assets.some(
-      (asset) =>
-        asset.unit.toLowerCase() !== originalUnit.toLowerCase() &&
-        asset.unit.toLowerCase() === updatedAsset.unit.toLowerCase()
-    );
-
-    if (unitAlreadyExists) {
-      alert("That unit number already exists in ARGOS.");
-      return false;
-    }
-
-    const vinAlreadyExists =
-      updatedAsset.vin &&
-      assets.some(
-        (asset) =>
-          (asset.vin || "").toLowerCase() !== originalVin.toLowerCase() &&
-          (asset.vin || "").toLowerCase() === updatedAsset.vin.toLowerCase()
-      );
-
-    if (vinAlreadyExists) {
-      alert("That VIN already exists in ARGOS.");
+    if (!validationResult.isValid) {
+      alert(validationResult.message);
       return false;
     }
 

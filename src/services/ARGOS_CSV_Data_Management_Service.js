@@ -1,3 +1,5 @@
+import { downloadFile } from "./ARGOS_File_Download_Service";
+
 const ASSET_CSV_COLUMNS = [
   "unit",
   "vin",
@@ -25,19 +27,6 @@ function escapeCSVValue(value) {
   }
 
   return stringValue;
-}
-
-function downloadFile(filename, content, type = "text/csv;charset=utf-8") {
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }
 
 function parseCSVLine(line) {
@@ -120,17 +109,13 @@ export function validateImportedAssetRows({
   resolveDepartment,
 }) {
   const existingUnits = new Set(
-    (existingAssets || []).map((asset) =>
-      String(asset.unit || "").toLowerCase()
-    )
+    (existingAssets || []).map((asset) => String(asset.unit || "").toLowerCase())
   );
-
   const existingVins = new Set(
     (existingAssets || [])
       .map((asset) => String(asset.vin || "").toLowerCase())
       .filter(Boolean)
   );
-
   const importedUnits = new Set();
   const importedVins = new Set();
   const validImportedAssets = [];
@@ -144,9 +129,7 @@ export function validateImportedAssetRows({
     const unitKey = String(importedAsset.unit || "").toLowerCase();
     const vinKey = String(importedAsset.vin || "").toLowerCase();
 
-    if (!importedAsset.unit) {
-      rowErrors.push("missing Unit");
-    }
+    if (!importedAsset.unit) rowErrors.push("missing Unit");
 
     if (!importedAsset.department) {
       rowErrors.push("missing Department");
@@ -156,25 +139,11 @@ export function validateImportedAssetRows({
       );
     }
 
-    if (!importedAsset.asset) {
-      rowErrors.push("missing Asset");
-    }
-
-    if (unitKey && existingUnits.has(unitKey)) {
-      rowErrors.push("duplicate Unit already exists");
-    }
-
-    if (unitKey && importedUnits.has(unitKey)) {
-      rowErrors.push("duplicate Unit inside CSV");
-    }
-
-    if (vinKey && existingVins.has(vinKey)) {
-      rowErrors.push("duplicate VIN already exists");
-    }
-
-    if (vinKey && importedVins.has(vinKey)) {
-      rowErrors.push("duplicate VIN inside CSV");
-    }
+    if (!importedAsset.asset) rowErrors.push("missing Asset");
+    if (unitKey && existingUnits.has(unitKey)) rowErrors.push("duplicate Unit already exists");
+    if (unitKey && importedUnits.has(unitKey)) rowErrors.push("duplicate Unit inside CSV");
+    if (vinKey && existingVins.has(vinKey)) rowErrors.push("duplicate VIN already exists");
+    if (vinKey && importedVins.has(vinKey)) rowErrors.push("duplicate VIN inside CSV");
 
     if (rowErrors.length > 0) {
       rejectedRows.push(`Row ${rowNumber}: ${rowErrors.join(", ")}`);
@@ -182,10 +151,7 @@ export function validateImportedAssetRows({
     }
 
     importedUnits.add(unitKey);
-
-    if (vinKey) {
-      importedVins.add(vinKey);
-    }
+    if (vinKey) importedVins.add(vinKey);
 
     validImportedAssets.push({
       ...importedAsset,
@@ -194,10 +160,7 @@ export function validateImportedAssetRows({
     });
   });
 
-  return {
-    validImportedAssets,
-    rejectedRows,
-  };
+  return { validImportedAssets, rejectedRows };
 }
 
 export function downloadAssetCSVTemplate() {
@@ -218,24 +181,15 @@ export function downloadAssetCSVTemplate() {
 
   const csvContent = [
     ASSET_CSV_COLUMNS.join(","),
-    ASSET_CSV_COLUMNS.map((column) =>
-      escapeCSVValue(exampleRow[column])
-    ).join(","),
+    ASSET_CSV_COLUMNS.map((column) => escapeCSVValue(exampleRow[column])).join(","),
   ].join("\n");
 
   downloadFile("argos-csv-template.csv", `\uFEFF${csvContent}`);
 }
 
-export function exportCSVReportFile({
-  filename,
-  columns,
-  rows,
-}) {
+export function exportCSVReportFile({ filename, columns, rows }) {
   const csvContent = [
-    columns
-      .map((column) => escapeCSVValue(column.header))
-      .join(","),
-
+    columns.map((column) => escapeCSVValue(column.header)).join(","),
     ...rows.map((row) =>
       columns
         .map((column) => {
