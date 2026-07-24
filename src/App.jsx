@@ -76,7 +76,15 @@ import "./App.css";
 function getStatusClass(status) {
   return String(status || "Ready").toLowerCase().replaceAll(" ", "-").replaceAll("/", "");
 }
-
+function normalizeDepartmentLookupValue(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 const DEMO_DEPARTMENTS = [
   { id: "demo-public-works", department_name: "Public Works", department_code: "PW", is_active: true },
@@ -1260,6 +1268,12 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     assets,
     setAssets,
     organizationId,
+    importedByUserId: session?.user?.id || null,
+    importedByName:
+      profile?.full_name ||
+      session?.user?.user_metadata?.full_name ||
+      session?.user?.email ||
+      "Unknown User",
     isDemoMode,
     statusOptions,
     resolveDepartment: resolveDepartmentValue,

@@ -9,6 +9,7 @@ import {
   FileUp,
   Filter,
   LoaderCircle,
+  RefreshCw,
   Upload,
 } from "lucide-react";
 import { exportCSVReportFile } from "../../services/ARGOS_CSV_Data_Management_Service";
@@ -155,7 +156,7 @@ export default function ARGOSDataManagementModule({
         <div className="argos-data-management__status-card">
           <Database size={22} strokeWidth={1.9} aria-hidden="true" />
           <span>Workspace</span>
-          <strong>Sprint 001AE</strong>
+          <strong>Sprint 001AF</strong>
         </div>
       </header>
 
@@ -550,13 +551,139 @@ export default function ARGOSDataManagementModule({
           )}
 
           {activeTab === "history" && (
-            <PlaceholderPanel
-              eyebrow="Import Accountability"
-              title="Import History"
-              description="Organization-scoped import records and outcomes will be implemented during Sprint 001AD.5."
-              phase="Sprint 001AD.5"
-              icon={FileClock}
-            />
+            <section
+              className="argos-data-management__panel"
+              aria-labelledby="csv-import-history-title"
+            >
+              <div className="argos-data-management__panel-heading">
+                <div>
+                  <p className="eyebrow">Import Accountability</p>
+                  <h3 id="csv-import-history-title">Import History</h3>
+                  <p>
+                    Review organization-scoped CSV import activity, outcomes, users, and
+                    rejected-row records.
+                  </p>
+                </div>
+                <span className="argos-data-management__phase">Operational</span>
+              </div>
+
+              <div className="argos-data-management__history-toolbar">
+                <div>
+                  <strong>{csvImport?.importHistory?.length || 0} recorded imports</strong>
+                  <span>Up to the 250 most recent imports are displayed.</span>
+                </div>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={csvImport?.loadImportHistory}
+                  disabled={csvImport?.importHistoryLoading}
+                >
+                  <RefreshCw
+                    size={17}
+                    className={
+                      csvImport?.importHistoryLoading
+                        ? "argos-data-management__spinner"
+                        : undefined
+                    }
+                    aria-hidden="true"
+                  />
+                  {csvImport?.importHistoryLoading ? "Refreshing…" : "Refresh History"}
+                </button>
+              </div>
+
+              {csvImport?.importHistoryError && (
+                <div className="argos-data-management__result is-error" role="alert">
+                  <AlertTriangle size={19} aria-hidden="true" />
+                  <div>
+                    <strong>Import History Unavailable</strong>
+                    <p>{csvImport.importHistoryError}</p>
+                  </div>
+                </div>
+              )}
+
+              {!csvImport?.importHistoryLoading &&
+                !csvImport?.importHistoryError &&
+                !(csvImport?.importHistory || []).length && (
+                  <div className="argos-data-management__history-empty">
+                    <FileClock size={34} strokeWidth={1.7} aria-hidden="true" />
+                    <h4>No import history yet</h4>
+                    <p>
+                      Successful CSV imports completed after Sprint 001AF will appear here.
+                    </p>
+                  </div>
+                )}
+
+              {(csvImport?.importHistory || []).length > 0 && (
+                <div className="argos-data-management__table-scroll argos-data-management__history-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Date &amp; Time</th>
+                        <th>File</th>
+                        <th>Imported By</th>
+                        <th>Total</th>
+                        <th>Imported</th>
+                        <th>Rejected</th>
+                        <th>Duplicates</th>
+                        <th>Outcome</th>
+                        <th>Rejected Report</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {csvImport.importHistory.map((record) => (
+                        <tr key={record.id}>
+                          <td>
+                            {record.createdAt
+                              ? new Intl.DateTimeFormat("en-US", {
+                                  dateStyle: "medium",
+                                  timeStyle: "short",
+                                }).format(new Date(record.createdAt))
+                              : "—"}
+                          </td>
+                          <td className="argos-data-management__history-file">
+                            {record.fileName}
+                          </td>
+                          <td>{record.importedByName || "Unknown User"}</td>
+                          <td>{record.totalRows}</td>
+                          <td>{record.importedRows}</td>
+                          <td>{record.rejectedRows}</td>
+                          <td>{record.duplicateRows}</td>
+                          <td>
+                            <span
+                              className={`argos-data-management__history-outcome ${
+                                record.rejectedRows > 0
+                                  ? "has-rejections"
+                                  : "is-complete"
+                              }`}
+                            >
+                              {record.rejectedRows > 0
+                                ? "Completed with Rejections"
+                                : "Completed"}
+                            </span>
+                          </td>
+                          <td>
+                            {record.rejectedRows > 0 ? (
+                              <button
+                                type="button"
+                                className="secondary argos-data-management__history-download"
+                                onClick={() =>
+                                  csvImport?.downloadHistoryRejectedRows(record)
+                                }
+                              >
+                                <Download size={15} aria-hidden="true" />
+                                Download
+                              </button>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
           )}
 
           {activeTab === "archived" && (
