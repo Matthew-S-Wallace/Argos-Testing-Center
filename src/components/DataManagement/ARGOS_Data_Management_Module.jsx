@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   Archive,
@@ -8,11 +8,20 @@ import {
   FileClock,
   FileUp,
   Filter,
+  Eye,
   LoaderCircle,
   RefreshCw,
+  RotateCcw,
+  Search,
   Upload,
+  X,
 } from "lucide-react";
 import { exportCSVReportFile } from "../../services/ARGOS_CSV_Data_Management_Service";
+import {
+  loadAssetLifecycleHistory,
+  restoreOperationalAsset,
+  summarizeAssetLifecycle,
+} from "../../services/ARGOS_Asset_Lifecycle_Service";
 import "./ARGOS_Data_Management_Module.css";
 
 const DATA_MANAGEMENT_TABS = [
@@ -71,6 +80,9 @@ function createExportFilename(scope) {
 export default function ARGOSDataManagementModule({
   csvImport,
   assets = [],
+  organizationId = "",
+  canManageAssets = false,
+  onAssetRestored,
   isDemoMode = false,
 }) {
   const [activeTab, setActiveTab] = useState("import");
@@ -78,6 +90,14 @@ export default function ARGOSDataManagementModule({
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [exportStatus, setExportStatus] = useState("");
+  const [archivedAssets, setArchivedAssets] = useState([]);
+  const [archiveLoading, setArchiveLoading] = useState(false);
+  const [archiveError, setArchiveError] = useState("");
+  const [archiveStatus, setArchiveStatus] = useState("");
+  const [archiveSearch, setArchiveSearch] = useState("");
+  const [archiveLifecycleFilter, setArchiveLifecycleFilter] = useState("archived");
+  const [selectedArchivedAsset, setSelectedArchivedAsset] = useState(null);
+  const [restoringArchiveId, setRestoringArchiveId] = useState("");
 
   const previewRows = csvImport?.previewAssets || [];
   const rejectedRows = csvImport?.rejectedRows || [];
@@ -144,6 +164,96 @@ export default function ARGOSDataManagementModule({
     setDepartmentFilter("all");
     setStatusFilter("all");
     setExportStatus("");
+  };
+
+  const loadArchivedAssets = async () => {
+    if (!organizationId || isDemoMode) {
+      setArchivedAssets([]);
+      setArchiveError("");
+      return;
+    }
+
+    setArchiveLoading(true);
+    setArchiveError("");
+
+    try {
+      const records = await loadAssetLifecycleHistory(organizationId);
+      setArchivedAssets(records);
+    } catch (error) {
+      console.error("ARGOS archived assets load failed:", error);
+      setArchiveError(error?.message || "ARGOS could not load archived assets.");
+    } finally {
+      setArchiveLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "archived") {
+      loadArchivedAssets();
+    }
+  }, [activeTab, organizationId, isDemoMode]);
+
+  const archiveSummary = useMemo(
+    () => summarizeAssetLifecycle(archivedAssets),
+    [archivedAssets]
+  );
+
+  const filteredArchivedAssets = useMemo(() => {
+    const searchValue = normalizeText(archiveSearch);
+
+    return archivedAssets.filter((record) => {
+      const lifecycleMatches =
+        archiveLifecycleFilter === "all" ||
+        (archiveLifecycleFilter === "archived" && !record.restoredAt) ||
+        (archiveLifecycleFilter === "restored" && Boolean(record.restoredAt));
+
+      if (!lifecycleMatches) return false;
+      if (!searchValue) return true;
+
+      return [
+        record.unit,
+        record.vin,
+        record.asset,
+        record.department,
+        record.archiveReason,
+      ].some((value) => normalizeText(value).includes(searchValue));
+    });
+  }, [archivedAssets, archiveLifecycleFilter, archiveSearch]);
+
+  const handleRestoreArchivedAsset = async (record) => {
+    if (!record || record.restoredAt || restoringArchiveId) return;
+
+    if (isDemoMode) {
+      setArchiveStatus("Asset restoration is disabled in the public demo.");
+      return;
+    }
+
+    if (!canManageAssets) {
+      setArchiveStatus("Administrator or Manager access is required to restore assets.");
+      return;
+    }
+
+    const shouldRestore = window.confirm(
+      `Restore Unit ${record.unit}?\n\nThe asset will return to the active fleet. ARGOS will preserve this archive event in lifecycle history.`
+    );
+
+    if (!shouldRestore) return;
+
+    setRestoringArchiveId(record.id);
+    setArchiveStatus("");
+
+    try {
+      const restoredAsset = await restoreOperationalAsset(record.id);
+      onAssetRestored?.(restoredAsset);
+      await loadArchivedAssets();
+      setSelectedArchivedAsset(null);
+      setArchiveStatus(`Unit ${record.unit} was restored successfully.`);
+    } catch (error) {
+      console.error("ARGOS asset restore failed:", error);
+      setArchiveStatus(error?.message || "ARGOS could not restore this asset.");
+    } finally {
+      setRestoringArchiveId("");
+    }
   };
 
   return (
@@ -687,18 +797,208 @@ export default function ARGOSDataManagementModule({
           )}
 
           {activeTab === "archived" && (
-            <PlaceholderPanel
-              eyebrow="Fleet Record Retention"
-              title="Archived Assets"
-              description="Archived asset review and restoration workflows will be implemented during Sprint 001AD.6."
-              phase="Sprint 001AD.6"
-              icon={Archive}
-            />
+            <section
+              className="argos-data-management__panel"
+              aria-labelledby="archived-assets-title"
+            >
+              <div className="argos-data-management__panel-heading">
+                <div>
+                  <p className="eyebrow">Fleet Record Retention</p>
+                  <h3 id="archived-assets-title">Archived Assets</h3>
+                  <p>
+                    Review the permanent asset lifecycle ledger and restore eligible assets
+                    to the active fleet.
+                  </p>
+                </div>
+                <span className="argos-data-management__phase">Operational</span>
+              </div>
+
+              {isDemoMode && (
+                <div className="argos-data-management__notice" role="status">
+                  Archived asset records and restoration are unavailable in the public demo.
+                </div>
+              )}
+
+              <div className="argos-data-management__archive-summary" aria-label="Asset lifecycle summary">
+                <article><span>Currently Archived</span><strong>{archiveSummary.currentlyArchived}</strong></article>
+                <article><span>Restored Events</span><strong>{archiveSummary.restoredEvents}</strong></article>
+                <article><span>Total Lifecycle Events</span><strong>{archiveSummary.totalEvents}</strong></article>
+              </div>
+
+              <div className="argos-data-management__archive-toolbar">
+                <label className="argos-data-management__archive-search">
+                  <span className="sr-only">Search archived assets</span>
+                  <Search size={17} aria-hidden="true" />
+                  <input
+                    type="search"
+                    value={archiveSearch}
+                    onChange={(event) => setArchiveSearch(event.target.value)}
+                    placeholder="Search unit, VIN, asset, department, or reason"
+                  />
+                </label>
+
+                <label>
+                  <span>Lifecycle</span>
+                  <select
+                    value={archiveLifecycleFilter}
+                    onChange={(event) => setArchiveLifecycleFilter(event.target.value)}
+                  >
+                    <option value="archived">Currently Archived</option>
+                    <option value="restored">Restored History</option>
+                    <option value="all">All Events</option>
+                  </select>
+                </label>
+
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={loadArchivedAssets}
+                  disabled={archiveLoading || isDemoMode}
+                >
+                  <RefreshCw
+                    size={17}
+                    className={archiveLoading ? "argos-data-management__spinner" : undefined}
+                    aria-hidden="true"
+                  />
+                  {archiveLoading ? "Refreshing…" : "Refresh"}
+                </button>
+              </div>
+
+              {archiveError && (
+                <div className="argos-data-management__result is-error" role="alert">
+                  <AlertTriangle size={19} aria-hidden="true" />
+                  <div><strong>Archived Assets Unavailable</strong><p>{archiveError}</p></div>
+                </div>
+              )}
+
+              {archiveStatus && (
+                <div className="argos-data-management__result is-neutral" role="status" aria-live="polite">
+                  <CheckCircle2 size={19} aria-hidden="true" />
+                  <div><strong>Asset Lifecycle</strong><p>{archiveStatus}</p></div>
+                </div>
+              )}
+
+              {!archiveLoading && !archiveError && !filteredArchivedAssets.length && (
+                <div className="argos-data-management__history-empty">
+                  <Archive size={34} strokeWidth={1.7} aria-hidden="true" />
+                  <h4>No matching lifecycle records</h4>
+                  <p>Archived assets will appear here after they are removed from the active fleet.</p>
+                </div>
+              )}
+
+              {filteredArchivedAssets.length > 0 && (
+                <div className="argos-data-management__table-scroll argos-data-management__archive-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Unit</th><th>Asset</th><th>Department</th><th>Archived</th>
+                        <th>Reason</th><th>Lifecycle</th><th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredArchivedAssets.map((record) => (
+                        <tr key={record.id}>
+                          <td className="argos-data-management__history-file">{record.unit || "—"}</td>
+                          <td>{record.asset || "—"}</td>
+                          <td>{record.department || "—"}</td>
+                          <td>{formatLifecycleDate(record.archivedAt)}</td>
+                          <td>{record.archiveReason || "—"}</td>
+                          <td>
+                            <span className={`argos-data-management__lifecycle-badge ${record.restoredAt ? "is-restored" : "is-archived"}`}>
+                              {record.restoredAt ? "Restored" : "Archived"}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="argos-data-management__archive-actions">
+                              <button type="button" className="secondary" onClick={() => setSelectedArchivedAsset(record)}>
+                                <Eye size={15} aria-hidden="true" /> View
+                              </button>
+                              {!record.restoredAt && canManageAssets && !isDemoMode && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRestoreArchivedAsset(record)}
+                                  disabled={restoringArchiveId === record.id}
+                                >
+                                  <RotateCcw size={15} aria-hidden="true" />
+                                  {restoringArchiveId === record.id ? "Restoring…" : "Restore"}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
           )}
         </div>
       </div>
+
+      {selectedArchivedAsset && (
+        <div className="argos-data-management__archive-overlay" role="presentation" onMouseDown={() => setSelectedArchivedAsset(null)}>
+          <section
+            className="argos-data-management__archive-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="archived-asset-detail-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header>
+              <div>
+                <p className="eyebrow">Asset Lifecycle Record</p>
+                <h3 id="archived-asset-detail-title">Unit {selectedArchivedAsset.unit || "—"}</h3>
+              </div>
+              <button type="button" className="secondary" onClick={() => setSelectedArchivedAsset(null)} aria-label="Close archive details">
+                <X size={18} aria-hidden="true" />
+              </button>
+            </header>
+
+            <div className="argos-data-management__archive-detail-grid">
+              <div><span>VIN</span><strong>{selectedArchivedAsset.vin || "—"}</strong></div>
+              <div><span>Asset</span><strong>{selectedArchivedAsset.asset || "—"}</strong></div>
+              <div><span>Department</span><strong>{selectedArchivedAsset.department || "—"}</strong></div>
+              <div><span>Lifecycle Status</span><strong>{selectedArchivedAsset.restoredAt ? "Restored" : "Archived"}</strong></div>
+              <div><span>Archived At</span><strong>{formatLifecycleDate(selectedArchivedAsset.archivedAt)}</strong></div>
+              <div><span>Archived By</span><strong>{selectedArchivedAsset.archivedBy || "Recorded User"}</strong></div>
+              <div className="is-wide"><span>Archive Reason</span><strong>{selectedArchivedAsset.archiveReason || "—"}</strong></div>
+              {selectedArchivedAsset.restoredAt && (
+                <>
+                  <div><span>Restored At</span><strong>{formatLifecycleDate(selectedArchivedAsset.restoredAt)}</strong></div>
+                  <div><span>Restored By</span><strong>{selectedArchivedAsset.restoredBy || "Recorded User"}</strong></div>
+                </>
+              )}
+            </div>
+
+            <footer>
+              <button type="button" className="secondary" onClick={() => setSelectedArchivedAsset(null)}>Close</button>
+              {!selectedArchivedAsset.restoredAt && canManageAssets && !isDemoMode && (
+                <button
+                  type="button"
+                  onClick={() => handleRestoreArchivedAsset(selectedArchivedAsset)}
+                  disabled={restoringArchiveId === selectedArchivedAsset.id}
+                >
+                  <RotateCcw size={16} aria-hidden="true" />
+                  {restoringArchiveId === selectedArchivedAsset.id ? "Restoring…" : "Restore Asset"}
+                </button>
+              )}
+            </footer>
+          </section>
+        </div>
+      )}
     </section>
   );
+}
+
+function formatLifecycleDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
 }
 
 function PlaceholderPanel({ eyebrow, title, description, phase, icon: Icon }) {

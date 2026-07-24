@@ -24,6 +24,10 @@ import {
 } from "./services/ARGOS_Filtering_Search_Service";
 import { validateAssetRecord } from "./services/ARGOS_Asset_Validation_Service";
 import {
+  archiveOperationalAsset,
+  loadActiveAssets,
+} from "./services/ARGOS_Asset_Lifecycle_Service";
+import {
   mapSupabaseAsset,
   mapSupabaseRepairHistory,
   mapSupabaseStatusHistory,
@@ -716,24 +720,24 @@ useEffect(() => {
 }, [session, organizationId, isDemoMode]);
 
 useEffect(() => {
-  if (!session || !organizationId) return;
+  let isMounted = true;
+
+  if (!session || !organizationId) return undefined;
 
   async function loadCloudAssets() {
-    const { data, error } = await supabase
-      .from("assets")
-      .select("*, asset_types(asset_type_name), technicians(technician_name)")
-      .eq("organization_id", organizationId)
-      .order("created_at", { ascending: true });
-
-    if (error) {
+    try {
+      const activeAssets = await loadActiveAssets(organizationId);
+      if (isMounted) setAssets(activeAssets);
+    } catch (error) {
       console.error("ARGOS cloud asset load failed:", error);
-      return;
     }
-
-    setAssets((data || []).map(mapSupabaseAsset));
   }
 
   loadCloudAssets();
+
+  return () => {
+    isMounted = false;
+  };
 }, [session, organizationId]);
 
 useEffect(() => {
@@ -1375,6 +1379,61 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
 
   function handleSave() { completeSave(); }
   function handleSaveNewAsset() { completeSaveNewAsset(); }
+
+  async function handleArchiveSelectedAsset() {
+    if (!selectedAsset || !editAsset) return;
+
+    if (isDemoMode) {
+      window.alert("Asset archiving is disabled in the public demo.");
+      return;
+    }
+
+    const assetId = selectedAsset.id || editAsset.id;
+    if (!assetId) {
+      window.alert("ARGOS could not identify this asset for archiving. Refresh the fleet and try again.");
+      return;
+    }
+
+    const archiveReason = window.prompt(
+      `Enter the archive reason for Unit ${selectedAsset.unit}:`,
+      "Retired from service"
+    );
+
+    if (archiveReason === null) return;
+
+    const normalizedArchiveReason = String(archiveReason || "").trim();
+    if (!normalizedArchiveReason) {
+      window.alert("An archive reason is required.");
+      return;
+    }
+
+    const shouldArchive = window.confirm(
+      `Archive Unit ${selectedAsset.unit}?\n\nThis unit will be removed from the active fleet and moved to Archived Assets. This action can be reversed later.`
+    );
+
+    if (!shouldArchive) return;
+
+    try {
+      await archiveOperationalAsset({
+        assetId,
+        archiveReason: normalizedArchiveReason,
+      });
+
+      setAssets((currentAssets) =>
+        currentAssets.filter((asset) =>
+          asset.id ? asset.id !== assetId : asset.unit !== selectedAsset.unit
+        )
+      );
+      setSelectedAsset(null);
+      setEditAsset(null);
+      setFieldScanContext(null);
+      setActiveView("fleet");
+      window.alert(`Unit ${selectedAsset.unit} was archived successfully.`);
+    } catch (error) {
+      console.error("ARGOS asset archive failed:", error);
+      window.alert(error?.message || "ARGOS could not archive this asset.");
+    }
+  }
 
   async function completeSave() {
     fieldSaveCompletedRef.current = false;
@@ -3472,6 +3531,18 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
           <ARGOSDataManagementModule
             csvImport={csvImportWorkflow}
             assets={assets}
+            organizationId={organizationId}
+            canManageAssets={hasAdministrationAccess}
+            onAssetRestored={(restoredAsset) => {
+              setAssets((currentAssets) => {
+                const restoredId = restoredAsset?.id;
+                const restoredUnit = restoredAsset?.unit;
+                const alreadyPresent = currentAssets.some((asset) =>
+                  restoredId ? asset.id === restoredId : asset.unit === restoredUnit
+                );
+                return alreadyPresent ? currentAssets : [...currentAssets, restoredAsset];
+              });
+            }}
             isDemoMode={isDemoMode}
           />
         )}
@@ -3896,6 +3967,16 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                     type="button"
                   >
                     Save & Scan Next
+                  </button>
+                )}
+
+                {hasAdministrationAccess && !isDemoMode && (
+                  <button
+                    className="cancel-button"
+                    onClick={handleArchiveSelectedAsset}
+                    type="button"
+                  >
+                    Archive Asset
                   </button>
                 )}
 

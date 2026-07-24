@@ -26,6 +26,9 @@ function normalizeArchiveRecord(row) {
     archiveReason: row.archive_reason || "",
     archivedAt: row.archived_at,
     archivedBy: row.archived_by,
+    restoredAt: row.restored_at || null,
+    restoredBy: row.restored_by || null,
+    lifecycleStatus: row.restored_at ? "Restored" : "Archived",
     snapshot: row.asset_snapshot || {},
   };
 }
@@ -85,6 +88,8 @@ export async function listArchivedAssets(organizationId) {
         archive_reason,
         archived_at,
         archived_by,
+        restored_at,
+        restored_by,
         asset_snapshot
       `
     )
