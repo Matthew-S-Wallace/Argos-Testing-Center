@@ -16,13 +16,9 @@ import {
 import {
   calculateDaysDown,
   calculateFinalDaysDown,
-  calculateStatusDurationDays,
-  formatDate,
   formatRTS,
-  formatStatusDuration,
   getFieldGreeting,
   getTodayDateString,
-  isSameLocalCalendarDate,
 } from "./services/ARGOS_Date_Time_Service";
 import {
   filterAndSortFleetAssets,
@@ -30,74 +26,53 @@ import {
   sortReportRows,
 } from "./services/ARGOS_Filtering_Search_Service";
 import { validateAssetRecord } from "./services/ARGOS_Asset_Validation_Service";
+import {
+  mapSupabaseAsset,
+  mapSupabaseRepairHistory,
+  mapSupabaseStatusHistory,
+} from "./services/ARGOS_Supabase_Mapping_Service";
+import {
+  createStatusHistoryEvent,
+  loadStatusHistoryEvents,
+  saveStatusHistoryEvents,
+} from "./services/ARGOS_Status_History_Service";
+import {
+  buildDailySummary,
+  buildStatusDurationAnalytics,
+  buildTechnicianAnalytics,
+  buildTechnicianDailySummary,
+} from "./services/ARGOS_Analytics_Service";
+import {
+  loadActiveView,
+  loadCompletedRepairEvents,
+  loadSavedAssets,
+  saveActiveView,
+  saveCompletedRepairEvents,
+  saveSavedAssets,
+} from "./services/ARGOS_Local_Storage_Service";
+import {
+  FALLBACK_STATUS_CONFIGURATIONS,
+  PRIORITY_OPTIONS,
+  REASON_OPTIONS,
+  RTS_TYPE_OPTIONS,
+  createBlankAsset,
+  findDepartmentByName,
+  normalizeAsset,
+  normalizeCompletedRepairEvent,
+  normalizeImportedAsset,
+  normalizeTechnicianDisplayName,
+  normalizeTechnicianKey,
+} from "./services/ARGOS_Asset_Normalization_Service";
+import {
+  decodeVinVehicleInformation,
+  isLikelyVIN,
+  normalizeScannedVIN,
+} from "./services/ARGOS_VIN_Service";
+import {
+  calculateServiceAwareness,
+  calculateWarrantyAwareness,
+} from "./services/ARGOS_Asset_Awareness_Service";
 import "./App.css";
-
-
-const STORAGE_KEY = "argosFleetAssets";
-const COMPLETED_STORAGE_KEY = "argosCompletedRepairEvents";
-const STATUS_HISTORY_STORAGE_KEY = "argosStatusHistoryEvents";
-const ACTIVE_VIEW_STORAGE_KEY = "argosActiveView";
-
-function getOrganizationStorageKey(baseKey, organizationId) {
-  return organizationId ? `${baseKey}:${organizationId}` : null;
-}
-
-const FALLBACK_STATUS_CONFIGURATIONS = [
-  { status_name: "Ready", status_code: "READY", display_order: 10, status_color: "#146C2E", counts_as_available: true, requires_down_date: false, is_active: true },
-  { status_name: "Down", status_code: "DOWN", display_order: 20, status_color: "#A61B1B", counts_as_available: false, requires_down_date: true, is_active: true },
-  { status_name: "In Shop", status_code: "IN_SHOP", display_order: 30, status_color: "#245B8A", counts_as_available: false, requires_down_date: true, is_active: true },
-  { status_name: "At 3rd Party Shop", status_code: "THIRD_PARTY", display_order: 40, status_color: "#6C4A8B", counts_as_available: false, requires_down_date: true, is_active: true },
-  { status_name: "Waiting Parts", status_code: "WAITING_PARTS", display_order: 50, status_color: "#A96300", counts_as_available: false, requires_down_date: true, is_active: true },
-  { status_name: "Awaiting Approval", status_code: "AWAITING_APPROVAL", display_order: 60, status_color: "#82550F", counts_as_available: false, requires_down_date: true, is_active: true },
-  { status_name: "Awaiting QC", status_code: "AWAITING_QC", display_order: 70, status_color: "#5B4B9A", counts_as_available: false, requires_down_date: true, is_active: true },
-  { status_name: "Ready for Pickup", status_code: "READY_PICKUP", display_order: 80, status_color: "#8A6A14", counts_as_available: false, requires_down_date: true, is_active: true },
-];
-
-const REASON_OPTIONS = [
-  "Available",
-  "Mechanical Failure",
-  "Preventive Maintenance",
-  "Parts Availability",
-  "Vendor / 3rd Party Delay",
-  "Inspection / QC",
-  "Awaiting Approval",
-  "Accident / Damage",
-  "Operator Reported Issue",
-  "Other",
-];
-
-const PRIORITY_OPTIONS = ["Normal", "Medium", "High", "Critical"];
-const RTS_TYPE_OPTIONS = ["Estimated Date", "TBD", "No RTS Established"];
-
-const CANONICAL_STATUS_NAMES = new Map(
-  FALLBACK_STATUS_CONFIGURATIONS.flatMap((status) => [
-    [status.status_name.toLowerCase(), status.status_name],
-    [status.status_code.toLowerCase(), status.status_name],
-  ])
-);
-
-function normalizeOperationalStatus(value) {
-  const cleanedValue = String(value || "Ready")
-    .trim()
-    .replace(/[-\s]+/g, "_")
-    .toLowerCase();
-
-  return (
-    CANONICAL_STATUS_NAMES.get(cleanedValue) ||
-    CANONICAL_STATUS_NAMES.get(cleanedValue.replaceAll("_", " ")) ||
-    String(value || "Ready").trim() ||
-    "Ready"
-  );
-}
-
-function findOptionMatch(value, options) {
-  const cleanedValue = String(value || "").trim().toLowerCase();
-  return options.find((option) => option.toLowerCase() === cleanedValue);
-}
-
-
-
-
 
 
 
@@ -105,183 +80,6 @@ function getStatusClass(status) {
   return String(status || "Ready").toLowerCase().replaceAll(" ", "-").replaceAll("/", "");
 }
 
-
-function normalizeScannedVIN(value) {
-  const cleanedValue = String(value || "")
-    .toUpperCase()
-    .replace(/[^A-HJ-NPR-Z0-9]/g, "");
-
-  if (cleanedValue.length <= 17) return cleanedValue;
-
-  const possibleVinMatches = [];
-
-  for (let index = 0; index <= cleanedValue.length - 17; index += 1) {
-    const candidate = cleanedValue.slice(index, index + 17);
-
-    if (/^[A-HJ-NPR-Z0-9]{17}$/.test(candidate)) {
-      possibleVinMatches.push(candidate);
-    }
-  }
-
-  return possibleVinMatches[possibleVinMatches.length - 1] || cleanedValue.slice(-17);
-}
-
-function isLikelyVIN(value) {
-  return /^[A-HJ-NPR-Z0-9]{17}$/.test(normalizeScannedVIN(value));
-}
-
-function cleanDecodedVehicleValue(value) {
-  const cleanedValue = String(value || "").trim();
-
-  if (
-    !cleanedValue ||
-    cleanedValue.toLowerCase() === "not applicable" ||
-    cleanedValue.toLowerCase() === "unknown"
-  ) {
-    return "";
-  }
-
-  return cleanedValue;
-}
-
-function buildDecodedAssetDescription(decodedVehicle) {
-  return [decodedVehicle.year, decodedVehicle.make, decodedVehicle.model]
-    .map(cleanDecodedVehicleValue)
-    .filter(Boolean)
-    .join(" ");
-}
-
-async function decodeVinVehicleInformation(vin) {
-  const normalizedVin = normalizeScannedVIN(vin);
-
-  if (!isLikelyVIN(normalizedVin)) {
-    return { year: "", make: "", model: "", assetDescription: "" };
-  }
-
-  try {
-    const response = await fetch(
-      `https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/${encodeURIComponent(
-        normalizedVin
-      )}?format=json`
-    );
-
-    if (!response.ok) {
-      throw new Error("VIN decoder request failed.");
-    }
-
-    const data = await response.json();
-    const result = data?.Results?.[0] || {};
-    const decodedVehicle = {
-      year: cleanDecodedVehicleValue(result.ModelYear),
-      make: cleanDecodedVehicleValue(result.Make),
-      model: cleanDecodedVehicleValue(result.Model),
-    };
-
-    return {
-      ...decodedVehicle,
-      assetDescription: buildDecodedAssetDescription(decodedVehicle),
-    };
-  } catch {
-    return { year: "", make: "", model: "", assetDescription: "" };
-  }
-}
-
-
-const initialAssets = [
-  {
-    unit: "1042",
-    vin: "1FT7X2B60NEC10420",
-    department: "Public Works",
-    asset: "Ford F-250",
-    status: "Waiting Parts",
-    statusStartedAt: "2026-07-01",
-    reason: "Parts Availability",
-    priority: "High",
-    downSince: "2026-07-01",
-    technician: "Smith",
-    rtsType: "Estimated Date",
-    rtsDate: "2026-07-10",
-    details: "Alternator on order",
-  },
-  {
-    unit: "2217",
-    vin: "1FM5K8AB4NGA22170",
-    department: "Police",
-    asset: "Ford Explorer",
-    status: "In Shop",
-    statusStartedAt: "2026-07-05",
-    reason: "Mechanical Failure",
-    priority: "Medium",
-    downSince: "2026-07-05",
-    technician: "Jones",
-    rtsType: "Estimated Date",
-    rtsDate: "2026-07-08",
-    details: "Brake inspection",
-  },
-  {
-    unit: "3314",
-    vin: "1GNSKLED5NR33140",
-    department: "Fire",
-    asset: "Chevrolet Tahoe",
-    status: "Ready",
-    statusStartedAt: getTodayDateString(),
-    reason: "Available",
-    priority: "Normal",
-    downSince: "",
-    technicianId: "",
-    technician: "Unassigned",
-    rtsType: "No RTS Established",
-    rtsDate: "",
-    details: "Available",
-  },
-  {
-    unit: "5088",
-    vin: "3ALACWFC8ND50880",
-    department: "Solid Waste",
-    asset: "Freightliner M2",
-    status: "Down",
-    statusStartedAt: "2026-06-26",
-    reason: "Mechanical Failure",
-    priority: "Critical",
-    downSince: "2026-06-26",
-    technician: "Garcia",
-    rtsType: "TBD",
-    rtsDate: "",
-    details: "Hydraulic leak",
-  },
-  {
-    unit: "6120",
-    vin: "1LV5065EEN061200",
-    department: "Parks",
-    asset: "John Deere Tractor",
-    status: "Awaiting QC",
-    statusStartedAt: "2026-07-07",
-    reason: "Inspection / QC",
-    priority: "Normal",
-    downSince: "2026-07-07",
-    technicianId: "",
-    technician: "Unassigned",
-    rtsType: "No RTS Established",
-    rtsDate: "",
-    details: "250-hour service due",
-  },
-  {
-    unit: "7741",
-    vin: "3C7WRKBL6NG77410",
-    department: "Utilities",
-    asset: "RAM 3500 Service Truck",
-    status: "Ready",
-    statusStartedAt: getTodayDateString(),
-    reason: "Available",
-    priority: "Normal",
-    downSince: "",
-    technicianId: "",
-    technician: "Unassigned",
-    rtsType: "No RTS Established",
-    rtsDate: "",
-    details: "Available",
-  },
-];
 
 const DEMO_DEPARTMENTS = [
   { id: "demo-public-works", department_name: "Public Works", department_code: "PW", is_active: true },
@@ -323,44 +121,6 @@ const DEMO_APWA_RULES = [
 ];
 
 
-
-function normalizeDepartmentLookupValue(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
-}
-
-function findDepartmentByName(departments, departmentName) {
-  const normalizedName = normalizeDepartmentLookupValue(departmentName);
-
-  return departments.find(
-    (department) =>
-      normalizeDepartmentLookupValue(department.department_name) === normalizedName
-  );
-}
-
-function normalizeTechnicianDisplayName(value) {
-  const cleanedValue = String(value || "")
-    .trim()
-    .replace(/\s+/g, " ");
-
-  if (
-    !cleanedValue ||
-    cleanedValue === "—" ||
-    cleanedValue === "‚Äî" ||
-    cleanedValue.toLowerCase() === "unassigned"
-  ) {
-    return "Unassigned";
-  }
-
-  return cleanedValue;
-}
-
-function normalizeTechnicianKey(value) {
-  return normalizeTechnicianDisplayName(value).toLowerCase();
-}
-
 const DEMO_ASSETS = [
   { unit: "DEMO-101", vin: "1FTFW1E50NFA10101", department: "Public Works", asset: "2022 Ford F-150", status: "Ready", statusStartedAt: getTodayDateString(), reason: "Available", priority: "Normal", downSince: "", technician: "Unassigned", rtsType: "No RTS Established", rtsDate: "", details: "Available" },
   { unit: "DEMO-102", vin: "1FT7W2B60NEA10102", department: "Public Works", asset: "2022 Ford F-250", status: "Waiting Parts", statusStartedAt: "2026-07-02", reason: "Parts Availability", priority: "High", downSince: "2026-07-02", technician: "M. Carter", rtsType: "Estimated Date", rtsDate: "2026-07-15", details: "Alternator ordered; awaiting delivery" },
@@ -379,737 +139,19 @@ const DEMO_ASSETS = [
   { unit: "DEMO-701", vin: "1FDEE3FS0NDC10701", department: "Transit", asset: "2022 Ford E-350 Cutaway Bus", status: "Ready for Pickup", statusStartedAt: "2026-07-07", reason: "Mechanical Failure", priority: "Medium", downSince: "2026-07-04", technician: "E. Martin", rtsType: "Estimated Date", rtsDate: "2026-07-10", details: "Wheelchair lift repair completed" },
 ];
 
-function inferDemoAssetTypeId(assetDescription) {
-  const description = String(assetDescription || "").toLowerCase();
-  if (/(police interceptor|tahoe|explorer|suv)/.test(description)) return "demo-suv";
-  if (/(f-150|f-250|f-350|silverado|ram 1500|ram 2500|ram 3500|pickup)/.test(description)) return "demo-pickup";
-  if (/(service truck|utility truck)/.test(description)) return "demo-service";
-  if (/(transit connect|van|sprinter|promaster)/.test(description)) return "demo-van";
-  if (/(bus|cutaway|shuttle)/.test(description)) return "demo-bus";
-  if (/(pumper|engine|ladder|quint|ambulance|rescue)/.test(description)) return "demo-fire";
-  if (/(rear loader|front loader|side loader|refuse|packer)/.test(description)) return "demo-refuse";
-  if (/(freightliner|international|mack|dump truck)/.test(description)) return "demo-heavy";
-  if (/trailer/.test(description)) return "demo-trailer";
-  if (/(excavator|backhoe|loader|dozer|grader|skid steer)/.test(description)) return "demo-construction";
-  if (/(mower|zero turn)/.test(description)) return "demo-grounds";
-  if (/tractor/.test(description)) return "demo-ag";
-  if (/(sedan|charger|impala|malibu|taurus)/.test(description)) return "demo-sedan";
-  return "demo-other";
-}
-
-function calculateWarrantyAwareness(asset) {
-  const explicitStatus = String(asset.warrantyStatus || "Unknown");
-  const expirationDate = asset.warrantyExpirationDate
-    ? new Date(`${asset.warrantyExpirationDate}T23:59:59`)
-    : null;
-  const mileageLimit = Number(asset.warrantyMileageLimit || 0);
-  const currentMileage = Number(asset.currentMileage || 0);
-  const expiredByDate = expirationDate && expirationDate.getTime() < Date.now();
-  const expiredByMileage = mileageLimit > 0 && currentMileage >= mileageLimit;
-
-  if (explicitStatus === "Not Applicable") return "Not Applicable";
-  if (expiredByDate || expiredByMileage || explicitStatus === "Expired") return "Expired";
-  if (expirationDate || mileageLimit > 0 || explicitStatus === "Under Warranty") return "In Warranty";
-  return "Unknown";
-}
-
-function calculateServiceAwareness(asset) {
-  const currentMileage = Number(asset.currentMileage || 0);
-  const currentHours = Number(asset.currentEngineHours || 0);
-  const dueMileage = Number(asset.nextServiceMileage || 0);
-  const dueHours = Number(asset.nextServiceHours || 0);
-  const mileageRemaining = dueMileage > 0 ? dueMileage - currentMileage : null;
-  const hoursRemaining = dueHours > 0 ? dueHours - currentHours : null;
-
-  if ((mileageRemaining !== null && mileageRemaining < 0) || (hoursRemaining !== null && hoursRemaining < 0)) {
-    return "PM Overdue";
-  }
-  if ((mileageRemaining !== null && mileageRemaining === 0) || (hoursRemaining !== null && hoursRemaining === 0)) {
-    return "PM Due";
-  }
-  if ((mileageRemaining !== null && mileageRemaining <= 500) || (hoursRemaining !== null && hoursRemaining <= 25)) {
-    return "Oil Change Due Soon";
-  }
-  return "No Service Due";
-}
-
-function createBlankAsset() {
-  return {
-    unit: "",
-    vin: "",
-    departmentId: "",
-    department: "",
-    assetTypeId: "",
-    assetTypeName: "",
-    asset: "",
-    year: "",
-    make: "",
-    model: "",
-    engine: "",
-    fuelType: "",
-    bodyClass: "",
-    driveType: "",
-    gvwrClass: "",
-    manufacturer: "",
-    apwaCodeId: "",
-    apwaCode: "",
-    apwaDescription: "",
-    apwaAssignmentSource: "",
-    apwaMappingRuleId: "",
-    apwaAssignedAt: "",
-    apwaAssignedBy: "",
-    apwaRecommendationMatchType: "",
-    currentMileage: "",
-    currentEngineHours: "",
-    workOrderNumber: "",
-    vendorShop: "",
-    primaryVmrs: "",
-    secondaryVmrs: "",
-    vmrsSystemCodeId: "", vmrsSystemCode: "", vmrsSystemDescription: "",
-    vmrsAssemblyCodeId: "", vmrsAssemblyCode: "", vmrsAssemblyDescription: "",
-    vmrsComponentCodeId: "", vmrsComponentCode: "", vmrsComponentDescription: "",
-    vmrsReasonCodeId: "", vmrsReasonCode: "", vmrsReasonDescription: "",
-    vmrsWorkAccomplishedCodeId: "", vmrsWorkAccomplishedCode: "", vmrsWorkAccomplishedDescription: "",
-    vmrsPositionCodeId: "", vmrsPositionCode: "", vmrsPositionDescription: "",
-    vmrsCodedAt: "", vmrsCodedBy: "",
-    repairOpenedAt: "",
-    repairCompletedAt: "",
-    mileageAtRepair: "",
-    engineHoursAtRepair: "",
-    warrantyStatus: "Unknown",
-    warrantyType: "",
-    warrantyExpirationDate: "",
-    warrantyMileageLimit: "",
-    lastServiceDate: "",
-    lastServiceMileage: "",
-    lastServiceHours: "",
-    nextServiceMileage: "",
-    nextServiceHours: "",
-    repairTimeline: [],
-    repairUpdateDraft: "",
-    mileageUpdatedAt: "",
-    engineHoursUpdatedAt: "",
-    nhtsaDecode: {},
-    status: "Ready",
-    statusStartedAt: getTodayDateString(),
-    reason: "Available",
-    priority: "Normal",
-    downSince: "",
-    technicianId: "",
-    technician: "Unassigned",
-    rtsType: "No RTS Established",
-    rtsDate: "",
-    details: "Available",
-  };
-}
-
-function normalizeAsset(asset) {
-  const sourceStatus = asset.status === "Completed" ? "Ready" : asset.status;
-  const normalizedStatus = normalizeOperationalStatus(sourceStatus);
-  const isReadyStatus = normalizedStatus === "Ready";
-  const technician = normalizeTechnicianDisplayName(asset.technician);
-
-  return {
-    vin: "",
-    departmentId: asset.departmentId || "",
-    assetTypeId: asset.assetTypeId || inferDemoAssetTypeId(asset.asset),
-    assetTypeName: asset.assetTypeName || "",
-    year: asset.year || "",
-    make: asset.make || "",
-    model: asset.model || "",
-    engine: asset.engine || "",
-    fuelType: asset.fuelType || "",
-    bodyClass: asset.bodyClass || "",
-    driveType: asset.driveType || "",
-    gvwrClass: asset.gvwrClass || "",
-    manufacturer: asset.manufacturer || "",
-    apwaCodeId: asset.apwaCodeId || "",
-    apwaCode: asset.apwaCode || "",
-    apwaDescription: asset.apwaDescription || "",
-    apwaAssignmentSource: asset.apwaAssignmentSource || "",
-    apwaMappingRuleId: asset.apwaMappingRuleId || "",
-    apwaAssignedAt: asset.apwaAssignedAt || "",
-    apwaAssignedBy: asset.apwaAssignedBy || "",
-    apwaRecommendationMatchType: asset.apwaRecommendationMatchType || "",
-    currentMileage: asset.currentMileage ?? "",
-    currentEngineHours: asset.currentEngineHours ?? "",
-    workOrderNumber: asset.workOrderNumber || "",
-    vendorShop: asset.vendorShop || "",
-    primaryVmrs: asset.primaryVmrs || "",
-    secondaryVmrs: asset.secondaryVmrs || "",
-    vmrsSystemCodeId: asset.vmrsSystemCodeId || "", vmrsSystemCode: asset.vmrsSystemCode || "", vmrsSystemDescription: asset.vmrsSystemDescription || "",
-    vmrsAssemblyCodeId: asset.vmrsAssemblyCodeId || "", vmrsAssemblyCode: asset.vmrsAssemblyCode || "", vmrsAssemblyDescription: asset.vmrsAssemblyDescription || "",
-    vmrsComponentCodeId: asset.vmrsComponentCodeId || "", vmrsComponentCode: asset.vmrsComponentCode || "", vmrsComponentDescription: asset.vmrsComponentDescription || "",
-    vmrsReasonCodeId: asset.vmrsReasonCodeId || "", vmrsReasonCode: asset.vmrsReasonCode || "", vmrsReasonDescription: asset.vmrsReasonDescription || "",
-    vmrsWorkAccomplishedCodeId: asset.vmrsWorkAccomplishedCodeId || "", vmrsWorkAccomplishedCode: asset.vmrsWorkAccomplishedCode || "", vmrsWorkAccomplishedDescription: asset.vmrsWorkAccomplishedDescription || "",
-    vmrsPositionCodeId: asset.vmrsPositionCodeId || "", vmrsPositionCode: asset.vmrsPositionCode || "", vmrsPositionDescription: asset.vmrsPositionDescription || "",
-    vmrsCodedAt: asset.vmrsCodedAt || "", vmrsCodedBy: asset.vmrsCodedBy || "",
-    repairOpenedAt: asset.repairOpenedAt || "",
-    repairCompletedAt: asset.repairCompletedAt || "",
-    mileageAtRepair: asset.mileageAtRepair ?? "",
-    engineHoursAtRepair: asset.engineHoursAtRepair ?? "",
-    warrantyStatus: asset.warrantyStatus || "Unknown",
-    warrantyType: asset.warrantyType || "",
-    warrantyExpirationDate: asset.warrantyExpirationDate || "",
-    warrantyMileageLimit: asset.warrantyMileageLimit ?? "",
-    lastServiceDate: asset.lastServiceDate || "",
-    lastServiceMileage: asset.lastServiceMileage ?? "",
-    lastServiceHours: asset.lastServiceHours ?? "",
-    nextServiceMileage: asset.nextServiceMileage ?? "",
-    nextServiceHours: asset.nextServiceHours ?? "",
-    repairTimeline: Array.isArray(asset.repairTimeline) ? asset.repairTimeline : [],
-    repairUpdateDraft: asset.repairUpdateDraft || "",
-    mileageUpdatedAt: asset.mileageUpdatedAt || "",
-    engineHoursUpdatedAt: asset.engineHoursUpdatedAt || "",
-    nhtsaDecode: asset.nhtsaDecode || {},
-    ...asset,
-    status: normalizedStatus,
-    reason: isReadyStatus ? "Available" : asset.reason || asset.issue || "Other",
-    details: asset.details || asset.issue || (isReadyStatus ? "Available" : "Details pending"),
-    statusStartedAt: asset.statusStartedAt || asset.downSince || getTodayDateString(),
-    technician,
-    downSince: isReadyStatus ? "" : asset.downSince || getTodayDateString(),
-    rtsType: isReadyStatus ? "No RTS Established" : asset.rtsType || "No RTS Established",
-    rtsDate: isReadyStatus ? "" : asset.rtsDate || "",
-  };
-}
-
-function normalizeCompletedRepairEvent(event) {
-  return {
-    ...event,
-    finalStatus: event.finalStatus || "Ready",
-    recordType: "Historical Repair Event",
-    technician: normalizeTechnicianDisplayName(event.technician),
-  };
-}
-
-function normalizeImportedAsset(row, statusOptions = FALLBACK_STATUS_CONFIGURATIONS.map((status) => status.status_name)) {
-  const normalizedImportedStatus = normalizeOperationalStatus(row.status);
-  const importedStatus = findOptionMatch(normalizedImportedStatus, statusOptions) || normalizedImportedStatus || "Ready";
-  const isReadyStatus = importedStatus === "Ready";
-  const priority = findOptionMatch(row.priority, PRIORITY_OPTIONS) || "Normal";
-  const reason = isReadyStatus ? "Available" : findOptionMatch(row.reason, REASON_OPTIONS) || "Other";
-  const rtsType = isReadyStatus
-    ? "No RTS Established"
-    : findOptionMatch(row.rtsType, RTS_TYPE_OPTIONS) || "No RTS Established";
-  const downSince = isReadyStatus ? "" : String(row.downSince || "").trim() || getTodayDateString();
-
-  return {
-    unit: String(row.unit || "").trim(),
-    vin: String(row.vin || "").trim().toUpperCase(),
-    departmentId: "",
-    department: String(row.department || "").trim(),
-    assetTypeId: "",
-    assetTypeName: String(row.assetType || "").trim(),
-    asset: String(row.asset || "").trim(),
-    status: importedStatus,
-    statusStartedAt: isReadyStatus ? getTodayDateString() : downSince,
-    reason,
-    priority,
-    downSince,
-    technician: normalizeTechnicianDisplayName(row.technician),
-    rtsType,
-    rtsDate: !isReadyStatus && rtsType === "Estimated Date" ? String(row.rtsDate || "").trim() : "",
-    details: String(row.details || "").trim() || (isReadyStatus ? "Available" : "Details pending"),
-  };
-}
-function mapSupabaseAsset(row) {
-  return normalizeAsset({
-    unit: row.unit || "",
-    vin: row.vin || "",
-    departmentId: row.department_id || "",
-    department: row.department || "",
-    assetTypeId: row.asset_type_id || "",
-    assetTypeName: row.asset_types?.asset_type_name || "",
-    asset: row.asset || "",
-    year: row.year || "",
-    make: row.make || "",
-    model: row.model || "",
-    engine: row.engine || "",
-    fuelType: row.fuel_type || "",
-    bodyClass: row.body_class || "",
-    driveType: row.drive_type || "",
-    gvwrClass: row.gvwr_class || "",
-    manufacturer: row.manufacturer || "",
-    apwaCodeId: row.apwa_code_id || "",
-    apwaCode: row.apwa_code || "",
-    apwaDescription: row.apwa_description || "",
-    apwaAssignmentSource: row.apwa_assignment_source || "",
-    apwaMappingRuleId: row.apwa_mapping_rule_id || "",
-    apwaAssignedAt: row.apwa_assigned_at || "",
-    apwaAssignedBy: row.apwa_assigned_by || "",
-    apwaRecommendationMatchType: "",
-    currentMileage: row.current_mileage ?? "",
-    currentEngineHours: row.current_engine_hours ?? "",
-    workOrderNumber: row.work_order_number || "",
-    vendorShop: row.vendor_shop || "",
-    primaryVmrs: row.primary_vmrs || "",
-    secondaryVmrs: row.secondary_vmrs || "",
-    vmrsSystemCodeId: row.vmrs_system_code_id || "", vmrsSystemCode: row.vmrs_system_code || "", vmrsSystemDescription: row.vmrs_system_description || "",
-    vmrsAssemblyCodeId: row.vmrs_assembly_code_id || "", vmrsAssemblyCode: row.vmrs_assembly_code || "", vmrsAssemblyDescription: row.vmrs_assembly_description || "",
-    vmrsComponentCodeId: row.vmrs_component_code_id || "", vmrsComponentCode: row.vmrs_component_code || "", vmrsComponentDescription: row.vmrs_component_description || "",
-    vmrsReasonCodeId: row.vmrs_reason_code_id || "", vmrsReasonCode: row.vmrs_reason_code || "", vmrsReasonDescription: row.vmrs_reason_description || "",
-    vmrsWorkAccomplishedCodeId: row.vmrs_work_accomplished_code_id || "", vmrsWorkAccomplishedCode: row.vmrs_work_accomplished_code || "", vmrsWorkAccomplishedDescription: row.vmrs_work_accomplished_description || "",
-    vmrsPositionCodeId: row.vmrs_position_code_id || "", vmrsPositionCode: row.vmrs_position_code || "", vmrsPositionDescription: row.vmrs_position_description || "",
-    vmrsCodedAt: row.vmrs_coded_at || "", vmrsCodedBy: row.vmrs_coded_by || "",
-    repairOpenedAt: row.repair_opened_at || "",
-    repairCompletedAt: row.repair_completed_at || "",
-    mileageAtRepair: row.mileage_at_repair ?? "",
-    engineHoursAtRepair: row.engine_hours_at_repair ?? "",
-    warrantyStatus: row.warranty_status || "Unknown",
-    warrantyType: row.warranty_type || "",
-    warrantyExpirationDate: row.warranty_expiration_date || "",
-    warrantyMileageLimit: row.warranty_mileage_limit ?? "",
-    lastServiceDate: row.last_service_date || "",
-    lastServiceMileage: row.last_service_mileage ?? "",
-    lastServiceHours: row.last_service_hours ?? "",
-    nextServiceMileage: row.next_service_mileage ?? "",
-    nextServiceHours: row.next_service_hours ?? "",
-    repairTimeline: Array.isArray(row.repair_timeline) ? row.repair_timeline : [],
-    mileageUpdatedAt: row.mileage_updated_at || "",
-    engineHoursUpdatedAt: row.engine_hours_updated_at || "",
-    nhtsaDecode: row.nhtsa_decode || {},
-    status: row.status || "Ready",
-    statusStartedAt: row.status_started_at || row.down_since || getTodayDateString(),
-    reason: row.reason || "Available",
-    priority: row.priority || "Normal",
-    downSince: row.down_since || "",
-    technicianId: row.technician_id || "",
-    technician: row.technicians?.technician_name || row.technician || "Unassigned",
-    rtsType: row.rts_type || "No RTS Established",
-    rtsDate: row.rts_date || "",
-    details: row.details || "Available",
-  });
-}
-function loadSavedAssets(organizationId) {
-  const storageKey = getOrganizationStorageKey(STORAGE_KEY, organizationId);
-  if (!storageKey) return [];
-
-  const savedAssets = localStorage.getItem(storageKey);
-  if (!savedAssets) return [];
-
-  try {
-    return JSON.parse(savedAssets).map(normalizeAsset);
-  } catch {
-    return [];
-  }
-}
-
-function mapSupabaseRepairHistory(row) {
-  return normalizeCompletedRepairEvent({
-    id: row.id,
-    unit: row.unit || "",
-    department: row.department || "",
-    asset: row.asset || "",
-    recordType: row.record_type || "Historical Repair Event",
-    status: row.prior_status || "Unknown",
-    finalStatus: row.final_status || "Ready",
-    reason: row.reason || "Other",
-    priority: row.priority || "Normal",
-    finalDaysDown: row.days_down ?? 0,
-    technician: row.technician || "Unassigned",
-    completedDate: row.completed || "",
-    workOrderNumber: row.work_order_number || "",
-    vendorShop: row.vendor_shop || "",
-    primaryVmrs: row.primary_vmrs || "",
-    secondaryVmrs: row.secondary_vmrs || "",
-    vmrsSystemCodeId: row.vmrs_system_code_id || "", vmrsSystemCode: row.vmrs_system_code || "", vmrsSystemDescription: row.vmrs_system_description || "",
-    vmrsAssemblyCodeId: row.vmrs_assembly_code_id || "", vmrsAssemblyCode: row.vmrs_assembly_code || "", vmrsAssemblyDescription: row.vmrs_assembly_description || "",
-    vmrsComponentCodeId: row.vmrs_component_code_id || "", vmrsComponentCode: row.vmrs_component_code || "", vmrsComponentDescription: row.vmrs_component_description || "",
-    vmrsReasonCodeId: row.vmrs_reason_code_id || "", vmrsReasonCode: row.vmrs_reason_code || "", vmrsReasonDescription: row.vmrs_reason_description || "",
-    vmrsWorkAccomplishedCodeId: row.vmrs_work_accomplished_code_id || "", vmrsWorkAccomplishedCode: row.vmrs_work_accomplished_code || "", vmrsWorkAccomplishedDescription: row.vmrs_work_accomplished_description || "",
-    vmrsPositionCodeId: row.vmrs_position_code_id || "", vmrsPositionCode: row.vmrs_position_code || "", vmrsPositionDescription: row.vmrs_position_description || "",
-    vmrsCodedAt: row.vmrs_coded_at || "", vmrsCodedBy: row.vmrs_coded_by || "",
-    mileageAtRepair: row.mileage_at_repair ?? "",
-    engineHoursAtRepair: row.engine_hours_at_repair ?? "",
-    warrantyStatus: row.warranty_status || "Unknown",
-    repairOpenedAt: row.repair_opened_at || "",
-    repairCompletedAt: row.repair_completed_at || row.completed || "",
-    repairTimeline: Array.isArray(row.repair_timeline) ? row.repair_timeline : [],
-    details: row.details || "Details pending",
-  });
-}
-
-function loadCompletedRepairEvents(organizationId) {
-  const storageKey = getOrganizationStorageKey(COMPLETED_STORAGE_KEY, organizationId);
-  if (!storageKey) return [];
-
-  const savedEvents = localStorage.getItem(storageKey);
-  if (!savedEvents) return [];
-
-  try {
-    return JSON.parse(savedEvents).map(normalizeCompletedRepairEvent);
-  } catch {
-    return [];
-  }
-}
-
-function mapSupabaseStatusHistory(row) {
-  const changedAt = row.changed_at || new Date().toISOString();
-  const changedDate = changedAt.slice(0, 10);
-  const statusStartedAt = row.status_started_at || changedDate;
-  const statusEndedAt = row.status_ended_at || changedDate;
-
-  return {
-    id: row.id,
-    unit: row.unit || "",
-    vin: "",
-    department: row.department || "",
-    asset: row.asset || "",
-    previousStatus: row.from_status || "Unknown",
-    newStatus: row.to_status || "Unknown",
-    reason: row.reason || "Other",
-    details: row.details || "Details pending",
-    technician: row.technician || "Unassigned",
-    statusStartedAt,
-    statusEndedAt,
-    durationDays:
-      row.duration_minutes != null
-        ? Number(row.duration_minutes) / (24 * 60)
-        : row.duration_days ?? calculateStatusDurationDays(statusStartedAt, statusEndedAt),
-    recordedAt: changedAt,
-  };
-}
-
-function loadStatusHistoryEvents(organizationId) {
-  const storageKey = getOrganizationStorageKey(STATUS_HISTORY_STORAGE_KEY, organizationId);
-  if (!storageKey) return [];
-
-  const savedEvents = localStorage.getItem(storageKey);
-  if (!savedEvents) return [];
-
-  try {
-    return JSON.parse(savedEvents);
-  } catch {
-    return [];
-  }
-}
-
-function createStatusHistoryEvent(previousAsset, updatedAsset, statusHistoryEvents = []) {
-  const recordedAt = new Date().toISOString();
-  const latestTransitionIntoCurrentStatus = statusHistoryEvents
-    .filter(
-      (event) =>
-        event.unit === previousAsset.unit &&
-        event.newStatus === previousAsset.status &&
-        event.recordedAt
-    )
-    .sort((firstEvent, secondEvent) =>
-      String(secondEvent.recordedAt).localeCompare(String(firstEvent.recordedAt))
-    )[0];
-  const statusStartedAt =
-    latestTransitionIntoCurrentStatus?.recordedAt ||
-    previousAsset.statusStartedAt ||
-    previousAsset.downSince ||
-    getTodayDateString();
-  const statusEndedAt = recordedAt;
-
-  return {
-    id: `${previousAsset.unit}-${previousAsset.status}-${updatedAsset.status}-${Date.now()}`,
-    unit: previousAsset.unit,
-    vin: updatedAsset.vin || previousAsset.vin || "",
-    department: updatedAsset.department || previousAsset.department,
-    asset: updatedAsset.asset || previousAsset.asset,
-    previousStatus: previousAsset.status,
-    newStatus: updatedAsset.status,
-    reason: updatedAsset.reason || previousAsset.reason || "Other",
-    details: updatedAsset.details || previousAsset.details || "Details pending",
-    technician: updatedAsset.technician || previousAsset.technician || "Unassigned",
-    statusStartedAt,
-    statusEndedAt,
-    durationDays: calculateStatusDurationDays(statusStartedAt, statusEndedAt),
-    recordedAt,
-  };
-}
-
-
-function buildTechnicianDailySummary({
-  assets,
-  statusHistoryEvents,
-  completedRepairRecords,
-  isAssignedToTechnician,
-  technicianKey,
-  includeOrganizationWork = false,
-  now = new Date(),
-}) {
-  const isAssigned = includeOrganizationWork
-    ? (asset) => normalizeTechnicianKey(asset.technician) !== "unassigned"
-    : isAssignedToTechnician;
-
-  const matchesTechnicianScope = (record) =>
-    includeOrganizationWork ||
-    normalizeTechnicianKey(record.technician) === technicianKey;
-
-  const assignedAssets = assets.filter(isAssigned);
-  const activeAssignedAssets = assignedAssets.filter((asset) => asset.status !== "Ready");
-
-  const todayStatusEvents = statusHistoryEvents.filter(
-    (event) =>
-      isSameLocalCalendarDate(event.recordedAt || event.statusEndedAt, now) &&
-      matchesTechnicianScope(event)
-  );
-
-  const todayCompletedRepairs = completedRepairRecords.filter(
-    (record) =>
-      isSameLocalCalendarDate(
-        record.completedDate ||
-          record.completedDisplayDate ||
-          record.statusEndedAt ||
-          record.recordedAt,
-        now
-      ) &&
-      matchesTechnicianScope(record)
-  );
-
-  const updatedUnits = Array.from(
-    new Set(todayStatusEvents.map((event) => event.unit).filter(Boolean))
-  );
-
-  return {
-    assignedAssets,
-    activeAssignedAssets,
-    waitingPartsAssets: activeAssignedAssets.filter(
-      (asset) => asset.status === "Waiting Parts"
-    ),
-    awaitingQcAssets: activeAssignedAssets.filter(
-      (asset) => asset.status === "Awaiting QC"
-    ),
-    readyForPickupAssets: activeAssignedAssets.filter(
-      (asset) => asset.status === "Ready for Pickup"
-    ),
-    criticalAssets: activeAssignedAssets.filter(
-      (asset) => asset.priority === "Critical"
-    ),
-    todayStatusEvents: [...todayStatusEvents].sort((firstEvent, secondEvent) =>
-      String(secondEvent.recordedAt || secondEvent.statusEndedAt || "").localeCompare(
-        String(firstEvent.recordedAt || firstEvent.statusEndedAt || "")
-      )
-    ),
-    todayCompletedRepairs,
-    updatedUnits,
-  };
-}
-
-function buildDailySummary(assets, statusConfigurations = FALLBACK_STATUS_CONFIGURATIONS) {
-  const assetsWithDaysDown = assets.map((asset) => ({
-    ...asset,
-    daysDown: calculateDaysDown(asset.downSince, asset.status),
-  }));
-
-  const availableStatusNames = new Set(
-    statusConfigurations
-      .filter((status) => status?.is_active !== false && status?.counts_as_available === true)
-      .map((status) => status.status_name)
-      .filter(Boolean)
-  );
-
-  if (availableStatusNames.size === 0) {
-    availableStatusNames.add("Ready");
-  }
-
-  const totalAssets = assetsWithDaysDown.length;
-  const readyAssets = assetsWithDaysDown.filter((asset) =>
-    availableStatusNames.has(asset.status)
-  );
-  const unavailableAssets = assetsWithDaysDown.filter(
-    (asset) => !availableStatusNames.has(asset.status)
-  );
-  const waitingPartsAssets = assetsWithDaysDown.filter((asset) => asset.status === "Waiting Parts");
-  const criticalUnavailableAssets = unavailableAssets.filter((asset) => asset.priority === "Critical");
-  const tbdAssets = unavailableAssets.filter((asset) => asset.rtsType === "TBD");
-  const noRtsAssets = unavailableAssets.filter((asset) => asset.rtsType === "No RTS Established");
-  const agingThreshold = 7;
-  const agedAssets = unavailableAssets.filter((asset) => asset.daysDown >= agingThreshold);
-  const longestDownAsset = [...unavailableAssets].sort((a, b) => b.daysDown - a.daysDown)[0];
-
-  const departmentCounts = unavailableAssets.reduce((counts, asset) => {
-    counts[asset.department] = (counts[asset.department] || 0) + 1;
-    return counts;
-  }, {});
-
-  return {
-    totalAssets,
-    readyAssets,
-    unavailableAssets,
-    waitingPartsAssets,
-    criticalUnavailableAssets,
-    tbdAssets,
-    noRtsAssets,
-    agedAssets,
-    longestDownAsset,
-    departmentWatch: Object.entries(departmentCounts)
-      .map(([department, count]) => `${department}: ${count}`)
-      .join(" | "),
-    availability: totalAssets > 0 ? ((readyAssets.length / totalAssets) * 100).toFixed(1) : "0.0",
-    agingThreshold,
-  };
-}
 
 
 
-function buildTechnicianAnalytics(assets, completedRepairRecords) {
-  const activeAssets = assets
-    .filter((asset) => asset.status !== "Ready")
-    .map((asset) => ({
-      ...asset,
-      daysDown: calculateDaysDown(asset.downSince, asset.status),
-      technician: normalizeTechnicianDisplayName(asset.technician),
-      technicianKey: normalizeTechnicianKey(asset.technician),
-    }));
-
-  const completedRecords = completedRepairRecords.map((record) => ({
-    ...record,
-    technician: normalizeTechnicianDisplayName(record.technician),
-    technicianKey: normalizeTechnicianKey(record.technician),
-    repairDuration: Number(record.daysDownDisplay ?? record.finalDaysDown ?? 0),
-  }));
-
-  const displayNamesByKey = new Map();
-
-  [...activeAssets, ...completedRecords].forEach((record) => {
-    if (!displayNamesByKey.has(record.technicianKey)) {
-      displayNamesByKey.set(record.technicianKey, record.technician);
-    }
-  });
-
-  const technicianKeys = Array.from(displayNamesByKey.keys()).sort((firstKey, secondKey) =>
-    displayNamesByKey.get(firstKey).localeCompare(displayNamesByKey.get(secondKey))
-  );
-
-  const rows = technicianKeys.map((technicianKey) => {
-    const technician = displayNamesByKey.get(technicianKey);
-    const assignedAssets = activeAssets.filter(
-      (asset) => asset.technicianKey === technicianKey
-    );
-    const completedRepairs = completedRecords.filter(
-      (record) => record.technicianKey === technicianKey
-    );
-    const totalActiveDaysDown = assignedAssets.reduce((sum, asset) => sum + asset.daysDown, 0);
-    const totalCompletedDuration = completedRepairs.reduce(
-      (sum, record) => sum + record.repairDuration,
-      0
-    );
-    const longestOpenAsset = [...assignedAssets].sort((a, b) => b.daysDown - a.daysDown)[0];
-
-    return {
-      technician,
-      technicianKey,
-      activeUnits: assignedAssets.length,
-      averageActiveDaysDown:
-        assignedAssets.length > 0 ? (totalActiveDaysDown / assignedAssets.length).toFixed(1) : "0.0",
-      longestOpenUnit: longestOpenAsset ? longestOpenAsset.unit : "—",
-      longestOpenDays: longestOpenAsset ? longestOpenAsset.daysDown : 0,
-      completedRepairs: completedRepairs.length,
-      averageRepairDuration:
-        completedRepairs.length > 0
-          ? formatStatusDuration(totalCompletedDuration / completedRepairs.length)
-          : "0 minutes",
-    };
-  });
-
-  const activeTechnicians = rows.filter(
-    (row) => row.technicianKey !== "unassigned" && row.activeUnits > 0
-  ).length;
-  const assignedActiveRepairs = activeAssets.filter(
-    (asset) => asset.technicianKey !== "unassigned"
-  ).length;
-  const unassignedRepairs = activeAssets.filter(
-    (asset) => asset.technicianKey === "unassigned"
-  ).length;
-  const totalActiveDaysDown = activeAssets.reduce((sum, asset) => sum + asset.daysDown, 0);
-
-  return {
-    rows,
-    activeTechnicians,
-    assignedActiveRepairs,
-    unassignedRepairs,
-    averageActiveDaysDown:
-      activeAssets.length > 0 ? (totalActiveDaysDown / activeAssets.length).toFixed(1) : "0.0",
-  };
-}
 
 
-function buildStatusDurationAnalytics(assets, statusHistoryEvents, statusOptions) {
-  const statusDurationOptions = statusOptions.filter((status) => status !== "Ready");
-  const activeAssets = assets.filter((asset) => asset.status !== "Ready");
 
-  const normalizedHistoryEvents = statusHistoryEvents
-    .filter((event) => statusDurationOptions.includes(event.previousStatus))
-    .map((event) => ({
-      ...event,
-      durationDays: Number(event.durationDays ?? 0),
-    }));
 
-  const totalRecordedDuration = normalizedHistoryEvents.reduce(
-    (sum, event) => sum + event.durationDays,
-    0
-  );
 
-  const rows = statusDurationOptions.map((status) => {
-    const currentUnits = activeAssets.filter((asset) => asset.status === status).length;
-    const completedEvents = normalizedHistoryEvents.filter(
-      (event) => event.previousStatus === status
-    );
-    const completedStatusEvents = completedEvents.length;
-    const totalDuration = completedEvents.reduce((sum, event) => sum + event.durationDays, 0);
-    const longestDuration =
-      completedEvents.length > 0
-        ? Math.max(...completedEvents.map((event) => event.durationDays))
-        : 0;
 
-    return {
-      status,
-      currentUnits,
-      completedStatusEvents,
-      averageDurationDays: completedStatusEvents > 0 ? totalDuration / completedStatusEvents : 0,
-      averageDuration:
-        completedStatusEvents > 0
-          ? formatStatusDuration(totalDuration / completedStatusEvents)
-          : "0 minutes",
-      longestDurationDays: longestDuration,
-      longestDuration: formatStatusDuration(longestDuration),
-      totalDuration,
-      percentageOfRecordedDowntime:
-        totalRecordedDuration > 0 ? ((totalDuration / totalRecordedDuration) * 100).toFixed(1) : "0.0",
-    };
-  });
 
-  const trackedStatusTransitions = normalizedHistoryEvents.length;
-  const averageRecordedDurationDays =
-    trackedStatusTransitions > 0 ? totalRecordedDuration / trackedStatusTransitions : 0;
-  const averageRecordedStatusDuration = formatStatusDuration(averageRecordedDurationDays);
-  const averageRecordedStatusEvent =
-    normalizedHistoryEvents.length > 0
-      ? [...normalizedHistoryEvents].sort(
-          (firstEvent, secondEvent) =>
-            Math.abs(firstEvent.durationDays - averageRecordedDurationDays) -
-            Math.abs(secondEvent.durationDays - averageRecordedDurationDays)
-        )[0]
-      : null;
-  const longestRecordedStatusEvent =
-    normalizedHistoryEvents.length > 0
-      ? [...normalizedHistoryEvents].sort(
-          (firstEvent, secondEvent) => secondEvent.durationDays - firstEvent.durationDays
-        )[0]
-      : null;
-  const longestRecordedStatusDuration = longestRecordedStatusEvent
-    ? formatStatusDuration(longestRecordedStatusEvent.durationDays)
-    : "0 minutes";
-  const currentLargestBottleneck = [...rows].sort((a, b) => b.currentUnits - a.currentUnits)[0];
 
-  return {
-    rows,
-    trackedStatusTransitions,
-    averageRecordedStatusDuration,
-    averageRecordedStatusEvent,
-    longestRecordedStatusDuration,
-    longestRecordedStatusEvent,
-    currentLargestBottleneck:
-      currentLargestBottleneck && currentLargestBottleneck.currentUnits > 0
-        ? currentLargestBottleneck
-        : null,
-  };
-}
+
+
 
 function App() {
   const [assets, setAssets] = useState([]);
@@ -1365,11 +407,7 @@ function App() {
       setAssets(loadSavedAssets(resolvedOrganizationId));
       setCompletedRepairEvents(loadCompletedRepairEvents(resolvedOrganizationId));
       setStatusHistoryEvents(loadStatusHistoryEvents(resolvedOrganizationId));
-      setActiveView(
-        localStorage.getItem(
-          getOrganizationStorageKey(ACTIVE_VIEW_STORAGE_KEY, resolvedOrganizationId)
-        ) || "command"
-      );
+      setActiveView(loadActiveView(resolvedOrganizationId));
       setOrganizationLoading(false);
     }
 
@@ -1737,27 +775,19 @@ useEffect(() => {
   loadCloudStatusHistory();
 }, [session, organizationId]);
   useEffect(() => {
-    const storageKey = getOrganizationStorageKey(STORAGE_KEY, organizationId);
-    if (!storageKey) return;
-    localStorage.setItem(storageKey, JSON.stringify(assets));
+    saveSavedAssets(organizationId, assets);
   }, [assets, organizationId]);
 
   useEffect(() => {
-    const storageKey = getOrganizationStorageKey(COMPLETED_STORAGE_KEY, organizationId);
-    if (!storageKey) return;
-    localStorage.setItem(storageKey, JSON.stringify(completedRepairEvents));
+    saveCompletedRepairEvents(organizationId, completedRepairEvents);
   }, [completedRepairEvents, organizationId]);
 
   useEffect(() => {
-    const storageKey = getOrganizationStorageKey(STATUS_HISTORY_STORAGE_KEY, organizationId);
-    if (!storageKey) return;
-    localStorage.setItem(storageKey, JSON.stringify(statusHistoryEvents));
+    saveStatusHistoryEvents(organizationId, statusHistoryEvents);
   }, [statusHistoryEvents, organizationId]);
 
   useEffect(() => {
-    const storageKey = getOrganizationStorageKey(ACTIVE_VIEW_STORAGE_KEY, organizationId);
-    if (!storageKey) return;
-    localStorage.setItem(storageKey, activeView);
+    saveActiveView(organizationId, activeView);
   }, [activeView, organizationId]);
 
   useEffect(() => {
