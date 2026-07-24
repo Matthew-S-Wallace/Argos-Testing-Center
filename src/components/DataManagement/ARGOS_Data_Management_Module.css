@@ -473,3 +473,114 @@ button.argos-data-management__tab.is-active {
   .argos-data-management__counts { flex-wrap: wrap; }
   .argos-data-management__preview-actions button { width: 100%; }
 }
+
+/* ARGOS™ Sprint 001AD.3 — CSV Import Polish */
+.argos-data-management__progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+  padding: 14px 16px;
+  border: 1px solid #bfd0e2;
+  border-radius: 10px;
+  background: #f1f6fb;
+  color: #173f67;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.argos-data-management__spinner { animation: argos-csv-spin 0.9s linear infinite; }
+@keyframes argos-csv-spin { to { transform: rotate(360deg); } }
+
+.argos-data-management__counts span.is-valid {
+  border-color: #bdd7c7;
+  background: #f0faf3;
+  color: #1e5f37;
+}
+
+.argos-data-management__counts span.is-rejected {
+  border-color: #e5b8b8;
+  background: #fff5f5;
+  color: #7b2626;
+}
+
+.argos-data-management__counts span.is-duplicate {
+  border-color: #d9c58e;
+  background: #fff9e9;
+  color: #755112;
+}
+
+.argos-data-management__rejections-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.argos-data-management__rejections-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.argos-data-management__rejections-heading button {
+  flex: 0 0 auto;
+}
+
+.argos-data-management__rejections li {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.argos-data-management__rejections li strong,
+.argos-data-management__rejections li span {
+  display: block;
+}
+
+.argos-data-management__rejections > p {
+  margin: 12px 0 0;
+  font-size: 11px;
+}
+
+.argos-data-management__result {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.argos-data-management__result.is-warning,
+.argos-data-management__result.is-neutral {
+  border-color: #d9c58e;
+  background: #fff9e9;
+  color: #755112;
+}
+
+.argos-data-management__result.is-error {
+  border-color: #e5b8b8;
+  background: #fff5f5;
+  color: #7b2626;
+}
+
+.argos-data-management__result.is-success {
+  border-color: #bdd7c7;
+  background: #f0faf3;
+  color: #1e5f37;
+}
+
+@media (max-width: 760px) {
+  .argos-data-management__rejections-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .argos-data-management__rejections-heading button {
+    width: 100%;
+  }
+
+  .argos-data-management__rejections li {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+}

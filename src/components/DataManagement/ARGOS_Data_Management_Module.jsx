@@ -6,6 +6,9 @@ import {
   FileClock,
   FileUp,
   Upload,
+  AlertTriangle,
+  CheckCircle2,
+  LoaderCircle,
 } from "lucide-react";
 import "./ARGOS_Data_Management_Module.css";
 
@@ -23,6 +26,8 @@ export default function ARGOSDataManagementModule({
   const [activeTab, setActiveTab] = useState("import");
   const previewRows = csvImport?.previewAssets || [];
   const rejectedRows = csvImport?.rejectedRows || [];
+  const validationSummary = csvImport?.validationSummary || { total: 0, valid: 0, rejected: 0, duplicates: 0 };
+  const isBusy = Boolean(csvImport?.isReading || csvImport?.isImporting);
 
   return (
     <section className="argos-data-management" aria-labelledby="argos-data-management-title">
@@ -34,7 +39,7 @@ export default function ARGOSDataManagementModule({
         <div className="argos-data-management__status-card">
           <Database size={22} strokeWidth={1.9} aria-hidden="true" />
           <span>Workspace</span>
-          <strong>Sprint 001AD.2</strong>
+          <strong>Sprint 001AD.3</strong>
         </div>
       </header>
 
@@ -107,22 +112,31 @@ export default function ARGOSDataManagementModule({
                     onChange={csvImport?.prepareCSVPreview}
                     className="argos-data-management__file-input"
                   />
-                  <button type="button" onClick={csvImport?.selectCSVFile} disabled={csvImport?.isReading}>
-                    {csvImport?.isReading ? "Validating..." : "Select CSV File"}
+                  <button type="button" onClick={csvImport?.selectCSVFile} disabled={isBusy}>
+                    {csvImport?.isReading ? "Validating…" : "Select CSV File"}
                   </button>
                 </article>
               </div>
 
-              {(previewRows.length > 0 || rejectedRows.length > 0) && (
+              {csvImport?.progress?.message && (
+                <div className="argos-data-management__progress" role="status" aria-live="polite">
+                  <LoaderCircle size={18} className="argos-data-management__spinner" aria-hidden="true" />
+                  <span>{csvImport.progress.message}</span>
+                </div>
+              )}
+
+              {(validationSummary.total > 0 || previewRows.length > 0 || rejectedRows.length > 0) && (
                 <section className="argos-data-management__preview" aria-labelledby="csv-preview-title">
                   <div className="argos-data-management__preview-heading">
                     <div>
                       <p className="eyebrow">Validation Results</p>
                       <h4 id="csv-preview-title">Import Preview</h4>
                     </div>
-                    <div className="argos-data-management__counts">
-                      <span><strong>{previewRows.length}</strong> Valid</span>
-                      <span><strong>{rejectedRows.length}</strong> Rejected</span>
+                    <div className="argos-data-management__counts" aria-label="CSV validation summary">
+                      <span><strong>{validationSummary.total}</strong> Total</span>
+                      <span className="is-valid"><strong>{validationSummary.valid}</strong> Valid</span>
+                      <span className="is-rejected"><strong>{validationSummary.rejected}</strong> Rejected</span>
+                      <span className="is-duplicate"><strong>{validationSummary.duplicates}</strong> Duplicates</span>
                     </div>
                   </div>
 
@@ -146,32 +160,51 @@ export default function ARGOSDataManagementModule({
 
                   {rejectedRows.length > 0 && (
                     <div className="argos-data-management__rejections">
-                      <strong>Rejected rows</strong>
-                      <ul>{rejectedRows.map((message) => <li key={message}>{message}</li>)}</ul>
+                      <div className="argos-data-management__rejections-heading">
+                        <div>
+                          <AlertTriangle size={18} aria-hidden="true" />
+                          <strong>Rejected rows require correction</strong>
+                        </div>
+                        <button type="button" className="secondary" onClick={csvImport?.downloadRejectedRows}>
+                          Download Error Report
+                        </button>
+                      </div>
+                      <ul>
+                        {rejectedRows.slice(0, 50).map((row) => (
+                          <li key={`${row.rowNumber}-${row.message}`}>
+                            <strong>Row {row.rowNumber}</strong>
+                            <span>{row.reasons.join("; ")}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      {rejectedRows.length > 50 && <p>Showing the first 50 rejected rows. Download the error report for the complete list.</p>}
                     </div>
                   )}
 
                   <div className="argos-data-management__preview-actions">
-                    <button type="button" className="secondary" onClick={() => csvImport?.resetPreview()} disabled={csvImport?.isImporting}>Cancel</button>
-                    <button type="button" onClick={csvImport?.confirmImport} disabled={!previewRows.length || csvImport?.isImporting}>
-                      {csvImport?.isImporting ? "Importing..." : `Import ${previewRows.length} Asset${previewRows.length === 1 ? "" : "s"}`}
+                    <button type="button" className="secondary" onClick={() => csvImport?.resetPreview()} disabled={isBusy}>Cancel</button>
+                    <button type="button" onClick={csvImport?.confirmImport} disabled={!previewRows.length || isBusy}>
+                      {csvImport?.isImporting ? "Importing…" : `Import ${previewRows.length} Asset${previewRows.length === 1 ? "" : "s"}`}
                     </button>
                   </div>
                 </section>
               )}
 
               {csvImport?.importStatus && (
-                <div className="argos-data-management__result" role="status" aria-live="polite">
-                  <strong>Import Result</strong>
-                  <p>{csvImport.importStatus}</p>
+                <div className={`argos-data-management__result is-${csvImport?.importStatusTone || "neutral"}`} role="status" aria-live="polite">
+                  {csvImport?.importStatusTone === "success" ? <CheckCircle2 size={19} aria-hidden="true" /> : <AlertTriangle size={19} aria-hidden="true" />}
+                  <div>
+                    <strong>{csvImport?.importStatusTone === "success" ? "Import Status" : "Import Review"}</strong>
+                    <p>{csvImport.importStatus}</p>
+                  </div>
                 </div>
               )}
             </section>
           )}
 
-          {activeTab === "export" && <PlaceholderPanel eyebrow="Fleet Data Distribution" title="CSV Export" description="Export controls will be implemented during Sprint 001AD.3." phase="Sprint 001AD.3" icon={Download} />}
-          {activeTab === "history" && <PlaceholderPanel eyebrow="Import Accountability" title="Import History" description="Organization-scoped import records and outcomes will be implemented during Sprint 001AD.4." phase="Sprint 001AD.4" icon={FileClock} />}
-          {activeTab === "archived" && <PlaceholderPanel eyebrow="Fleet Record Retention" title="Archived Assets" description="Archived asset review and restoration workflows will be implemented during Sprint 001AD.4." phase="Sprint 001AD.4" icon={Archive} />}
+          {activeTab === "export" && <PlaceholderPanel eyebrow="Fleet Data Distribution" title="CSV Export" description="Export controls will be implemented during Sprint 001AD.4." phase="Sprint 001AD.4" icon={Download} />}
+          {activeTab === "history" && <PlaceholderPanel eyebrow="Import Accountability" title="Import History" description="Organization-scoped import records and outcomes will be implemented during Sprint 001AD.5." phase="Sprint 001AD.5" icon={FileClock} />}
+          {activeTab === "archived" && <PlaceholderPanel eyebrow="Fleet Record Retention" title="Archived Assets" description="Archived asset review and restoration workflows will be implemented during Sprint 001AD.6." phase="Sprint 001AD.6" icon={Archive} />}
         </div>
       </div>
     </section>

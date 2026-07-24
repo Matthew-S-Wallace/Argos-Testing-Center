@@ -206,3 +206,34 @@ export function exportCSVReportFile({ filename, columns, rows }) {
 
   downloadFile(filename, `\uFEFF${csvContent}`);
 }
+export function downloadRejectedCSVRows({
+  fileName = "argos-import",
+  rejectedRows = [],
+} = {}) {
+  if (!Array.isArray(rejectedRows) || rejectedRows.length === 0) {
+    return;
+  }
+
+  const csvContent = [
+    "Rejected Row",
+    ...rejectedRows.map((row) =>
+      escapeCSVValue(
+        typeof row === "string"
+          ? row
+          : row?.message ||
+              row?.reason ||
+              JSON.stringify(row)
+      )
+    ),
+  ].join("\n");
+
+  const baseName =
+    String(fileName || "argos-import")
+      .replace(/\.csv$/i, "")
+      .trim() || "argos-import";
+
+  downloadFile(
+    `${baseName}-rejected-rows.csv`,
+    `\uFEFF${csvContent}`
+  );
+}
