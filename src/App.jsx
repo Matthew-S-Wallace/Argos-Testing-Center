@@ -3457,6 +3457,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         {activeView === "data-management" && (
           <ARGOSDataManagementModule
             csvImport={csvImportWorkflow}
+            assets={assets}
             isDemoMode={isDemoMode}
           />
         )}
