@@ -255,3 +255,14 @@ button.argos-departments-row-action {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Sprint 001AH UX Polish */
+.argos-departments-table tbody tr[aria-selected="true"]{
+  background:rgba(25,78,121,.08);
+  outline:2px solid rgba(25,78,121,.22);
+  outline-offset:-2px;
+}
+.argos-departments-table tbody tr{transition:background .15s ease;}
+.argos-departments-table td,.argos-departments-table th{padding:15px 16px;}
+.argos-departments-actions{margin-bottom:8px}

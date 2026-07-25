@@ -178,31 +178,6 @@
   color: #8d1f1f;
 }
 
-.argos-users-foundation-note {
-  margin-top: 24px;
-  padding: 18px 20px;
-  border: 1px solid #e1d4b2;
-  border-radius: 10px;
-  background: #fffaf0;
-  font-family: Inter, system-ui, sans-serif;
-}
-
-.argos-users-foundation-note strong,
-.argos-users-foundation-note span {
-  display: block;
-}
-
-.argos-users-foundation-note strong {
-  color: #82550f;
-  font-size: 13px;
-}
-
-.argos-users-foundation-note span {
-  margin-top: 6px;
-  color: #526174;
-  font-size: 13px;
-  line-height: 1.55;
-}
 
 @media (max-width: 1100px) {
   .argos-users-summary {
@@ -508,6 +483,265 @@
   }
 
   .argos-users-invite-actions button {
+    width: 100%;
+  }
+}
+
+
+/* Sprint 001AH — Users Administration UX polish */
+.argos-users-content {
+  display: grid;
+  gap: 22px;
+  padding: 28px;
+}
+
+.argos-users-heading {
+  position: relative;
+  overflow: hidden;
+  padding: 24px 26px;
+  border: 1px solid #081f3d;
+  border-radius: 14px;
+  background: #081f3d;
+  box-shadow: 0 12px 28px rgba(8, 31, 61, 0.18);
+}
+
+.argos-users-heading h4 {
+  color: #ffffff;
+  font-size: clamp(24px, 2.4vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.argos-users-heading .eyebrow {
+  margin: 0 0 6px;
+  color: #d3b66d;
+}
+
+.argos-users-heading p:not(.eyebrow) {
+  max-width: 760px;
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.argos-users-mode {
+  border-color: rgba(211, 182, 109, 0.58);
+  background: rgba(211, 182, 109, 0.12);
+  color: #f1d58f;
+}
+
+.argos-users-actions {
+  align-items: center;
+  margin-top: 0;
+}
+
+.argos-users-action,
+.argos-users-submit,
+.argos-users-editor-actions button,
+.argos-users-invite-actions button {
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.015em;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.argos-users-action:not(:disabled):hover,
+.argos-users-submit:not(:disabled):hover,
+.argos-users-editor-actions button:not(:disabled):hover,
+.argos-users-invite-actions button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.argos-users-action--primary,
+.argos-users-submit {
+  border-color: #081f3d;
+  background: #081f3d;
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(8, 31, 61, 0.16);
+}
+
+.argos-users-action--primary:not(:disabled):hover,
+.argos-users-submit:not(:disabled):hover {
+  background: #173654;
+}
+
+.argos-users-action--secondary {
+  border-color: rgba(8, 31, 61, 0.22);
+  background: #ffffff;
+  color: #081f3d;
+}
+
+.argos-users-action--secondary:not(:disabled):hover {
+  border-color: #b79241;
+  background: #fffaf0;
+}
+
+.argos-users-action--danger {
+  border-color: rgba(139, 30, 22, 0.28);
+  background: #fffafa;
+  color: #8b1e16;
+}
+
+.argos-users-action--danger:not(:disabled):hover {
+  border-color: #8b1e16;
+  background: #f8e8e5;
+}
+
+.argos-users-action--restore {
+  border-color: rgba(20, 108, 46, 0.28);
+  background: #f7fcf8;
+  color: #146c2e;
+}
+
+.argos-users-action--restore:not(:disabled):hover {
+  border-color: #146c2e;
+  background: #eef8f1;
+}
+
+.argos-users-summary {
+  gap: 12px;
+  margin: 0;
+}
+
+.argos-users-summary > div {
+  position: relative;
+  min-height: 104px;
+  display: grid;
+  align-content: center;
+  padding: 18px 20px;
+  overflow: hidden;
+  border-color: rgba(8, 31, 61, 0.13);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfaf7 100%);
+  box-shadow: 0 7px 18px rgba(8, 31, 61, 0.06);
+}
+
+.argos-users-summary > div::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: #b79241;
+}
+
+.argos-users-summary span {
+  color: #667184;
+}
+
+.argos-users-summary strong {
+  color: #081f3d;
+  font-size: 22px;
+}
+
+.argos-users-table-wrap {
+  border-color: rgba(8, 31, 61, 0.14);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(8, 31, 61, 0.06);
+}
+
+.argos-users-table th {
+  height: 46px;
+  background: #f1efe9;
+  color: #081f3d;
+}
+
+.argos-users-table td {
+  height: 52px;
+}
+
+.argos-users-table tbody tr:hover {
+  background: rgba(183, 146, 65, 0.075);
+}
+
+.argos-users-table tbody tr.selected {
+  background: rgba(8, 31, 61, 0.06);
+  box-shadow: inset 4px 0 0 #b79241;
+}
+
+.argos-users-table input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #081f3d;
+}
+
+.argos-users-state,
+.argos-users-editor,
+.argos-users-invite-panel {
+  margin-top: 0;
+  border-color: rgba(8, 31, 61, 0.14);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfaf7 100%);
+  box-shadow: 0 8px 22px rgba(8, 31, 61, 0.055);
+}
+
+.argos-users-editor-heading h5,
+.argos-users-invite-heading h5 {
+  color: #081f3d;
+}
+
+.argos-users-editor-heading > span,
+.argos-users-invite-heading > span {
+  background: #f4ecdc;
+  color: #82550f;
+}
+
+.argos-users-editor-grid input,
+.argos-users-editor-grid select,
+.argos-users-invite-grid input,
+.argos-users-invite-grid select {
+  min-height: 44px;
+  border-color: #c9d0d9;
+}
+
+.argos-users-editor-grid input:focus,
+.argos-users-editor-grid select:focus,
+.argos-users-invite-grid input:focus,
+.argos-users-invite-grid select:focus {
+  border-color: #b79241;
+  outline: 3px solid rgba(183, 146, 65, 0.16);
+}
+
+.argos-users-editor-actions,
+.argos-users-invite-actions {
+  padding-top: 18px;
+  border-top: 1px solid #e9e6df;
+}
+
+.argos-users-editor-actions button.secondary,
+.argos-users-invite-actions button.secondary {
+  border-color: rgba(8, 31, 61, 0.22);
+  background: #ffffff;
+  color: #081f3d;
+}
+
+.argos-users-message {
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .argos-users-content {
+    gap: 18px;
+    padding: 20px 16px;
+  }
+
+  .argos-users-heading {
+    padding: 21px 20px;
+  }
+
+  .argos-users-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .argos-users-action {
     width: 100%;
   }
 }

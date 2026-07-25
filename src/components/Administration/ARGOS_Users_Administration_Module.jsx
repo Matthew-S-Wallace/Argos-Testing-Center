@@ -717,9 +717,8 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
             <p className="eyebrow">Identity &amp; Access Management</p>
             <h4>Organization Users</h4>
             <p>
-              This workspace is restricted to active ARGOS Administrators and
-              Managers. Technician and standard-user accounts cannot view or
-              perform user-management operations.
+              User management is available to authorized organization administrators
+              and managers.
             </p>
           </div>
           <span className="argos-users-mode">Access Restricted</span>
@@ -738,18 +737,18 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
           <p className="eyebrow">Identity &amp; Access Management</p>
           <h4>Organization Users</h4>
           <p>
-            Review and update organization-scoped user identity, role,
-            department assignment, job title, and contact information through
-            the controlled ARGOS administrator security boundary.
+            Manage organization users, roles, departments, job titles, contact
+            information, and account access.
           </p>
         </div>
 
-        <span className="argos-users-mode">Controlled Editing</span>
+        <span className="argos-users-mode">User Management</span>
       </div>
 
       <div className="argos-users-actions" aria-label="User management actions">
         <button
           type="button"
+          className="argos-users-action argos-users-action--primary"
           disabled={
             !userInvitationPermitted ||
             Boolean(editDraft) ||
@@ -773,6 +772,7 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
         </button>
         <button
           type="button"
+          className="argos-users-action argos-users-action--secondary"
           onClick={beginEditSelectedUser}
           disabled={
             !canEditSelectedUser ||
@@ -785,6 +785,11 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
         </button>
         <button
           type="button"
+          className={`argos-users-action ${
+            selectedUser?.is_active === false
+              ? "argos-users-action--restore"
+              : "argos-users-action--danger"
+          }`}
           onClick={changeSelectedUserStatus}
           disabled={
             !selectedUser ||
@@ -1025,7 +1030,7 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
               Cancel
             </button>
 
-            <button type="submit" disabled={isInvitingUser}>
+            <button type="submit" className="argos-users-submit" disabled={isInvitingUser}>
               {isInvitingUser ? "Sending…" : "Send Invitation"}
             </button>
           </div>
@@ -1138,24 +1143,14 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
             >
               Cancel
             </button>
-            <button type="submit" disabled={isSaving}>
+            <button type="submit" className="argos-users-submit" disabled={isSaving}>
               {isSaving ? "Saving…" : "Save User"}
             </button>
           </div>
         </form>
       ) : null}
 
-      <div className="argos-users-foundation-note">
-        <strong>Sprint 001O operation-level authorization active</strong>
-        <span>
-          ARGOS routes profile edits and account-status operations through the
-          authenticated, tenant-scoped identity boundary. Administrators retain
-          controlled invitation, role, department, suspend, and restore authority;
-          Managers receive limited non-Administrator profile editing according to
-          the central Permission Resolver. Self-protection and final-active-
-          Administrator safeguards remain enforced in the interface.
-        </span>
-      </div>
+
     </div>
   );
 }

@@ -454,7 +454,7 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
       {!editingDepartment && departments.length > 0 && (
         <div className="argos-departments-action-message">
           {selectedDepartment
-            ? `Selected: ${selectedDepartment.department_name}`
+            ? `Selected Department: ${selectedDepartment.department_name}`
             : "Select a department row to enable Edit Department."}
         </div>
       )}
@@ -621,16 +621,6 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
         </div>
       )}
 
-      <div className="argos-departments-foundation-note">
-        <strong>Sprint 001F boundary</strong>
-        <span>
-          Departments are organization-scoped production records. Department names and
-          codes can now be edited by Administrators. Asset counts remain matched against
-          the existing asset department text; renaming a department does not rewrite
-          historical asset records. Reactivation and department-ID migration remain
-          outside this sprint.
-        </span>
-      </div>
     </div>
   );
 }
