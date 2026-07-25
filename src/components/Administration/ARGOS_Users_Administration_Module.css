@@ -745,3 +745,83 @@
     width: 100%;
   }
 }
+
+/* Sprint 001AH — Users header cleanup */
+.argos-users-heading p:not(.eyebrow) {
+  font-size: 16px;
+}
+
+.argos-users-mode {
+  display: none;
+}
+
+
+/* Sprint 001AH — Standard User Management header */
+.argos-users-heading {
+  position: static;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.argos-users-heading h4 {
+  color: #071a33;
+  font-size: 27px;
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+.argos-users-heading .eyebrow {
+  margin: 0;
+  color: inherit;
+}
+
+.argos-users-heading p:not(.eyebrow) {
+  max-width: 780px;
+  margin: 10px 0 0;
+  color: #526174;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.argos-users-mode {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .argos-users-heading {
+    padding: 0;
+  }
+}
+
+
+/* Sprint 001AH — User Management table action alignment */
+.argos-users-heading .eyebrow {
+  color: #9a6614;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-users-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0 10px;
+}
+
+@media (max-width: 760px) {
+  .argos-users-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .argos-users-action {
+    width: 100%;
+  }
+}

@@ -481,3 +481,50 @@
     width: 100%;
   }
 }
+
+
+/* Sprint 001AH — Standardized Archived Assets */
+.argos-archive-heading {
+  display: block;
+}
+
+.argos-archive-heading .eyebrow {
+  margin: 0;
+  color: #9a6614;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-archive-heading h4 {
+  margin: 4px 0 0;
+  color: #071a33;
+  font-size: 27px;
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+.argos-archive-heading p:not(.eyebrow) {
+  max-width: 720px;
+  margin: 10px 0 0;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.argos-archive-toolbar {
+  align-items: end;
+}
+
+.argos-archive-refresh-button {
+  flex: 0 0 auto;
+  min-height: 44px;
+}
+
+@media (max-width: 720px) {
+  .argos-archive-toolbar {
+    align-items: stretch;
+  }
+}

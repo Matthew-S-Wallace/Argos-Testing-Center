@@ -664,3 +664,95 @@ button.argos-data-management__tab.is-active {
     grid-column: auto;
   }
 }
+
+
+/* Sprint 001AH — Standardized Data Management */
+.argos-data-management__page-header {
+  display: block;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.argos-data-management__page-eyebrow {
+  margin: 0;
+  color: #9a6614;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-data-management__page-header h1 {
+  margin: 4px 0 0;
+  color: #071a33;
+  font-size: 27px;
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+.argos-data-management__status-card,
+.argos-data-management__phase {
+  display: none !important;
+}
+
+.argos-data-management__workspace {
+  margin-top: 18px;
+}
+
+.argos-data-management__panel-heading {
+  display: block;
+  padding-bottom: 18px;
+}
+
+.argos-data-management__panel-heading .eyebrow {
+  margin: 0;
+  color: #9a6614;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-data-management__panel-heading h3,
+.argos-data-management__placeholder h3 {
+  margin: 4px 0 0;
+  color: #071a33;
+  font-size: 27px;
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+.argos-data-management__panel-heading > div > p:last-child,
+.argos-data-management__placeholder > p:not(.eyebrow) {
+  max-width: 760px;
+  margin: 10px 0 0;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.argos-data-management__content {
+  padding: 30px;
+}
+
+.argos-data-management__action-grid,
+.argos-data-management__export-summary,
+.argos-data-management__history-toolbar {
+  margin-top: 24px;
+}
+
+@media (max-width: 760px) {
+  .argos-data-management__page-header {
+    padding: 0;
+  }
+
+  .argos-data-management__panel-heading {
+    display: block;
+  }
+}

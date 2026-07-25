@@ -263,11 +263,6 @@ export default function ARGOSDataManagementModule({
           <p className="argos-data-management__page-eyebrow">Data Administration</p>
           <h1 id="argos-data-management-title">Data Management</h1>
         </div>
-        <div className="argos-data-management__status-card">
-          <Database size={22} strokeWidth={1.9} aria-hidden="true" />
-          <span>Workspace</span>
-          <strong>Sprint 001AF</strong>
-        </div>
       </header>
 
       <div className="argos-data-management__workspace">
@@ -299,7 +294,6 @@ export default function ARGOSDataManagementModule({
                   <p className="eyebrow">Fleet Data Intake</p>
                   <h3 id="csv-import-title">CSV Import</h3>
                 </div>
-                <span className="argos-data-management__phase">Operational</span>
               </div>
 
               {isDemoMode && (
@@ -522,7 +516,6 @@ export default function ARGOSDataManagementModule({
                     organization-scoped CSV file.
                   </p>
                 </div>
-                <span className="argos-data-management__phase">Operational</span>
               </div>
 
               <div className="argos-data-management__export-summary">
@@ -674,7 +667,6 @@ export default function ARGOSDataManagementModule({
                     rejected-row records.
                   </p>
                 </div>
-                <span className="argos-data-management__phase">Operational</span>
               </div>
 
               <div className="argos-data-management__history-toolbar">
@@ -810,7 +802,6 @@ export default function ARGOSDataManagementModule({
                     to the active fleet.
                   </p>
                 </div>
-                <span className="argos-data-management__phase">Operational</span>
               </div>
 
               {isDemoMode && (
@@ -1010,7 +1001,6 @@ function PlaceholderPanel({ eyebrow, title, description, phase, icon: Icon }) {
       <p className="eyebrow">{eyebrow}</p>
       <h3>{title}</h3>
       <p>{description}</p>
-      <span className="argos-data-management__phase">{phase}</span>
     </section>
   );
 }

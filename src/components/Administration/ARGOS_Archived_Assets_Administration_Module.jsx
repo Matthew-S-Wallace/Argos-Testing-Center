@@ -192,14 +192,6 @@ export default function ARGOSArchivedAssetsAdministrationModule({
           </p>
         </div>
 
-        <button
-          className="argos-archive-refresh-button"
-          type="button"
-          onClick={loadArchive}
-          disabled={isDemoMode}
-        >
-          Refresh Archive
-        </button>
       </header>
 
       {isDemoMode && (
@@ -273,6 +265,15 @@ export default function ARGOSArchivedAssetsAdministrationModule({
           <span>Results</span>
           <strong>{filteredAssets.length}</strong>
         </div>
+
+        <button
+          className="argos-archive-refresh-button"
+          type="button"
+          onClick={loadArchive}
+          disabled={isDemoMode}
+        >
+          Refresh Archive
+        </button>
       </div>
 
       {!isDemoMode && !loadError && filteredAssets.length === 0 ? (

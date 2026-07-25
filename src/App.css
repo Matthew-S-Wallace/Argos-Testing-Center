@@ -5264,3 +5264,71 @@ button.administration-menu-item.active {
 }
 .vmrs-empty-guidance strong { color: #82550f; font-size: 13px; }
 .vmrs-empty-guidance span { color: #526174; font-size: 12px; line-height: 1.5; }
+
+
+/* Sprint 001AH — Standardized Organization Profile */
+.organization-profile-content {
+  padding: 30px;
+}
+
+.organization-profile-heading {
+  display: block;
+}
+
+.organization-profile-heading .eyebrow {
+  margin: 0;
+  color: #9a6614;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.organization-profile-heading h4 {
+  margin: 4px 0 0;
+  color: #071a33;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 27px;
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+.organization-profile-description {
+  max-width: 760px;
+  margin: 10px 0 0;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.organization-profile-state {
+  margin: 0;
+  padding: 24px;
+  border: 1px solid #d8d8d2;
+  border-radius: 10px;
+  background: #fbfbf8;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  text-align: center;
+}
+
+.organization-profile-state.error {
+  border-color: rgba(166, 27, 27, 0.3);
+  background: #fff6f6;
+  color: #8d1f1f;
+}
+
+@media (max-width: 760px) {
+  .organization-profile-content {
+    padding: 24px 20px;
+  }
+}
+
+
+/* Sprint 001AH — Organization Profile heading correction */
+.organization-profile-description {
+  font-weight: 400;
+}

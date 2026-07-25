@@ -38,3 +38,57 @@
 @media(max-width:760px){.argos-vmrs-modal-backdrop{align-items:flex-end;padding:0}.argos-vmrs-modal{max-height:92vh;border-radius:14px 14px 0 0}.argos-vmrs-modal-header,.argos-vmrs-modal-body,.argos-vmrs-modal-footer{padding-left:20px;padding-right:20px}.argos-vmrs-import-fields{grid-template-columns:1fr}.argos-vmrs-import-fields label:last-child{grid-column:auto}.argos-vmrs-modal-footer{display:grid;grid-template-columns:1fr 1fr}.argos-vmrs-dropzone{min-height:190px;padding:22px 18px}}
 
 .argos-vmrs-primary-button:disabled,.argos-vmrs-secondary-button:disabled{opacity:.55;cursor:not-allowed}
+
+
+/* Sprint 001AH — Standardized VMRS Catalog Management */
+.argos-vmrs-heading {
+  display: block;
+}
+
+.argos-vmrs-heading .eyebrow {
+  margin: 0;
+  color: #9a6614;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-vmrs-heading h4 {
+  margin: 4px 0 0;
+  color: #071a33;
+  font-size: 27px;
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+.argos-vmrs-heading p:not(.eyebrow) {
+  max-width: 820px;
+  margin: 10px 0 0;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.argos-vmrs-mode {
+  display: none !important;
+}
+
+.argos-vmrs-summary {
+  margin: 24px 0 18px;
+}
+
+.argos-vmrs-toolbar {
+  margin-bottom: 18px;
+}
+
+.argos-vmrs-table-wrap {
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  .argos-vmrs-heading {
+    display: block;
+  }
+}

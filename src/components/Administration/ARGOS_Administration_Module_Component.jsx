@@ -39,46 +39,31 @@ const ADMINISTRATION_GROUPS = [
   },
 ];
 
-const ORGANIZATION_PROFILE_FIELDS = [
-  ["Organization Name", "name"],
-  ["Fleet / Display Name", "fleet_name"],
-  ["Primary Contact", "primary_contact_name"],
-  ["Contact Email", "contact_email"],
-  ["Contact Phone", "contact_phone"],
-  ["Address Line 1", "address_line_1"],
-  ["Address Line 2", "address_line_2"],
-  ["City", "city"],
-  ["State", "state"],
-  ["ZIP / Postal Code", "postal_code"],
-  ["Time Zone", "time_zone"],
-];
-
 function OrganizationProfileWorkspace({
   organizationProfile,
   organizationProfileLoading,
   organizationProfileError,
 }) {
+  const organizationName =
+    organizationProfile?.name ||
+    organizationProfile?.fleet_name ||
+    "Organization";
+
   return (
     <div className="organization-profile-content">
-      <div className="organization-profile-heading">
-        <div>
-          <p className="eyebrow">Organization Record</p>
-          <h4>Agency and Fleet Information</h4>
-        </div>
-      </div>
-
       {organizationProfileLoading ? (
         <div className="organization-profile-state">Loading organization profile…</div>
       ) : organizationProfileError ? (
         <div className="organization-profile-state error">{organizationProfileError}</div>
       ) : organizationProfile ? (
-        <div className="organization-profile-grid">
-          {ORGANIZATION_PROFILE_FIELDS.map(([label, field]) => (
-            <div className="organization-profile-field" key={field}>
-              <span>{label}</span>
-              <strong>{organizationProfile[field] || "Not configured"}</strong>
-            </div>
-          ))}
+        <div className="organization-profile-heading">
+          <div>
+            <p className="eyebrow">Organization Administration</p>
+            <h4>Organization Profile</h4>
+            <p className="organization-profile-description">
+              {organizationName}
+            </p>
+          </div>
         </div>
       ) : (
         <div className="organization-profile-state">
@@ -167,43 +152,16 @@ export default function AdministrationModule({
   const isArchivedAssetsSection = activeSection === "Archived Assets";
 
   function getSectionDisplayName(item) {
-    return item === "VMRS Configuration" ? "VMRS Catalog Management" : item;
+    if (item === "VMRS Configuration") return "VMRS Catalog Management";
+    if (item === "Users") return "User Management";
+    if (item === "Roles") return "Role Assignment";
+    if (item === "Departments") return "Fleet Departments";
+    return item;
   }
 
-  function getSectionLabel(item) {
-    if (
-      item === "Organization Profile" ||
-      item === "Users" ||
-      item === "Roles" ||
-      item === "Departments" ||
-      item === "Asset Types" ||
-      item === "Status Configuration" ||
-      item === "Reason Configuration" ||
-      item === "Technicians" ||
-      item === "APWA Mapping" ||
-      item === "VMRS Configuration" ||
-      item === "Archived Assets"
-    ) {
-      return null;
-    }
-
-    return "Planned";
-  }
-
-  function getWorkspaceStatus() {
-    if (isOrganizationProfile) return "Live Profile";
-    if (isUsersSection) return "Live Users";
-    if (isRolesSection) return "Live Roles";
-    if (isDepartmentsSection) return "Live Departments";
-    if (isAssetTypesSection) return "Live Asset Types";
-    if (isStatusConfigurationSection) return "Live Status Configuration";
-    if (isReasonConfigurationSection) return "Live Reason Configuration";
-    if (isTechniciansSection) return "Live Technicians";
-    if (isAPWAMappingSection) return "Live APWA Mapping";
-    if (isVMRSConfigurationSection) return "Live VMRS Catalog";
-    if (isArchivedAssetsSection) return "Live Archive";
-    return "Framework Ready";
-  }
+  function getSectionLabel() {
+    return null;
+}
 
   if (!canAccessAdministration) {
     return (
@@ -251,7 +209,6 @@ export default function AdministrationModule({
               <p className="eyebrow">Administration Workspace</p>
               <h3>{getSectionDisplayName(activeSection)}</h3>
             </div>
-            <span className="administration-status">{getWorkspaceStatus()}</span>
           </div>
 
           {!canAccessActiveSection ? (

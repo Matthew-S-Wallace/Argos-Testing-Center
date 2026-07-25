@@ -285,3 +285,66 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Sprint 001AH — Standardized Asset Types */
+.argos-asset-types-heading {
+  display: block;
+}
+
+.argos-asset-types-heading .eyebrow {
+  margin: 0;
+  color: #9a6614;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-asset-types-heading h4 {
+  margin: 4px 0 0;
+  color: #071a33;
+  font-size: 27px;
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+.argos-asset-types-heading p:not(.eyebrow) {
+  max-width: 760px;
+  margin: 10px 0 0;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.argos-asset-types-mode {
+  display: none !important;
+}
+
+.argos-asset-types-summary {
+  margin: 24px 0 0;
+}
+
+.argos-asset-types-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 10px;
+}
+
+.argos-asset-types-table-wrap {
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  .argos-asset-types-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .argos-asset-types-actions button {
+    width: 100%;
+  }
+}

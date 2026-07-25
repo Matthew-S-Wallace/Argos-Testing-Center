@@ -377,9 +377,6 @@ export default function ARGOSAssetTypesAdministrationModule({ isDemoMode }) {
             asset records, reporting, VIN defaults, and future maintenance analytics.
           </p>
         </div>
-        <span className="argos-asset-types-mode">
-          {isAdministrator ? "Administrator" : "Read Only"}
-        </span>
       </div>
 
       {actionMessage && (

@@ -419,36 +419,17 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
           </p>
         </div>
 
-        <span className="argos-departments-mode">
-          {isAdministrator ? "Administrator" : "Read Only"}
-        </span>
+      <div className="argos-departments-summary">
+        <div>
+          <span>Total Departments</span>
+          <strong>{departments.length}</strong>
+        </div>
+        <div>
+          <span>Active Departments</span>
+          <strong>{activeDepartments.length}</strong>
+        </div>
       </div>
 
-      <div className="argos-departments-actions">
-        <button
-          type="button"
-          onClick={() => {
-            setShowAddForm((currentValue) => !currentValue);
-            setActionMessage("");
-          }}
-          disabled={!isAdministrator}
-        >
-          {showAddForm ? "Cancel Add" : "Add Department"}
-        </button>
-        <button
-          type="button"
-          disabled={!isAdministrator || !selectedDepartment}
-          onClick={() => {
-            if (editingDepartment) {
-              cancelEditDepartment();
-              return;
-            }
-
-            beginEditDepartment(selectedDepartment);
-          }}
-        >
-          {editingDepartment ? "Cancel Edit" : "Edit Department"}
-        </button>
       </div>
 
       {!editingDepartment && departments.length > 0 && (
@@ -529,15 +510,31 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
         <div className="argos-departments-action-message">{actionMessage}</div>
       )}
 
-      <div className="argos-departments-summary">
-        <div>
-          <span>Total Departments</span>
-          <strong>{departments.length}</strong>
-        </div>
-        <div>
-          <span>Active Departments</span>
-          <strong>{activeDepartments.length}</strong>
-        </div>
+      <div className="argos-departments-actions">
+        <button
+          type="button"
+          onClick={() => {
+            setShowAddForm((currentValue) => !currentValue);
+            setActionMessage("");
+          }}
+          disabled={!isAdministrator}
+        >
+          {showAddForm ? "Cancel Add" : "Add Department"}
+        </button>
+        <button
+          type="button"
+          disabled={!isAdministrator || !selectedDepartment}
+          onClick={() => {
+            if (editingDepartment) {
+              cancelEditDepartment();
+              return;
+            }
+
+            beginEditDepartment(selectedDepartment);
+          }}
+        >
+          {editingDepartment ? "Cancel Edit" : "Edit Department"}
+        </button>
       </div>
 
       {isLoading ? (

@@ -516,7 +516,6 @@ export default function ARGOSAPWAMappingAdministrationModule({ isDemoMode }) {
             Department, an Asset Type, or an exact combination of both.
           </p>
         </div>
-        <span className="argos-apwa-mode">{canManage ? "Manager Access" : "Read Only"}</span>
       </div>
 
       {actionMessage && <div className="argos-apwa-action-message">{actionMessage}</div>}

@@ -204,7 +204,6 @@ export default function ARGOSTechniciansAdministrationModule({ isDemoMode }) {
           <h4>Technicians</h4>
           <p>Maintain controlled technician records used for asset assignment and workload analytics.</p>
         </div>
-        <span className="argos-technicians-mode">{canManage ? "Admin / Manager" : "Read Only"}</span>
       </div>
 
       {actionMessage && <div className="argos-technicians-action-message">{actionMessage}</div>}

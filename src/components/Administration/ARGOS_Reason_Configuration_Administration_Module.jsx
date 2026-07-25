@@ -427,9 +427,6 @@ export default function ARGOSReasonConfigurationAdministrationModule({
             workflow requirements.
           </p>
         </div>
-        <span className="argos-reason-config-mode">
-          {isAdmin ? "Administrator" : "Read Only"}
-        </span>
       </div>
 
       {message && (

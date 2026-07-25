@@ -42,10 +42,11 @@
 }
 
 .argos-departments-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 24px;
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:10px;
+  margin:24px 0 12px;
 }
 
 .argos-departments-actions button,
@@ -266,3 +267,44 @@ button.argos-departments-row-action {
 .argos-departments-table tbody tr{transition:background .15s ease;}
 .argos-departments-table td,.argos-departments-table th{padding:15px 16px;}
 .argos-departments-actions{margin-bottom:8px}
+
+
+/* Sprint 001AH — Departments table action layout */
+.argos-departments-summary {
+  margin: 18px 0 0;
+}
+
+.argos-departments-actions {
+  margin: 18px 0 10px;
+}
+
+
+/* Sprint 001AH — Final Fleet Departments alignment */
+.argos-departments-heading {
+  display: block;
+}
+
+.argos-departments-summary {
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 220px));
+  justify-content: start;
+  align-items: stretch;
+  margin: 18px 0 0;
+}
+
+.argos-departments-summary > div {
+  min-height: 92px;
+  display: grid;
+  align-content: center;
+}
+
+.argos-departments-actions {
+  justify-content: flex-end;
+  margin: 18px 0 10px;
+}
+
+@media (max-width: 760px) {
+  .argos-departments-summary {
+    grid-template-columns: 1fr;
+  }
+}

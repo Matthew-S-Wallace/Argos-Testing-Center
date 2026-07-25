@@ -715,13 +715,12 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
         <div className="argos-users-heading">
           <div>
             <p className="eyebrow">Identity &amp; Access Management</p>
-            <h4>Organization Users</h4>
+            <h4>User Management</h4>
             <p>
               User management is available to authorized organization administrators
               and managers.
             </p>
           </div>
-          <span className="argos-users-mode">Access Restricted</span>
         </div>
         <UsersState error>
           Your account is not authorized to manage organization users.
@@ -735,14 +734,38 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
       <div className="argos-users-heading">
         <div>
           <p className="eyebrow">Identity &amp; Access Management</p>
-          <h4>Organization Users</h4>
+          <h4>User Management</h4>
           <p>
             Manage organization users, roles, departments, job titles, contact
             information, and account access.
           </p>
         </div>
 
-        <span className="argos-users-mode">User Management</span>
+      </div>
+
+      <div className="argos-users-summary">
+        <div>
+          <span>Visible Users</span>
+          <strong>{users.length}</strong>
+        </div>
+        <div>
+          <span>Active Accounts</span>
+          <strong>{activeUserCount}</strong>
+        </div>
+        <div>
+          <span>Suspended Accounts</span>
+          <strong>{suspendedUserCount}</strong>
+        </div>
+        <div>
+          <span>Management Status</span>
+          <strong>
+            {currentUserIsAdministrator
+              ? "Administrator"
+              : currentUserIsManager
+                ? "Manager — Limited"
+                : "Read Only"}
+          </strong>
+        </div>
       </div>
 
       <div className="argos-users-actions" aria-label="User management actions">
@@ -811,31 +834,6 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
               ? "Restore Selected User"
               : "Suspend Selected User"}
         </button>
-      </div>
-
-      <div className="argos-users-summary">
-        <div>
-          <span>Visible Users</span>
-          <strong>{users.length}</strong>
-        </div>
-        <div>
-          <span>Active Accounts</span>
-          <strong>{activeUserCount}</strong>
-        </div>
-        <div>
-          <span>Suspended Accounts</span>
-          <strong>{suspendedUserCount}</strong>
-        </div>
-        <div>
-          <span>Management Status</span>
-          <strong>
-            {currentUserIsAdministrator
-              ? "Administrator"
-              : currentUserIsManager
-                ? "Manager — Limited"
-                : "Read Only"}
-          </strong>
-        </div>
       </div>
 
       {actionMessage ? (

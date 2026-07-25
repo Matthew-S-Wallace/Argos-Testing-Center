@@ -98,7 +98,7 @@ export default function ARGOSStatusConfigurationAdministrationModule({isDemoMode
   const field=(source,setter,key,type="text",disabled=false)=><input type={type} value={type==="checkbox"?undefined:source[key]} checked={type==="checkbox"?source[key]:undefined} disabled={disabled} onChange={(event)=>change(setter,key,type==="checkbox"?event.target.checked:event.target.value)} />;
 
   return <div className="argos-status-config-content">
-    <div className="argos-status-config-heading"><div><p className="eyebrow">Operational Workflow</p><h4>Status Configuration</h4><p>Maintain organization-scoped statuses, ordering, colors, availability behavior, down-date requirements, and future Reason mappings.</p></div><span className="argos-status-config-mode">{isAdmin?"Administrator":"Read Only"}</span></div>
+    <div className="argos-status-config-heading"><div><p className="eyebrow">Operational Workflow</p><h4>Status Configuration</h4><p>Maintain organization-scoped statuses, ordering, colors, availability behavior, down-date requirements, and future Reason mappings.</p></div></div>
     {message&&<div className="argos-status-config-action-message">{message}</div>}
     <div className="argos-status-config-summary"><div><span>Total Statuses</span><strong>{rows.length}</strong></div><div><span>Active Statuses</span><strong>{active.length}</strong></div><div><span>Available Statuses</span><strong>{active.filter((row)=>row.counts_as_available).length}</strong></div></div>
     <div className="argos-status-config-actions"><button type="button" disabled={!isAdmin} onClick={()=>{setShowAdd((value)=>!value);setMessage("");}}>{showAdd?"Cancel Add":"Add Status"}</button></div>

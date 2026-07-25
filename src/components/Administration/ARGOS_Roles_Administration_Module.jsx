@@ -208,12 +208,13 @@ export default function ARGOSRolesAdministrationModule({ isDemoMode }) {
     <div className="argos-roles-content">
       <div className="argos-roles-heading">
         <div>
-          <h4>Roles</h4>
+          <p className="eyebrow">Organizational Roles</p>
+          <h4>Role Assignment</h4>
           <p>
             Review organization role assignments and the administration capabilities available to each ARGOS role.
           </p>
         </div>
-        <span className="argos-roles-mode">Read-Only Governance</span>
+        
       </div>
 
       <div className="argos-roles-summary">
