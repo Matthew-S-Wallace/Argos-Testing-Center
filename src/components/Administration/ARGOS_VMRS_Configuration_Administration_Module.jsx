@@ -514,16 +514,6 @@ export default function ARGOSVMRSConfigurationAdministrationModule({ isDemoMode 
 
       {actionMessage && <div className="argos-vmrs-action-message">{actionMessage}</div>}
 
-      {!isLoading && !errorMessage && codes.length === 0 && (
-        <div className="argos-vmrs-catalog-warning">
-          <strong>No VMRS Catalog Imported</strong>
-          <span>
-            This organization has not imported a VMRS catalog. Organizations that maintain a
-            licensed VMRS catalog may import their own reference data to enable VMRS repair
-            classification and reporting. ARGOS does not distribute VMRS reference data.
-          </span>
-        </div>
-      )}
 
       <div className="argos-vmrs-import-panel">
         <div>
@@ -622,15 +612,6 @@ export default function ARGOSVMRSConfigurationAdministrationModule({ isDemoMode 
         isSubmitting={isImporting}
       />
 
-      <div className="argos-vmrs-foundation-note">
-        <strong>ARGOS VMRS operating boundary</strong>
-        <span>
-          ARGOS uses organization-supplied VMRS reference data for standardized repair
-          classification and reporting only. ARGOS does not distribute VMRS content or introduce
-          work orders, parts, labor costing, preventive maintenance scheduling, or other FMIS
-          functions.
-        </span>
-      </div>
     </div>
   );
 }

@@ -432,6 +432,29 @@ export default function ARGOSReasonConfigurationAdministrationModule({
         </span>
       </div>
 
+      {message && (
+        <div className="argos-reason-config-action-message">
+          {message}
+        </div>
+      )}
+
+      <div className="argos-reason-config-summary">
+        <div>
+          <span>Total Reasons</span>
+          <strong>{rows.length}</strong>
+        </div>
+        <div>
+          <span>Active Reasons</span>
+          <strong>{active.length}</strong>
+        </div>
+        <div>
+          <span>Mobile Visible</span>
+          <strong>
+            {active.filter((row) => row.mobile_visible).length}
+          </strong>
+        </div>
+      </div>
+
       <div className="argos-reason-config-actions">
         <button
           type="button"
@@ -484,29 +507,6 @@ export default function ARGOSReasonConfigurationAdministrationModule({
           </button>
         </form>
       )}
-
-      {message && (
-        <div className="argos-reason-config-action-message">
-          {message}
-        </div>
-      )}
-
-      <div className="argos-reason-config-summary">
-        <div>
-          <span>Total Reasons</span>
-          <strong>{rows.length}</strong>
-        </div>
-        <div>
-          <span>Active Reasons</span>
-          <strong>{active.length}</strong>
-        </div>
-        <div>
-          <span>Mobile Visible</span>
-          <strong>
-            {active.filter((row) => row.mobile_visible).length}
-          </strong>
-        </div>
-      </div>
 
       {loading ? (
         <div className="argos-reason-config-state">
@@ -642,15 +642,6 @@ export default function ARGOSReasonConfigurationAdministrationModule({
         </div>
       )}
 
-      <div className="argos-reason-config-foundation-note">
-        <strong>Sprint 001Z boundary</strong>
-        <span>
-          Reason Configuration remains organization scoped and uses the
-          existing centralized Administration permission model. Each reason is
-          mapped to a configured status without altering operational workflow
-          architecture.
-        </span>
-      </div>
     </div>
   );
 }

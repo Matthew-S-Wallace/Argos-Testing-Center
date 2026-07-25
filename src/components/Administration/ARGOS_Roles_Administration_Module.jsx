@@ -336,12 +336,6 @@ export default function ARGOSRolesAdministrationModule({ isDemoMode }) {
         </div>
       </section>
 
-      <div className="argos-roles-foundation-note">
-        <strong>Role assignments are managed through Organization Users</strong>
-        <span>
-          System role definitions are read-only in Version 1.0. Existing administrator protections remain active.
-        </span>
-      </div>
     </div>
   );
 }

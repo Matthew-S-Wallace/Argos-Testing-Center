@@ -207,6 +207,13 @@ export default function ARGOSTechniciansAdministrationModule({ isDemoMode }) {
         <span className="argos-technicians-mode">{canManage ? "Admin / Manager" : "Read Only"}</span>
       </div>
 
+      {actionMessage && <div className="argos-technicians-action-message">{actionMessage}</div>}
+
+      <div className="argos-technicians-summary">
+        <div><span>Total Technicians</span><strong>{technicians.length}</strong></div>
+        <div><span>Active Technicians</span><strong>{activeCount}</strong></div>
+      </div>
+
       <div className="argos-technicians-actions">
         <button type="button" disabled={!canManage} onClick={() => setShowAdd((value) => !value)}>{showAdd ? "Cancel Add" : "Add Technician"}</button>
       </div>
@@ -220,13 +227,6 @@ export default function ARGOSTechniciansAdministrationModule({ isDemoMode }) {
           <button type="submit" disabled={isSaving}>{isSaving ? "Saving…" : "Create Technician"}</button>
         </form>
       )}
-
-      {actionMessage && <div className="argos-technicians-action-message">{actionMessage}</div>}
-
-      <div className="argos-technicians-summary">
-        <div><span>Total Technicians</span><strong>{technicians.length}</strong></div>
-        <div><span>Active Technicians</span><strong>{activeCount}</strong></div>
-      </div>
 
       {isLoading ? <div className="argos-technicians-state">Loading technicians…</div> :
        errorMessage ? <div className="argos-technicians-state error">{errorMessage}</div> :
@@ -261,10 +261,6 @@ export default function ARGOSTechniciansAdministrationModule({ isDemoMode }) {
          </table>
        </div>}
 
-      <div className="argos-technicians-foundation-note">
-        <strong>Sprint 001M boundary</strong>
-        <span>Technicians are organization-scoped controlled records. Administrators and managers may maintain them. Historical technician text remains intact while active asset assignments use technician IDs.</span>
-      </div>
     </div>
   );
 }

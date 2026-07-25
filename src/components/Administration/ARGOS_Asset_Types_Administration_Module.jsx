@@ -382,6 +382,15 @@ export default function ARGOSAssetTypesAdministrationModule({ isDemoMode }) {
         </span>
       </div>
 
+      {actionMessage && (
+        <div className="argos-asset-types-action-message">{actionMessage}</div>
+      )}
+
+      <div className="argos-asset-types-summary">
+        <div><span>Total Asset Types</span><strong>{assetTypes.length}</strong></div>
+        <div><span>Active Asset Types</span><strong>{activeAssetTypes.length}</strong></div>
+      </div>
+
       <div className="argos-asset-types-actions">
         <button
           type="button"
@@ -423,15 +432,6 @@ export default function ARGOSAssetTypesAdministrationModule({ isDemoMode }) {
           </button>
         </form>
       )}
-
-      {actionMessage && (
-        <div className="argos-asset-types-action-message">{actionMessage}</div>
-      )}
-
-      <div className="argos-asset-types-summary">
-        <div><span>Total Asset Types</span><strong>{assetTypes.length}</strong></div>
-        <div><span>Active Asset Types</span><strong>{activeAssetTypes.length}</strong></div>
-      </div>
 
       {isLoading ? (
         <AssetTypesState>Loading Asset Types…</AssetTypesState>
@@ -501,14 +501,6 @@ export default function ARGOSAssetTypesAdministrationModule({ isDemoMode }) {
         </div>
       )}
 
-      <div className="argos-asset-types-foundation-note">
-        <strong>Sprint 001K operational boundary</strong>
-        <span>
-          Asset Types are organization-scoped production records. Existing assets retain
-          their descriptive Asset field while receiving a controlled Asset Type relationship.
-          Version 1.0 supports create, edit, and disable; deletion is intentionally unavailable.
-        </span>
-      </div>
     </div>
   );
 }

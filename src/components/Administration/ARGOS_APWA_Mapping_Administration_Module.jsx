@@ -519,6 +519,15 @@ export default function ARGOSAPWAMappingAdministrationModule({ isDemoMode }) {
         <span className="argos-apwa-mode">{canManage ? "Manager Access" : "Read Only"}</span>
       </div>
 
+      {actionMessage && <div className="argos-apwa-action-message">{actionMessage}</div>}
+
+      <div className="argos-apwa-summary">
+        <div><span>Total Rules</span><strong>{rules.length}</strong></div>
+        <div><span>Active Rules</span><strong>{activeRules.length}</strong></div>
+        <div><span>Exact Matches</span><strong>{exactRules.length}</strong></div>
+        <div><span>APWA Codes</span><strong>{apwaCodes.length}</strong></div>
+      </div>
+
       <div className="argos-apwa-actions">
         <button
           type="button"
@@ -541,15 +550,6 @@ export default function ARGOSAPWAMappingAdministrationModule({ isDemoMode }) {
           </button>
         </form>
       )}
-
-      {actionMessage && <div className="argos-apwa-action-message">{actionMessage}</div>}
-
-      <div className="argos-apwa-summary">
-        <div><span>Total Rules</span><strong>{rules.length}</strong></div>
-        <div><span>Active Rules</span><strong>{activeRules.length}</strong></div>
-        <div><span>Exact Matches</span><strong>{exactRules.length}</strong></div>
-        <div><span>APWA Codes</span><strong>{apwaCodes.length}</strong></div>
-      </div>
 
       {!isLoading && !errorMessage && apwaCodes.length === 0 && (
         <div className="argos-apwa-catalog-warning">
@@ -642,14 +642,6 @@ export default function ARGOSAPWAMappingAdministrationModule({ isDemoMode }) {
         </div>
       )}
 
-      <div className="argos-apwa-foundation-note">
-        <strong>Sprint 001W operational boundary</strong>
-        <span>
-          APWA Mapping manages recommendation rules only. The APWA reference catalog remains
-          migration- or service-role-managed, and asset assignment will be connected during the
-          next operational integration phase.
-        </span>
-      </div>
     </div>
   );
 }

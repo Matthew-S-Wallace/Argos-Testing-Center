@@ -1,6 +1,7 @@
 import ARGOSUsersAdministrationModule from "./ARGOS_Users_Administration_Module";
 import ARGOSRolesAdministrationModule from "./ARGOS_Roles_Administration_Module";
 import ARGOSDepartmentsAdministrationModule from "./ARGOS_Departments_Administration_Module";
+import ARGOSAssetTypesAdministrationModule from "./ARGOS_Asset_Types_Administration_Module";
 import "./ARGOS_VMRS_Configuration_Administration_Module.css";
 import ARGOSStatusConfigurationAdministrationModule from "./ARGOS_Status_Configuration_Administration_Module";
 import ARGOSReasonConfigurationAdministrationModule from "./ARGOS_Reason_Configuration_Administration_Module";
