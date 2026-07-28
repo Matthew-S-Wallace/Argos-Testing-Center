@@ -7,6 +7,7 @@ import ARGOSReportsModule from "./components/Reports/ARGOS_Reports_Module_001Z3"
 import ARGOSRepairHistoryModule from "./components/RepairHistory/ARGOS_Repair_History_Module";
 import ARGOSOperationsNavigation from "./components/Layout/ARGOS_Operations_Navigation_Blue_Shield_Reference_001U";
 import ARGOSDataManagementModule from "./components/DataManagement/ARGOS_Data_Management_Module";
+import ARGOSDailySummaryPage from "./components/DailySummary/ARGOS_Daily_Summary_Page";
 import { canViewAdministration } from "./utils/ARGOS_Permission_Resolver";
 import { exportCSVReportFile } from "./services/ARGOS_CSV_Data_Management_Service";
 import useARGOSCSVImportWorkflow from "./hooks/ARGOS_Use_CSV_Import_Workflow";
@@ -169,7 +170,6 @@ function App() {
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [editAsset, setEditAsset] = useState(null);
   const [newAsset, setNewAsset] = useState(null);
-  const [showDailySummary, setShowDailySummary] = useState(false);
   const [activeView, setActiveView] = useState("command");
   const [showFieldHome, setShowFieldHome] = useState(true);
   const [fieldQueueMode, setFieldQueueMode] = useState("all");
@@ -1020,7 +1020,6 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
   }
 
   function handleOpenDailySummaryAsset(asset) {
-    setShowDailySummary(false);
     setShowFieldHome(false);
     setActiveView(asset.status === "Ready" ? "fleet" : "command");
     handleSelectAsset(asset);
@@ -3115,7 +3114,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
             <b>›</b>
           </button>
 
-          <button className="argos-field-action" type="button" onClick={() => { setShowFieldHome(false); setShowDailySummary(true); }}>
+          <button className="argos-field-action" type="button" onClick={() => { setShowFieldHome(false); setActiveView("daily-summary"); }}>
             <span className="argos-field-action-icon">✦</span>
             <span><strong>Daily Summary</strong><small>Review your work, handoffs, blockers, and completed activity</small></span>
             <b>›</b>
@@ -3142,7 +3141,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
           setActiveView(nextView);
         }}
-        onOpenDailySummary={() => setShowDailySummary(true)}
+        onOpenDailySummary={() => setActiveView("daily-summary")}
         onSignOut={handleSignOut}
         hasAdministrationAccess={hasAdministrationAccess}
         isDemoMode={isDemoMode}
@@ -3187,6 +3186,23 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
             getStatusClass={getStatusClass}
             calculateDaysDown={calculateDaysDown}
             formatRTS={formatRTS}
+          />
+        )}
+
+        {activeView === "daily-summary" && (
+          <ARGOSDailySummaryPage
+            dailySummary={dailySummary}
+            technicianDailySummary={technicianDailySummary}
+            hasAdministrationAccess={hasAdministrationAccess}
+            signedInTechnicianName={signedInTechnicianName}
+            currentTime={fieldCurrentTime}
+            onOpenQueue={() =>
+              openFieldView("fleet", {
+                resetFleet: true,
+                fieldQueueMode: hasAdministrationAccess ? "all" : "awaiting",
+              })
+            }
+            onOpenAsset={handleOpenDailySummaryAsset}
           />
         )}
 
@@ -3666,149 +3682,6 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                   Use VIN
                 </button>
               </div>
-            </section>
-          </div>
-        )}
-
-        {showDailySummary && (
-          <div className="daily-summary-overlay argos-daily-summary-overlay">
-            <section className="daily-summary-panel argos-daily-summary-view" aria-label="Daily Fleet Summary">
-              <header className="argos-daily-summary-header">
-                <div className="argos-daily-summary-heading">
-                  <p className="eyebrow">ARGOS Awareness Engine</p>
-                  <h2>Daily Summary</h2>
-                  <p>
-                    Fleet Readiness, Technician Workloads, and Operational Risks
-                  </p>
-                </div>
-                <div className="argos-daily-summary-header-actions">
-                  <div className="argos-daily-summary-date">
-                    <span>Operational brief</span>
-                    <strong>
-                      {fieldCurrentTime.toLocaleDateString(undefined, {
-                        weekday: "long",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </strong>
-                  </div>
-                  <button
-                    className="argos-daily-summary-close"
-                    onClick={() => setShowDailySummary(false)}
-                    type="button"
-                    aria-label="Close Daily Summary"
-                  >
-                    ×
-                  </button>
-                </div>
-              </header>
-
-              <section className="argos-daily-summary-kpis" aria-label="Fleet readiness key performance indicators">
-                <article className="argos-daily-summary-availability">
-                  <span>Fleet availability</span>
-                  <strong>{dailySummary.availability}%</strong>
-
-                </article>
-                <article>
-                  <span>Units Unavailable</span>
-                  <strong>{dailySummary.unavailableAssets.length}</strong>
-
-                </article>
-                <article>
-                  <span>Critical Units Down</span>
-                  <strong>{dailySummary.criticalUnavailableAssets.length}</strong>
-
-                </article>
-                <article>
-                  <span>Units Awaiting Parts</span>
-                  <strong>{dailySummary.waitingPartsAssets.length}</strong>
-
-                </article>
-                <article>
-                  <span>Units Aged Past 7 Days</span>
-                  <strong>{dailySummary.agedAssets.length}</strong>
-
-                </article>
-              </section>
-
-              <section className="argos-daily-summary-section">
-                <div className="argos-daily-summary-section-heading">
-                  <div>
-                    <p className="eyebrow"></p>
-                    <h3>{hasAdministrationAccess ? "Fleet Operations Overview" : signedInTechnicianName !== "Unassigned" ? signedInTechnicianName : "Current Operator"}</h3>
-                  </div>
-                  <span className="argos-daily-summary-active-badge">
-                    {technicianDailySummary.activeAssignedAssets.length} active
-                  </span>
-                </div>
-
-                <div className="argos-technician-summary-metrics argos-daily-summary-work-metrics">
-                  <article><span>Assigned to Technicians</span><strong>{technicianDailySummary.activeAssignedAssets.length}</strong></article>
-                  <article><span>Updated Today</span><strong>{technicianDailySummary.updatedUnits.length}</strong></article>
-                  <article><span>Awaiting QC</span><strong>{technicianDailySummary.awaitingQcAssets.length}</strong></article>
-                  <article><span>Ready Pickup</span><strong>{technicianDailySummary.readyForPickupAssets.length}</strong></article>
-                  <article><span>Waiting Parts</span><strong>{technicianDailySummary.waitingPartsAssets.length}</strong></article>
-                  <article className="critical"><span>Critical</span><strong>{technicianDailySummary.criticalAssets.length}</strong></article>
-                </div>
-
-                <div className="argos-technician-summary-grid argos-daily-summary-work-grid">
-                  <div className="argos-technician-work-list">
-                    <div className="argos-technician-list-heading">
-                      <div><p className="eyebrow">Current Work</p><h4>{hasAdministrationAccess ? "Units Requiring Action" : "Assigned Units Requiring Action"}</h4></div>
-                      <button type="button" onClick={() => {
-                        setShowDailySummary(false);
-                        openFieldView("fleet", {
-                          resetFleet: true,
-                          fieldQueueMode: hasAdministrationAccess ? "all" : "awaiting",
-                        });
-                      }}>Open Queue</button>
-                    </div>
-                    {technicianDailySummary.activeAssignedAssets.length === 0 ? (
-                      <p className="argos-technician-empty-state">{hasAdministrationAccess ? "No active assigned units currently require action." : "No active units are currently assigned to you."}</p>
-                    ) : technicianDailySummary.activeAssignedAssets.map((asset) => (
-                      <button className="argos-technician-work-item" key={`daily-work-${asset.unit}`} type="button" onClick={() => handleOpenDailySummaryAsset(asset)}>
-                        <span><strong>{asset.unit}</strong><small>{asset.asset}</small></span>
-                        <span><b className={`status-pill ${getStatusClass(asset.status)}`}>{asset.status}</b><small>{asset.details}</small></span>
-                        <i aria-hidden="true">›</i>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="argos-technician-activity-list">
-                    <div className="argos-technician-list-heading">
-                      <div><p className="eyebrow">Activity Log</p><h4>{hasAdministrationAccess ? "Updates Recorded Today" : "Updates Recorded Today"}</h4></div>
-                      <strong>{technicianDailySummary.todayStatusEvents.length + technicianDailySummary.todayCompletedRepairs.length}</strong>
-                    </div>
-                    {technicianDailySummary.todayStatusEvents.length === 0 && technicianDailySummary.todayCompletedRepairs.length === 0 ? (
-                      <p className="argos-technician-empty-state">{hasAdministrationAccess ? "No organization activity has been recorded today." : "No technician activity has been recorded today."}</p>
-                    ) : (<>
-                      {technicianDailySummary.todayStatusEvents.slice(0, 6).map((event) => (
-                        <article key={`daily-event-${event.id}`}><span>{event.unit}</span><strong>{event.previousStatus} → {event.newStatus}</strong><small>{new Date(event.recordedAt || event.statusEndedAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</small></article>
-                      ))}
-                      {technicianDailySummary.todayCompletedRepairs.slice(0, 4).map((record) => (
-                        <article key={`daily-completed-${record.recordId}`}><span>{record.unit}</span><strong>Repair completed</strong><small>{record.details || record.reason || "Returned to service"}</small></article>
-                      ))}
-                    </>)}
-                  </div>
-                </div>
-              </section>
-
-              <section className="argos-daily-summary-section">
-                <div className="argos-daily-summary-section-heading">
-                  <div><h3>Units Requiring Attention</h3></div>
-                </div>
-                <div className="argos-daily-summary-insight-grid">
-                  <article className={dailySummary.criticalUnavailableAssets.length > 0 ? "risk" : "stable"}>
-                    <span>Highest Risk</span><strong>{dailySummary.criticalUnavailableAssets.length > 0 ? `${dailySummary.criticalUnavailableAssets.length} critical unavailable` : "No critical unavailable assets"}</strong>
-                    <p>{dailySummary.criticalUnavailableAssets.length > 0 ? dailySummary.criticalUnavailableAssets.map((asset) => `${asset.unit} · ${asset.department}`).join(", ") : "Critical fleet availability is currently stable."}</p>
-                  </article>
-                  <article><span>Longest Down</span><strong>{dailySummary.longestDownAsset ? `${dailySummary.longestDownAsset.unit} · ${dailySummary.longestDownAsset.daysDown} days` : "No down assets"}</strong><p>{dailySummary.longestDownAsset ? `${dailySummary.longestDownAsset.asset}: ${dailySummary.longestDownAsset.details}` : "All tracked assets are currently available."}</p></article>
-                  <article><span>Parts Constraint</span><strong>{dailySummary.waitingPartsAssets.length} unit{dailySummary.waitingPartsAssets.length === 1 ? "" : "s"} waiting parts</strong><p>{dailySummary.waitingPartsAssets.length > 0 ? dailySummary.waitingPartsAssets.map((asset) => `${asset.unit} · ${asset.details}`).join(", ") : "No parts-delay assets are currently flagged."}</p></article>
-                  <article><span>RTS Gaps</span><strong>{dailySummary.tbdAssets.length} TBD · {dailySummary.noRtsAssets.length} no RTS</strong><p>Return-to-service uncertainty remains visible for assets without firm dates.</p></article>
-                  <article><span>Aging Threshold</span><strong>{dailySummary.agedAssets.length} unit{dailySummary.agedAssets.length === 1 ? "" : "s"} down {dailySummary.agingThreshold}+ days</strong><p>{dailySummary.agedAssets.length > 0 ? dailySummary.agedAssets.map((asset) => `${asset.unit} · ${asset.daysDown} days`).join(", ") : "No units are currently beyond the aging threshold."}</p></article>
-                  <article><span>Department Watch</span><strong>{dailySummary.departmentWatch || "No department watch items"}</strong><p>Departments listed have unavailable assets requiring management visibility.</p></article>
-                </div>
-              </section>
             </section>
           </div>
         )}

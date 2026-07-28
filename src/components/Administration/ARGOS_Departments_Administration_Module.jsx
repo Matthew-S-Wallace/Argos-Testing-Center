@@ -418,6 +418,7 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
             Fire, Public Works, Parks, Transit, and Utilities.
           </p>
         </div>
+      </div>
 
       <div className="argos-departments-summary">
         <div>
@@ -428,8 +429,6 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
           <span>Active Departments</span>
           <strong>{activeDepartments.length}</strong>
         </div>
-      </div>
-
       </div>
 
       {!editingDepartment && departments.length > 0 && (
