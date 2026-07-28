@@ -77,6 +77,13 @@ function createExportFilename(scope) {
   return `argos-${scope}-assets-${dateStamp}.csv`;
 }
 
+const ADMINISTRATION_SECTION_TO_TAB = Object.freeze({
+  "CSV Import": "import",
+  "CSV Export": "export",
+  "Import History": "history",
+  "Archived Assets": "archived",
+});
+
 export default function ARGOSDataManagementModule({
   csvImport,
   assets = [],
@@ -84,8 +91,12 @@ export default function ARGOSDataManagementModule({
   canManageAssets = false,
   onAssetRestored,
   isDemoMode = false,
+  activeSection = "",
+  embeddedInAdministration = false,
 }) {
-  const [activeTab, setActiveTab] = useState("import");
+  const resolvedInitialTab =
+    ADMINISTRATION_SECTION_TO_TAB[activeSection] || "import";
+  const [activeTab, setActiveTab] = useState(resolvedInitialTab);
   const [exportScope, setExportScope] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -98,6 +109,13 @@ export default function ARGOSDataManagementModule({
   const [archiveLifecycleFilter, setArchiveLifecycleFilter] = useState("archived");
   const [selectedArchivedAsset, setSelectedArchivedAsset] = useState(null);
   const [restoringArchiveId, setRestoringArchiveId] = useState("");
+
+  useEffect(() => {
+    const nextTab = ADMINISTRATION_SECTION_TO_TAB[activeSection];
+    if (nextTab) {
+      setActiveTab(nextTab);
+    }
+  }, [activeSection]);
 
   const previewRows = csvImport?.previewAssets || [];
   const rejectedRows = csvImport?.rejectedRows || [];
@@ -257,34 +275,43 @@ export default function ARGOSDataManagementModule({
   };
 
   return (
-    <section className="argos-data-management" aria-labelledby="argos-data-management-title">
-      <header className="argos-data-management__page-header">
-        <div>
-          <p className="argos-data-management__page-eyebrow">Data Administration</p>
-          <h1 id="argos-data-management-title">Data Management</h1>
-        </div>
-      </header>
+    <section
+      className={`argos-data-management${
+        embeddedInAdministration ? " is-administration-embedded" : ""
+      }`}
+      aria-labelledby="argos-data-management-title"
+    >
+      {!embeddedInAdministration && (
+        <header className="argos-data-management__page-header">
+          <div>
+            <p className="argos-data-management__page-eyebrow">Data Administration</p>
+            <h1 id="argos-data-management-title">Data Management</h1>
+          </div>
+        </header>
+      )}
 
       <div className="argos-data-management__workspace">
-        <nav className="argos-data-management__tabs" aria-label="Data Management sections">
-          {DATA_MANAGEMENT_TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
+        {!embeddedInAdministration && (
+          <nav className="argos-data-management__tabs" aria-label="Data Management sections">
+            {DATA_MANAGEMENT_TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
 
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                className={`argos-data-management__tab${isActive ? " is-active" : ""}`}
-                onClick={() => setActiveTab(tab.id)}
-                aria-current={isActive ? "page" : undefined}
-              >
-                <Icon size={18} strokeWidth={2} aria-hidden="true" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </nav>
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`argos-data-management__tab${isActive ? " is-active" : ""}`}
+                  onClick={() => setActiveTab(tab.id)}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  <Icon size={18} strokeWidth={2} aria-hidden="true" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        )}
 
         <div className="argos-data-management__content">
           {activeTab === "import" && (

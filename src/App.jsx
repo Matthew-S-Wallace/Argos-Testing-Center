@@ -6,7 +6,6 @@ import CommandCenter from "./components/CommandCenter/ARGOS_Command_Center_Compo
 import ARGOSReportsModule from "./components/Reports/ARGOS_Reports_Module_001Z3";
 import ARGOSRepairHistoryModule from "./components/RepairHistory/ARGOS_Repair_History_Module";
 import ARGOSOperationsNavigation from "./components/Layout/ARGOS_Operations_Navigation_Blue_Shield_Reference_001U";
-import ARGOSDataManagementModule from "./components/DataManagement/ARGOS_Data_Management_Module";
 import ARGOSDailySummaryPage from "./components/DailySummary/ARGOS_Daily_Summary_Page";
 import { canViewAdministration } from "./utils/ARGOS_Permission_Resolver";
 import { exportCSVReportFile } from "./services/ARGOS_CSV_Data_Management_Service";
@@ -1280,7 +1279,10 @@ const completedRepairRecords = dedupedCompletedRepairEvents.map((event) => ({
     isDemoMode,
     statusOptions,
     resolveDepartment: resolveDepartmentValue,
-    onImportComplete: () => setActiveView("data-management"),
+    onImportComplete: () => {
+      setActiveAdministrationSection("Import History");
+      setActiveView("administration");
+    },
   });
 
   function applyStatusChange(currentAsset, newStatus) {
@@ -3543,11 +3545,18 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         )}
 
 
-        {activeView === "data-management" && (
-          <ARGOSDataManagementModule
+        {activeView === "administration" && hasAdministrationAccess && (
+          <AdministrationModule
+            activeSection={activeAdministrationSection}
+            onSelectSection={setActiveAdministrationSection}
+            isDemoMode={isDemoMode}
+            profile={profile}
+            organizationProfile={organizationProfile}
+            organizationProfileLoading={organizationProfileLoading}
+            organizationProfileError={organizationProfileError}
             csvImport={csvImportWorkflow}
             assets={assets}
-            organizationId={organizationId}
+            dataManagementOrganizationId={organizationId}
             canManageAssets={hasAdministrationAccess}
             onAssetRestored={(restoredAsset) => {
               setAssets((currentAssets) => {
@@ -3559,20 +3568,6 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
                 return alreadyPresent ? currentAssets : [...currentAssets, restoredAsset];
               });
             }}
-            isDemoMode={isDemoMode}
-          />
-        )}
-
-
-        {activeView === "administration" && hasAdministrationAccess && (
-          <AdministrationModule
-            activeSection={activeAdministrationSection}
-            onSelectSection={setActiveAdministrationSection}
-            isDemoMode={isDemoMode}
-            profile={profile}
-            organizationProfile={organizationProfile}
-            organizationProfileLoading={organizationProfileLoading}
-            organizationProfileError={organizationProfileError}
           />
         )}
 

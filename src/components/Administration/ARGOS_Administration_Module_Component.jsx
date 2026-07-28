@@ -9,6 +9,7 @@ import ARGOSTechniciansAdministrationModule from "./ARGOS_Technicians_Administra
 import ARGOSAPWAMappingAdministrationModule from "./ARGOS_APWA_Mapping_Administration_Module";
 import ARGOSVMRSConfigurationAdministrationModule from "./ARGOS_VMRS_Configuration_Administration_Module";
 import ARGOSArchivedAssetsAdministrationModule from "./ARGOS_Archived_Assets_Administration_Module";
+import ARGOSDataManagementModule from "../DataManagement/ARGOS_Data_Management_Module";
 import {
   canViewAdministration,
   canViewAdministrationSection,
@@ -118,6 +119,11 @@ export default function AdministrationModule({
   organizationProfile,
   organizationProfileLoading,
   organizationProfileError,
+  csvImport,
+  assets = [],
+  canManageAssets = false,
+  onAssetRestored,
+  dataManagementOrganizationId,
   currentUser,
   userProfile,
   profile,
@@ -133,6 +139,7 @@ export default function AdministrationModule({
   );
 
   const organizationId =
+    dataManagementOrganizationId ||
     organizationProfile?.id ||
     organizationProfile?.organization_id ||
     authorizationUser?.organization_id ||
@@ -149,7 +156,12 @@ export default function AdministrationModule({
   const isTechniciansSection = activeSection === "Technicians";
   const isAPWAMappingSection = activeSection === "APWA Mapping";
   const isVMRSConfigurationSection = activeSection === "VMRS Configuration";
+  const isCSVImportSection = activeSection === "CSV Import";
+  const isCSVExportSection = activeSection === "CSV Export";
+  const isImportHistorySection = activeSection === "Import History";
   const isArchivedAssetsSection = activeSection === "Archived Assets";
+  const isDataManagementSection =
+    isCSVImportSection || isCSVExportSection || isImportHistorySection;
 
   function getSectionDisplayName(item) {
     if (item === "VMRS Configuration") return "VMRS Catalog Management";
@@ -237,6 +249,17 @@ export default function AdministrationModule({
             <ARGOSAPWAMappingAdministrationModule isDemoMode={isDemoMode} />
           ) : isVMRSConfigurationSection ? (
             <ARGOSVMRSConfigurationAdministrationModule isDemoMode={isDemoMode} />
+          ) : isDataManagementSection ? (
+            <ARGOSDataManagementModule
+              csvImport={csvImport}
+              assets={assets}
+              organizationId={organizationId}
+              canManageAssets={canManageAssets}
+              onAssetRestored={onAssetRestored}
+              isDemoMode={isDemoMode}
+              activeSection={activeSection}
+              embeddedInAdministration
+            />
           ) : isArchivedAssetsSection ? (
             <ARGOSArchivedAssetsAdministrationModule
               organizationId={organizationId}

@@ -756,3 +756,579 @@ button.argos-data-management__tab.is-active {
     display: block;
   }
 }
+
+/* Sprint 001AH — Data Management embedded within Administration */
+
+.argos-data-management.is-administration-embedded {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.argos-data-management.is-administration-embedded .argos-data-management__workspace {
+  display: block;
+  min-height: 0;
+  margin-top: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.argos-data-management.is-administration-embedded .argos-data-management__content {
+  width: 100%;
+  min-width: 0;
+  padding: 30px;
+}
+
+.argos-data-management.is-administration-embedded .argos-data-management__panel {
+  min-height: 0;
+}
+
+.argos-data-management.is-administration-embedded .argos-data-management__panel-heading h3,
+.argos-data-management.is-administration-embedded .argos-data-management__placeholder h3 {
+  font-family: Inter, system-ui, sans-serif;
+  font-weight: 800;
+}
+
+
+/* Sprint 001AH — CSV Export production layout */
+
+.argos-data-management__export-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+
+.argos-data-management__export-summary > div {
+  min-height: 96px;
+  display: grid;
+  align-content: center;
+  padding: 18px 20px;
+  border: 1px solid #d8d8d2;
+  border-radius: 10px;
+  background: #fbfbf8;
+}
+
+.argos-data-management__export-summary span,
+.argos-data-management__export-summary strong {
+  display: block;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-data-management__export-summary span {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-data-management__export-summary strong {
+  margin-top: 7px;
+  color: #071a33;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.argos-data-management__export-scopes {
+  margin: 0;
+  padding: 20px;
+  border: 1px solid #d8d8d2;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.argos-data-management__export-scopes legend {
+  padding: 0 8px;
+  color: #071a33;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.argos-data-management__export-scope-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.argos-data-management__export-scope {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: flex-start;
+  min-height: 118px;
+  padding: 18px;
+  border: 1px solid #d8d8d2;
+  border-radius: 10px;
+  background: #fbfbf8;
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.argos-data-management__export-scope:hover {
+  border-color: #b9bec5;
+  box-shadow: 0 7px 18px rgba(7, 26, 51, 0.07);
+}
+
+.argos-data-management__export-scope.is-selected {
+  border-color: #9a6614;
+  background: #fffaf0;
+  box-shadow: 0 0 0 3px rgba(154, 102, 20, 0.1);
+}
+
+.argos-data-management__export-scope input {
+  width: 17px;
+  height: 17px;
+  margin: 2px 0 0;
+  accent-color: #9a6614;
+}
+
+.argos-data-management__export-scope span,
+.argos-data-management__export-scope strong,
+.argos-data-management__export-scope small {
+  display: block;
+}
+
+.argos-data-management__export-scope strong {
+  color: #071a33;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.argos-data-management__export-scope small {
+  margin-top: 7px;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.argos-data-management__export-filters {
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #d8d8d2;
+  border-radius: 12px;
+  background: #fbfbf8;
+}
+
+.argos-data-management__export-filters-heading,
+.argos-data-management__export-filters-heading > div {
+  display: flex;
+  align-items: center;
+}
+
+.argos-data-management__export-filters-heading {
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.argos-data-management__export-filters-heading > div {
+  gap: 9px;
+}
+
+.argos-data-management__export-filters-heading svg {
+  color: #9a6614;
+}
+
+.argos-data-management__export-filters-heading h4 {
+  margin: 0;
+  color: #071a33;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.argos-data-management__export-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.argos-data-management__export-filter-grid label {
+  display: grid;
+  gap: 8px;
+}
+
+.argos-data-management__export-filter-grid label > span {
+  color: #667085;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.argos-data-management__export-filter-grid select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #cfd5dc;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #071a33;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+}
+
+.argos-data-management__export-filter-grid select:focus {
+  outline: none;
+  border-color: #d8a93b;
+  box-shadow: 0 0 0 3px rgba(216, 169, 59, 0.15);
+}
+
+.argos-data-management__export-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 22px;
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #d8d8d2;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.argos-data-management__export-action strong,
+.argos-data-management__export-action span {
+  display: block;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-data-management__export-action strong {
+  color: #071a33;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.argos-data-management__export-action span {
+  max-width: 620px;
+  margin-top: 5px;
+  color: #526174;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.argos-data-management__export-action button,
+.argos-data-management__history-toolbar button,
+.argos-data-management__history-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 0 0 auto;
+}
+
+
+/* Sprint 001AH — Import History production layout */
+
+.argos-data-management__history-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin: 24px 0 18px;
+  padding: 18px 20px;
+  border: 1px solid #d8d8d2;
+  border-radius: 10px;
+  background: #fbfbf8;
+}
+
+.argos-data-management__history-toolbar strong,
+.argos-data-management__history-toolbar span {
+  display: block;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-data-management__history-toolbar strong {
+  color: #071a33;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.argos-data-management__history-toolbar span {
+  margin-top: 5px;
+  color: #667085;
+  font-size: 12px;
+}
+
+.argos-data-management__history-empty {
+  display: grid;
+  justify-items: center;
+  min-height: 260px;
+  margin-top: 18px;
+  padding: 42px 24px;
+  border: 1px dashed #cfd5dc;
+  border-radius: 12px;
+  background: #fbfbf8;
+  text-align: center;
+}
+
+.argos-data-management__history-empty svg {
+  color: #9a6614;
+}
+
+.argos-data-management__history-empty h4 {
+  margin: 15px 0 0;
+  color: #071a33;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.argos-data-management__history-empty p {
+  max-width: 520px;
+  margin: 8px 0 0;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.argos-data-management__history-table {
+  margin-top: 18px;
+}
+
+.argos-data-management__history-table table {
+  min-width: 1050px;
+}
+
+.argos-data-management__history-table th,
+.argos-data-management__history-table td {
+  padding: 13px 14px;
+  vertical-align: middle;
+}
+
+.argos-data-management__history-file {
+  max-width: 220px;
+  color: #071a33;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  white-space: normal !important;
+}
+
+.argos-data-management__history-outcome {
+  display: inline-flex;
+  justify-content: center;
+  min-width: 100px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.argos-data-management__history-outcome.is-complete {
+  background: #dff3e5;
+  color: #146c2e;
+}
+
+.argos-data-management__history-outcome.has-rejections {
+  background: #fff0d8;
+  color: #875900;
+}
+
+.argos-data-management__history-download {
+  padding: 8px 10px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+
+/* Responsive Data Management */
+
+@media (max-width: 1100px) {
+  .argos-data-management__export-scope-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .argos-data-management__export-scope {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .argos-data-management.is-administration-embedded .argos-data-management__content {
+    padding: 24px 20px;
+  }
+
+  .argos-data-management__export-summary,
+  .argos-data-management__export-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .argos-data-management__export-filters-heading,
+  .argos-data-management__export-action,
+  .argos-data-management__history-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .argos-data-management__export-action button,
+  .argos-data-management__history-toolbar button {
+    width: 100%;
+  }
+}
+
+/* Sprint 001AH — Import History final facelift */
+
+.argos-data-management__history-table {
+  width: 100%;
+  margin-top: 18px;
+  overflow-x: auto;
+  border: 1px solid #d8d8d2;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.argos-data-management__history-table table {
+  width: 100%;
+  min-width: 1120px;
+  table-layout: fixed;
+  border: 0;
+  border-radius: 0;
+}
+
+.argos-data-management__history-table thead {
+  background: #f7f7f4;
+}
+
+.argos-data-management__history-table th {
+  padding: 14px 16px;
+  color: #27384d;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.argos-data-management__history-table td {
+  padding: 17px 16px;
+  color: #27384d;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  vertical-align: middle;
+}
+
+.argos-data-management__history-table tbody tr {
+  transition: background 160ms ease;
+}
+
+.argos-data-management__history-table tbody tr:hover {
+  background: #fbfaf6;
+}
+
+.argos-data-management__history-table th:nth-child(1),
+.argos-data-management__history-table td:nth-child(1) {
+  width: 190px;
+}
+
+.argos-data-management__history-table th:nth-child(2),
+.argos-data-management__history-table td:nth-child(2) {
+  width: 230px;
+}
+
+.argos-data-management__history-table th:nth-child(3),
+.argos-data-management__history-table td:nth-child(3) {
+  width: 165px;
+}
+
+.argos-data-management__history-table th:nth-child(4),
+.argos-data-management__history-table td:nth-child(4),
+.argos-data-management__history-table th:nth-child(5),
+.argos-data-management__history-table td:nth-child(5),
+.argos-data-management__history-table th:nth-child(6),
+.argos-data-management__history-table td:nth-child(6),
+.argos-data-management__history-table th:nth-child(7),
+.argos-data-management__history-table td:nth-child(7) {
+  width: 88px;
+  text-align: center;
+}
+
+.argos-data-management__history-table th:nth-child(8),
+.argos-data-management__history-table td:nth-child(8) {
+  width: 165px;
+}
+
+.argos-data-management__history-table th:nth-child(9),
+.argos-data-management__history-table td:nth-child(9) {
+  width: 150px;
+  text-align: center;
+}
+
+.argos-data-management__history-file {
+  max-width: none;
+  color: #071a33;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+  white-space: normal !important;
+}
+
+.argos-data-management__history-file::before {
+  content: "CSV";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 9px;
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: #eef2f6;
+  color: #526174;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+}
+
+.argos-data-management__history-outcome {
+  min-width: 118px;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+.argos-data-management__history-download {
+  min-width: 104px;
+}
+
+.argos-data-management__history-table::-webkit-scrollbar {
+  height: 10px;
+}
+
+.argos-data-management__history-table::-webkit-scrollbar-track {
+  background: #f1f2f3;
+  border-radius: 999px;
+}
+
+.argos-data-management__history-table::-webkit-scrollbar-thumb {
+  background: #a8afb8;
+  border-radius: 999px;
+}
+
+.argos-data-management__history-table::-webkit-scrollbar-thumb:hover {
+  background: #7e8792;
+}
+
+@media (max-width: 760px) {
+  .argos-data-management__history-table table {
+    min-width: 1040px;
+  }
+
+  .argos-data-management__history-toolbar {
+    padding: 16px;
+  }
+}
+
