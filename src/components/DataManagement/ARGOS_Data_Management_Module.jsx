@@ -18,6 +18,12 @@ import {
 } from "lucide-react";
 import { exportCSVReportFile } from "../../services/ARGOS_CSV_Data_Management_Service";
 import {
+  ARGOS_AUDIT_CATEGORIES,
+  ARGOS_AUDIT_OUTCOMES,
+  ARGOS_AUDIT_SEVERITIES,
+  logARGOSAuditEvent,
+} from "../../services/ARGOS_Audit_Log_Service";
+import {
   loadAssetLifecycleHistory,
   restoreOperationalAsset,
   summarizeAssetLifecycle,
@@ -160,14 +166,16 @@ export default function ARGOSDataManagementModule({
     });
   }, [assets, departmentFilter, exportScope, statusFilter]);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!exportRows.length) {
       setExportStatus("No assets match the selected export criteria.");
       return;
     }
 
+    const filename = createExportFilename(exportScope);
+
     exportCSVReportFile({
-      filename: createExportFilename(exportScope),
+      filename,
       columns: EXPORT_COLUMNS,
       rows: exportRows,
     });
@@ -175,6 +183,51 @@ export default function ARGOSDataManagementModule({
     setExportStatus(
       `${exportRows.length} asset${exportRows.length === 1 ? "" : "s"} exported successfully.`
     );
+
+    if (isDemoMode) return;
+
+    try {
+      const auditResult = await logARGOSAuditEvent({
+        organizationId,
+
+        category: ARGOS_AUDIT_CATEGORIES.DATA_MANAGEMENT,
+        action: "csv_export_completed",
+
+        entityType: "csv_export",
+        entityName: filename,
+
+        outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+        severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+
+        summary: `CSV export completed: ${exportRows.length} asset${
+          exportRows.length === 1 ? "" : "s"
+        } downloaded.`,
+
+        details: {
+          fileName: filename,
+          exportScope,
+          departmentFilter,
+          statusFilter,
+          exportedRowCount: exportRows.length,
+          columnCount: EXPORT_COLUMNS.length,
+          columnHeaders: EXPORT_COLUMNS.map((column) => column.header),
+        },
+
+        source: "csv_export",
+      });
+
+      if (auditResult.error) {
+        console.error(
+          "ARGOS Audit Log: CSV export completed, but the audit event was not recorded:",
+          auditResult.error
+        );
+      }
+    } catch (auditError) {
+      console.error(
+        "ARGOS Audit Log: unexpected CSV export audit failure:",
+        auditError
+      );
+    }
   };
 
   const resetExportFilters = () => {

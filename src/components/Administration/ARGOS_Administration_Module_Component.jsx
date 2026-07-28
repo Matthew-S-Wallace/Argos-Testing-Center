@@ -9,6 +9,7 @@ import ARGOSTechniciansAdministrationModule from "./ARGOS_Technicians_Administra
 import ARGOSAPWAMappingAdministrationModule from "./ARGOS_APWA_Mapping_Administration_Module";
 import ARGOSVMRSConfigurationAdministrationModule from "./ARGOS_VMRS_Configuration_Administration_Module";
 import ARGOSArchivedAssetsAdministrationModule from "./ARGOS_Archived_Assets_Administration_Module";
+import ARGOSAuditLogAdministrationModule from "./ARGOS_Audit_Log_Administration_Module";
 import ARGOSDataManagementModule from "../DataManagement/ARGOS_Data_Management_Module";
 import {
   canViewAdministration,
@@ -160,6 +161,7 @@ export default function AdministrationModule({
   const isCSVExportSection = activeSection === "CSV Export";
   const isImportHistorySection = activeSection === "Import History";
   const isArchivedAssetsSection = activeSection === "Archived Assets";
+  const isAuditLogSection = activeSection === "Audit Log";
   const isDataManagementSection =
     isCSVImportSection || isCSVExportSection || isImportHistorySection;
 
@@ -262,6 +264,11 @@ export default function AdministrationModule({
             />
           ) : isArchivedAssetsSection ? (
             <ARGOSArchivedAssetsAdministrationModule
+              organizationId={organizationId}
+              isDemoMode={isDemoMode}
+            />
+          ) : isAuditLogSection ? (
+            <ARGOSAuditLogAdministrationModule
               organizationId={organizationId}
               isDemoMode={isDemoMode}
             />

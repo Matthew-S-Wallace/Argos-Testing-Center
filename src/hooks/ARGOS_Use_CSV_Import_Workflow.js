@@ -8,6 +8,12 @@ import {
 } from "../services/ARGOS_CSV_Data_Management_Service";
 import { normalizeImportedAsset } from "../services/ARGOS_Asset_Normalization_Service";
 import { mapSupabaseAsset } from "../services/ARGOS_Supabase_Mapping_Service";
+import {
+  ARGOS_AUDIT_CATEGORIES,
+  ARGOS_AUDIT_OUTCOMES,
+  ARGOS_AUDIT_SEVERITIES,
+  logARGOSAuditEvent,
+} from "../services/ARGOS_Audit_Log_Service";
 
 const EMPTY_PROGRESS = { phase: "idle", message: "" };
 
@@ -61,7 +67,8 @@ export default function useARGOSCSVImportWorkflow({
       total: sourceRowCount,
       valid: previewAssets.length,
       rejected: rejectedRows.length,
-      duplicates: rejectedRows.filter((row) => row.category === "duplicate").length,
+      duplicates: rejectedRows.filter((row) => row.category === "duplicate")
+        .length,
     }),
     [previewAssets.length, rejectedRows, sourceRowCount]
   );
@@ -145,20 +152,25 @@ export default function useARGOSCSVImportWorkflow({
     setPreviewAssets([]);
     setRejectedRows([]);
     setSourceRowCount(0);
-    setProgress({ phase: "reading", message: "Reading and validating CSV file…" });
+    setProgress({
+      phase: "reading",
+      message: "Reading and validating CSV file…",
+    });
 
     try {
       const parsedCSV = await readCSVFile(file);
-const rows = Array.isArray(parsedCSV)
-  ? parsedCSV
-  : Array.isArray(parsedCSV?.rows)
-    ? parsedCSV.rows
-    : [];
+      const rows = Array.isArray(parsedCSV)
+        ? parsedCSV
+        : Array.isArray(parsedCSV?.rows)
+          ? parsedCSV.rows
+          : [];
 
-setSourceRowCount(rows.length);
+      setSourceRowCount(rows.length);
       setProgress({
         phase: "validating",
-        message: `Validating ${rows.length} asset row${rows.length === 1 ? "" : "s"}…`,
+        message: `Validating ${rows.length} asset row${
+          rows.length === 1 ? "" : "s"
+        }…`,
       });
 
       const validation = validateImportedAssetRows({
@@ -183,7 +195,9 @@ setSourceRowCount(rows.length);
           `${validation.validImportedAssets.length} row${
             validation.validImportedAssets.length === 1 ? " is" : "s are"
           } ready to import. ${validation.rejectedRows.length} row${
-            validation.rejectedRows.length === 1 ? " requires" : "s require"
+            validation.rejectedRows.length === 1
+              ? " requires"
+              : "s require"
           } correction.`,
           "warning"
         );
@@ -208,7 +222,10 @@ setSourceRowCount(rows.length);
     } finally {
       setIsReading(false);
       setProgress(EMPTY_PROGRESS);
-      if (event.target) event.target.value = "";
+
+      if (event.target) {
+        event.target.value = "";
+      }
     }
   }
 
@@ -231,12 +248,18 @@ setSourceRowCount(rows.length);
       duplicateRows,
       rejectedDetails: rejectedRowRecords,
       importStatus:
-        rejectedRowRecords.length > 0 ? "completed_with_rejections" : "completed",
+        rejectedRowRecords.length > 0
+          ? "completed_with_rejections"
+          : "completed",
       createdAt: new Date().toISOString(),
     };
 
     if (isDemoMode) {
-      setImportHistory((currentHistory) => [historyRecord, ...currentHistory]);
+      setImportHistory((currentHistory) => [
+        historyRecord,
+        ...currentHistory,
+      ]);
+
       return { historySaved: true };
     }
 
@@ -294,8 +317,13 @@ setSourceRowCount(rows.length);
 
     try {
       if (isDemoMode) {
-        setAssets((currentAssets) => [...currentAssets, ...previewAssets]);
+        setAssets((currentAssets) => [
+          ...currentAssets,
+          ...previewAssets,
+        ]);
+
         await recordImportHistory(importSnapshot);
+
         setStatus(
           `Import complete: ${previewAssets.length} temporary demo asset${
             previewAssets.length === 1 ? "" : "s"
@@ -308,6 +336,7 @@ setSourceRowCount(rows.length);
           }. Demo changes disappear when the demo is refreshed or exited.`,
           "success"
         );
+
         onImportComplete?.();
         resetPreview({ preserveStatus: true });
         return;
@@ -339,16 +368,69 @@ setSourceRowCount(rows.length);
         details: asset.details,
       }));
 
-      const { data, error } = await supabase.from("assets").insert(cloudRows).select();
+      const { data, error } = await supabase
+        .from("assets")
+        .insert(cloudRows)
+        .select();
+
       if (error) throw error;
 
       const savedAssets = (data || []).map(mapSupabaseAsset);
-      setAssets((currentAssets) => [...currentAssets, ...savedAssets]);
+
+      setAssets((currentAssets) => [
+        ...currentAssets,
+        ...savedAssets,
+      ]);
 
       const historyResult = await recordImportHistory({
         ...importSnapshot,
         importedRows: savedAssets.length,
       });
+
+      try {
+        const auditResult = await logARGOSAuditEvent({
+          organizationId,
+          userId: importedByUserId || null,
+          userName: importedByName || null,
+
+          category: ARGOS_AUDIT_CATEGORIES.DATA_MANAGEMENT,
+          action: "csv_import_completed",
+
+          entityType: "csv_import",
+          entityName: importSnapshot.fileName || "Unnamed CSV",
+
+          outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+          severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+
+          summary: `CSV import completed: ${savedAssets.length} asset${
+            savedAssets.length === 1 ? "" : "s"
+          } added successfully.`,
+
+          details: {
+            fileName: importSnapshot.fileName || "Unnamed CSV",
+            totalRows: importSnapshot.totalRows,
+            createdCount: savedAssets.length,
+            updatedCount: 0,
+            rejectedCount: importSnapshot.rejectedRowRecords.length,
+            duplicateCount: importSnapshot.duplicateRows,
+            importHistorySaved: historyResult.historySaved,
+          },
+
+          source: "csv_import",
+        });
+
+        if (auditResult.error) {
+          console.error(
+            "ARGOS Audit Log: CSV import completed, but the audit event was not recorded:",
+            auditResult.error
+          );
+        }
+      } catch (auditError) {
+        console.error(
+          "ARGOS Audit Log: unexpected CSV import audit failure:",
+          auditError
+        );
+      }
 
       setStatus(
         `Import complete: ${savedAssets.length} asset${

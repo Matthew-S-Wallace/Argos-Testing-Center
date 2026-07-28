@@ -9,6 +9,12 @@ import ARGOSOperationsNavigation from "./components/Layout/ARGOS_Operations_Navi
 import ARGOSDailySummaryPage from "./components/DailySummary/ARGOS_Daily_Summary_Page";
 import { canViewAdministration } from "./utils/ARGOS_Permission_Resolver";
 import { exportCSVReportFile } from "./services/ARGOS_CSV_Data_Management_Service";
+import {
+  ARGOS_AUDIT_CATEGORIES,
+  ARGOS_AUDIT_OUTCOMES,
+  ARGOS_AUDIT_SEVERITIES,
+  logARGOSAuditEvent,
+} from "./services/ARGOS_Audit_Log_Service";
 import useARGOSCSVImportWorkflow from "./hooks/ARGOS_Use_CSV_Import_Workflow";
 import {
   calculateDaysDown,
@@ -1985,7 +1991,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
   setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 }
 
-  function exportCSVReport(filename, columns, rows, emptyMessage, successMessage) {
+  async function exportCSVReport(filename, columns, rows, emptyMessage, successMessage) {
     if (rows.length === 0) {
       csvImportWorkflow.setImportStatus(emptyMessage);
       return;
@@ -1993,6 +1999,56 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
 
     exportCSVReportFile({ filename, columns, rows });
     csvImportWorkflow.setImportStatus(successMessage);
+
+    if (isDemoMode) return;
+
+    try {
+      const auditResult = await logARGOSAuditEvent({
+        organizationId,
+        userId: session?.user?.id || null,
+        userName:
+          profile?.full_name ||
+          session?.user?.user_metadata?.full_name ||
+          session?.user?.email ||
+          null,
+        userEmail: session?.user?.email || null,
+        userRole: profile?.role || null,
+
+        category: ARGOS_AUDIT_CATEGORIES.DATA_MANAGEMENT,
+        action: "csv_export_completed",
+
+        entityType: "csv_export",
+        entityName: filename,
+
+        outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+        severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+
+        summary: `CSV export completed: ${rows.length} row${
+          rows.length === 1 ? "" : "s"
+        } downloaded.`,
+
+        details: {
+          fileName: filename,
+          exportedRowCount: rows.length,
+          columnCount: columns.length,
+          columnHeaders: columns.map((column) => column.header),
+        },
+
+        source: "csv_export",
+      });
+
+      if (auditResult.error) {
+        console.error(
+          "ARGOS Audit Log: CSV export completed, but the audit event was not recorded:",
+          auditResult.error
+        );
+      }
+    } catch (auditError) {
+      console.error(
+        "ARGOS Audit Log: unexpected CSV export audit failure:",
+        auditError
+      );
+    }
   }
 
   function handleExportUnitsDown() {
