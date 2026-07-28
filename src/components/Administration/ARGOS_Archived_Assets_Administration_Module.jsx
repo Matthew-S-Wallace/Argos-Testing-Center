@@ -3,6 +3,12 @@ import {
   listArchivedAssets,
   restoreArchivedAsset,
 } from "../../services/ARGOS_Asset_Archive_Service";
+import {
+  ARGOS_AUDIT_CATEGORIES,
+  ARGOS_AUDIT_OUTCOMES,
+  ARGOS_AUDIT_SEVERITIES,
+  logARGOSAuditEvent,
+} from "../../services/ARGOS_Audit_Log_Service";
 import "./ARGOS_Archived_Assets_Administration_Module.css";
 
 function formatArchivedDate(value) {
@@ -143,6 +149,51 @@ export default function ARGOSArchivedAssetsAdministrationModule({
     try {
       const restoredAsset = await restoreArchivedAsset(selectedArchive.id);
 
+      try {
+        const auditResult = await logARGOSAuditEvent({
+          organizationId,
+          category: ARGOS_AUDIT_CATEGORIES.DATA_MANAGEMENT,
+          action: "archived_asset_restored",
+          entityType: "asset",
+          entityId: restoredAsset?.id || selectedArchive.id || null,
+          entityName:
+            selectedArchive.unit ||
+            restoredAsset?.unit ||
+            restoredAsset?.asset ||
+            null,
+          outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+          severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+          summary: `Archived asset restored${
+            selectedArchive.unit ? `: Unit ${selectedArchive.unit}` : ""
+          }.`,
+          details: {
+            archivedAssetId: selectedArchive.id || null,
+            restoredAssetId: restoredAsset?.id || null,
+            unit: selectedArchive.unit || restoredAsset?.unit || "",
+            vin: selectedArchive.vin || restoredAsset?.vin || "",
+            asset: selectedArchive.asset || restoredAsset?.asset || "",
+            department:
+              selectedArchive.department || restoredAsset?.department || "",
+            archiveReason: selectedArchive.archiveReason || "",
+            archivedAt: selectedArchive.archivedAt || null,
+            restoredAt: new Date().toISOString(),
+          },
+          source: "archived_asset_restore",
+        });
+
+        if (auditResult.error) {
+          console.error(
+            "ARGOS Audit Log: asset restore completed, but the audit event was not recorded:",
+            auditResult.error
+          );
+        }
+      } catch (auditError) {
+        console.error(
+          "ARGOS Audit Log: unexpected archived asset restore audit failure:",
+          auditError
+        );
+      }
+
       setArchivedAssets((currentAssets) =>
         currentAssets.filter(
           (asset) => asset.id !== selectedArchive.id
@@ -192,6 +243,14 @@ export default function ARGOSArchivedAssetsAdministrationModule({
           </p>
         </div>
 
+        <button
+          className="argos-archive-refresh-button"
+          type="button"
+          onClick={loadArchive}
+          disabled={isDemoMode}
+        >
+          Refresh Archive
+        </button>
       </header>
 
       {isDemoMode && (
@@ -265,15 +324,6 @@ export default function ARGOSArchivedAssetsAdministrationModule({
           <span>Results</span>
           <strong>{filteredAssets.length}</strong>
         </div>
-
-        <button
-          className="argos-archive-refresh-button"
-          type="button"
-          onClick={loadArchive}
-          disabled={isDemoMode}
-        >
-          Refresh Archive
-        </button>
       </div>
 
       {!isDemoMode && !loadError && filteredAssets.length === 0 ? (
