@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import { canManageStatusConfiguration } from "../../utils/ARGOS_Permission_Resolver";
+import {
+  ARGOS_AUDIT_CATEGORIES,
+  ARGOS_AUDIT_OUTCOMES,
+  ARGOS_AUDIT_SEVERITIES,
+  logARGOSAuditEvent,
+} from "../../services/ARGOS_Audit_Log_Service";
 import "./ARGOS_Status_Configuration_Administration_Module.css";
 
 const DEMO_STATUSES = [
@@ -76,6 +82,49 @@ export default function ARGOSStatusConfigurationAdministrationModule({isDemoMode
     if(isDemoMode){setRows((current)=>sortRows([...current,{...payload,id:`demo-${Date.now()}`,is_system_status:false,is_active:true}]));setForm(EMPTY);setShowAdd(false);setMessage("Demo status created.");return;}
     setSaving(true);const {data,error:createError}=await supabase.from("status_configurations").insert({organization_id:organizationId,...payload,is_system_status:false}).select(FIELDS).single();
     if(createError){setMessage(createError.code==="23505"?"That status name or code already exists for this organization.":"ARGOS could not create the status.");setSaving(false);return;}
+    try {
+      const auditResult = await logARGOSAuditEvent({
+        organizationId,
+        category: ARGOS_AUDIT_CATEGORIES.ADMINISTRATION,
+        action: "status_configuration_created",
+        entityType: "status_configuration",
+        entityId: data?.id || null,
+        entityName: data?.status_name || payload.status_name,
+        outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+        severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+        summary: `Status configuration created: ${data?.status_name || payload.status_name}.`,
+        details: {
+          statusConfigurationId: data?.id || null,
+          statusName: data?.status_name || payload.status_name,
+          statusCode: data?.status_code || payload.status_code,
+          displayOrder: data?.display_order ?? payload.display_order,
+          statusColor: data?.status_color || payload.status_color,
+          countsAsAvailable:
+            data?.counts_as_available ?? payload.counts_as_available,
+          requiresDownDate:
+            data?.requires_down_date ?? payload.requires_down_date,
+          allowsReasonMapping:
+            data?.allows_reason_mapping ?? payload.allows_reason_mapping,
+          isSystemStatus: data?.is_system_status === true,
+          isActive: data?.is_active !== false,
+          createdAt: data?.created_at || new Date().toISOString(),
+        },
+        source: "status_configuration_administration",
+      });
+
+      if (auditResult.error) {
+        console.error(
+          "ARGOS Audit Log: status creation succeeded, but the audit event was not recorded:",
+          auditResult.error
+        );
+      }
+    } catch (auditError) {
+      console.error(
+        "ARGOS Audit Log: unexpected status creation audit failure:",
+        auditError
+      );
+    }
+
     setRows((current)=>sortRows([...current,data]));setForm(EMPTY);setShowAdd(false);setMessage("Status created.");setSaving(false);
   }
 
@@ -84,6 +133,88 @@ export default function ARGOSStatusConfigurationAdministrationModule({isDemoMode
     if(isDemoMode){setRows((current)=>sortRows(current.map((item)=>item.id===row.id?{...item,...payload}:item)));cancel();setMessage("Demo status updated.");return;}
     setSaving(true);const {data,error:updateError}=await supabase.from("status_configurations").update(payload).eq("id",row.id).eq("organization_id",organizationId).select(FIELDS).single();
     if(updateError){setMessage(updateError.code==="23505"?"That status name or code already exists for this organization.":"ARGOS could not update the status.");setSaving(false);return;}
+    try {
+      const auditResult = await logARGOSAuditEvent({
+        organizationId,
+        category: ARGOS_AUDIT_CATEGORIES.ADMINISTRATION,
+        action: "status_configuration_updated",
+        entityType: "status_configuration",
+        entityId: data?.id || row.id,
+        entityName: data?.status_name || row.status_name,
+        outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+        severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+        summary: `Status configuration updated: ${data?.status_name || row.status_name}.`,
+        details: {
+          statusConfigurationId: data?.id || row.id,
+          isSystemStatus: row.is_system_status === true,
+          previous: {
+            statusName: row.status_name,
+            statusCode: row.status_code,
+            displayOrder: row.display_order,
+            statusColor: row.status_color,
+            countsAsAvailable: row.counts_as_available,
+            requiresDownDate: row.requires_down_date,
+            allowsReasonMapping: row.allows_reason_mapping,
+            isActive: row.is_active !== false,
+          },
+          updated: {
+            statusName: data?.status_name || payload.status_name,
+            statusCode: data?.status_code || payload.status_code,
+            displayOrder: data?.display_order ?? payload.display_order,
+            statusColor: data?.status_color || payload.status_color,
+            countsAsAvailable:
+              data?.counts_as_available ?? payload.counts_as_available,
+            requiresDownDate:
+              data?.requires_down_date ?? payload.requires_down_date,
+            allowsReasonMapping:
+              data?.allows_reason_mapping ?? payload.allows_reason_mapping,
+            isActive: data?.is_active !== false,
+          },
+          changedFields: [
+            row.status_name !== (data?.status_name || payload.status_name)
+              ? "status_name"
+              : null,
+            row.status_code !== (data?.status_code || payload.status_code)
+              ? "status_code"
+              : null,
+            Number(row.display_order) !==
+            Number(data?.display_order ?? payload.display_order)
+              ? "display_order"
+              : null,
+            row.status_color !== (data?.status_color || payload.status_color)
+              ? "status_color"
+              : null,
+            row.counts_as_available !==
+            (data?.counts_as_available ?? payload.counts_as_available)
+              ? "counts_as_available"
+              : null,
+            row.requires_down_date !==
+            (data?.requires_down_date ?? payload.requires_down_date)
+              ? "requires_down_date"
+              : null,
+            row.allows_reason_mapping !==
+            (data?.allows_reason_mapping ?? payload.allows_reason_mapping)
+              ? "allows_reason_mapping"
+              : null,
+          ].filter(Boolean),
+          updatedAt: data?.updated_at || new Date().toISOString(),
+        },
+        source: "status_configuration_administration",
+      });
+
+      if (auditResult.error) {
+        console.error(
+          "ARGOS Audit Log: status update succeeded, but the audit event was not recorded:",
+          auditResult.error
+        );
+      }
+    } catch (auditError) {
+      console.error(
+        "ARGOS Audit Log: unexpected status update audit failure:",
+        auditError
+      );
+    }
+
     setRows((current)=>sortRows(current.map((item)=>item.id===data.id?data:item)));cancel();setMessage("Status updated.");setSaving(false);
   }
 
@@ -92,7 +223,47 @@ export default function ARGOSStatusConfigurationAdministrationModule({isDemoMode
     if(!window.confirm(`Disable ${row.status_name}? Existing records will remain unchanged.`))return;
     if(isDemoMode){setRows((current)=>current.map((item)=>item.id===row.id?{...item,is_active:false}:item));setMessage("Demo status disabled.");return;}
     const {data,error:disableError}=await supabase.from("status_configurations").update({is_active:false}).eq("id",row.id).eq("organization_id",organizationId).select(FIELDS).single();
-    if(disableError){setMessage("ARGOS could not disable the status.");return;}setRows((current)=>current.map((item)=>item.id===data.id?data:item));setMessage("Status disabled.");
+    if(disableError){setMessage("ARGOS could not disable the status.");return;}
+
+    try {
+      const auditResult = await logARGOSAuditEvent({
+        organizationId,
+        category: ARGOS_AUDIT_CATEGORIES.ADMINISTRATION,
+        action: "status_configuration_disabled",
+        entityType: "status_configuration",
+        entityId: data?.id || row.id,
+        entityName: data?.status_name || row.status_name,
+        outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+        severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+        summary: `Status configuration disabled: ${data?.status_name || row.status_name}.`,
+        details: {
+          statusConfigurationId: data?.id || row.id,
+          statusName: data?.status_name || row.status_name,
+          statusCode: data?.status_code || row.status_code,
+          isSystemStatus: row.is_system_status === true,
+          previousStatus: "active",
+          newStatus: "inactive",
+          previousIsActive: row.is_active !== false,
+          newIsActive: data?.is_active !== false,
+          disabledAt: data?.updated_at || new Date().toISOString(),
+        },
+        source: "status_configuration_administration",
+      });
+
+      if (auditResult.error) {
+        console.error(
+          "ARGOS Audit Log: status disable succeeded, but the audit event was not recorded:",
+          auditResult.error
+        );
+      }
+    } catch (auditError) {
+      console.error(
+        "ARGOS Audit Log: unexpected status disable audit failure:",
+        auditError
+      );
+    }
+
+    setRows((current)=>current.map((item)=>item.id===data.id?data:item));setMessage("Status disabled.");
   }
 
   const field=(source,setter,key,type="text",disabled=false)=><input type={type} value={type==="checkbox"?undefined:source[key]} checked={type==="checkbox"?source[key]:undefined} disabled={disabled} onChange={(event)=>change(setter,key,type==="checkbox"?event.target.checked:event.target.value)} />;
