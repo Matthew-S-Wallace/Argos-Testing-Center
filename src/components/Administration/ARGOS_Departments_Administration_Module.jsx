@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import { canManageDepartments } from "../../utils/ARGOS_Permission_Resolver";
+import {
+  ARGOS_AUDIT_CATEGORIES,
+  ARGOS_AUDIT_OUTCOMES,
+  ARGOS_AUDIT_SEVERITIES,
+  logARGOSAuditEvent,
+} from "../../services/ARGOS_Audit_Log_Service";
 import "./ARGOS_Departments_Administration_Module.css";
 
 const DEMO_DEPARTMENTS = [
@@ -243,6 +249,40 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
       return;
     }
 
+    try {
+      const auditResult = await logARGOSAuditEvent({
+        organizationId,
+        category: ARGOS_AUDIT_CATEGORIES.ADMINISTRATION,
+        action: "department_created",
+        entityType: "department",
+        entityId: data?.id || null,
+        entityName: data?.department_name || cleanedName,
+        outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+        severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+        summary: `Department created: ${data?.department_name || cleanedName}.`,
+        details: {
+          departmentId: data?.id || null,
+          departmentName: data?.department_name || cleanedName,
+          departmentCode: data?.department_code || cleanedCode || null,
+          isActive: data?.is_active !== false,
+          createdAt: data?.created_at || new Date().toISOString(),
+        },
+        source: "department_administration",
+      });
+
+      if (auditResult.error) {
+        console.error(
+          "ARGOS Audit Log: department creation succeeded, but the audit event was not recorded:",
+          auditResult.error
+        );
+      }
+    } catch (auditError) {
+      console.error(
+        "ARGOS Audit Log: unexpected department creation audit failure:",
+        auditError
+      );
+    }
+
     setDepartments((currentDepartments) =>
       [...currentDepartments, data].sort((first, second) =>
         first.department_name.localeCompare(second.department_name)
@@ -345,6 +385,56 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
       return;
     }
 
+    try {
+      const auditResult = await logARGOSAuditEvent({
+        organizationId,
+        category: ARGOS_AUDIT_CATEGORIES.ADMINISTRATION,
+        action: "department_updated",
+        entityType: "department",
+        entityId: data?.id || editingDepartment.id,
+        entityName: data?.department_name || cleanedName,
+        outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+        severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+        summary: `Department updated: ${data?.department_name || cleanedName}.`,
+        details: {
+          departmentId: data?.id || editingDepartment.id,
+          previous: {
+            departmentName: editingDepartment.department_name || "",
+            departmentCode: editingDepartment.department_code || null,
+            isActive: editingDepartment.is_active !== false,
+          },
+          updated: {
+            departmentName: data?.department_name || cleanedName,
+            departmentCode: data?.department_code || cleanedCode || null,
+            isActive: data?.is_active !== false,
+          },
+          changedFields: [
+            editingDepartment.department_name !== (data?.department_name || cleanedName)
+              ? "department_name"
+              : null,
+            (editingDepartment.department_code || null) !==
+            (data?.department_code || cleanedCode || null)
+              ? "department_code"
+              : null,
+          ].filter(Boolean),
+          updatedAt: data?.updated_at || new Date().toISOString(),
+        },
+        source: "department_administration",
+      });
+
+      if (auditResult.error) {
+        console.error(
+          "ARGOS Audit Log: department update succeeded, but the audit event was not recorded:",
+          auditResult.error
+        );
+      }
+    } catch (auditError) {
+      console.error(
+        "ARGOS Audit Log: unexpected department update audit failure:",
+        auditError
+      );
+    }
+
     setDepartments((currentDepartments) =>
       currentDepartments
         .map((department) =>
@@ -399,6 +489,47 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
       return;
     }
 
+    try {
+      const auditResult = await logARGOSAuditEvent({
+        organizationId,
+        category: ARGOS_AUDIT_CATEGORIES.ADMINISTRATION,
+        action: "department_disabled",
+        entityType: "department",
+        entityId: data?.id || department.id,
+        entityName: data?.department_name || department.department_name,
+        outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+        severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+        summary: `Department disabled: ${
+          data?.department_name || department.department_name
+        }.`,
+        details: {
+          departmentId: data?.id || department.id,
+          departmentName:
+            data?.department_name || department.department_name || "",
+          departmentCode:
+            data?.department_code || department.department_code || null,
+          previousStatus: "active",
+          newStatus: "inactive",
+          previousIsActive: department.is_active !== false,
+          newIsActive: data?.is_active !== false,
+          disabledAt: data?.updated_at || new Date().toISOString(),
+        },
+        source: "department_administration",
+      });
+
+      if (auditResult.error) {
+        console.error(
+          "ARGOS Audit Log: department disable succeeded, but the audit event was not recorded:",
+          auditResult.error
+        );
+      }
+    } catch (auditError) {
+      console.error(
+        "ARGOS Audit Log: unexpected department disable audit failure:",
+        auditError
+      );
+    }
+
     setDepartments((currentDepartments) =>
       currentDepartments.map((currentDepartment) =>
         currentDepartment.id === data.id ? data : currentDepartment
@@ -418,7 +549,6 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
             Fire, Public Works, Parks, Transit, and Utilities.
           </p>
         </div>
-      </div>
 
       <div className="argos-departments-summary">
         <div>
@@ -429,6 +559,11 @@ export default function ARGOSDepartmentsAdministrationModule({ isDemoMode }) {
           <span>Active Departments</span>
           <strong>{activeDepartments.length}</strong>
         </div>
+      </div>
+
+        <span className="argos-departments-mode">
+          {isAdministrator ? "Administrator" : "Read Only"}
+        </span>
       </div>
 
       {!editingDepartment && departments.length > 0 && (
