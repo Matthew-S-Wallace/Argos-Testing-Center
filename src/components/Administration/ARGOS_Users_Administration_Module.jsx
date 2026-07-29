@@ -740,13 +740,106 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
 
     try {
       await updateArgosUserProfile(selectedUser.id, authorizedDraft);
-      setActionMessage("User profile updated successfully.");
-      setEditDraft(null);
 
       const updatedDepartment =
         departments.find(
           (department) => department.id === authorizedDraft.department_id,
         )?.department_name || "Not assigned";
+
+      try {
+        const auditResult = await logARGOSAuditEvent({
+          category: ARGOS_AUDIT_CATEGORIES.ADMINISTRATION,
+          action: "user_profile_updated",
+
+          entityType: "user",
+          entityId: selectedUser.id,
+          entityName:
+            authorizedDraft.full_name.trim() ||
+            selectedUser.fullName ||
+            selectedUser.email ||
+            null,
+
+          outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+          severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+
+          summary: `User profile updated: ${
+            authorizedDraft.full_name.trim() ||
+            selectedUser.fullName ||
+            selectedUser.id
+          }.`,
+
+          details: {
+            targetUserId: selectedUser.id,
+            previous: {
+              fullName: selectedUser.fullName || "",
+              role: selectedUser.roleValue || "",
+              departmentId: selectedUser.departmentId || null,
+              department: selectedUser.department || "Not assigned",
+              jobTitle:
+                selectedUser.jobTitle === "Not configured"
+                  ? ""
+                  : selectedUser.jobTitle || "",
+              phone:
+                selectedUser.phone === "Not configured"
+                  ? ""
+                  : selectedUser.phone || "",
+            },
+            updated: {
+              fullName: authorizedDraft.full_name.trim(),
+              role: normalizeRoleValue(authorizedDraft.role),
+              departmentId: authorizedDraft.department_id || null,
+              department: updatedDepartment,
+              jobTitle: authorizedDraft.job_title.trim(),
+              phone: authorizedDraft.phone.trim(),
+            },
+            changedFields: [
+              selectedUser.fullName !== authorizedDraft.full_name.trim()
+                ? "full_name"
+                : null,
+              selectedUser.roleValue !==
+              normalizeRoleValue(authorizedDraft.role)
+                ? "role"
+                : null,
+              selectedUser.departmentId !==
+              (authorizedDraft.department_id || "")
+                ? "department"
+                : null,
+              (selectedUser.jobTitle === "Not configured"
+                ? ""
+                : selectedUser.jobTitle || "") !==
+              authorizedDraft.job_title.trim()
+                ? "job_title"
+                : null,
+              (selectedUser.phone === "Not configured"
+                ? ""
+                : selectedUser.phone || "") !==
+              authorizedDraft.phone.trim()
+                ? "phone"
+                : null,
+            ].filter(Boolean),
+            roleChanged,
+            departmentChanged,
+            updatedAt: new Date().toISOString(),
+          },
+
+          source: "user_administration",
+        });
+
+        if (auditResult.error) {
+          console.error(
+            "ARGOS Audit Log: user profile update succeeded, but the audit event was not recorded:",
+            auditResult.error,
+          );
+        }
+      } catch (auditError) {
+        console.error(
+          "ARGOS Audit Log: unexpected user profile update audit failure:",
+          auditError,
+        );
+      }
+
+      setActionMessage("User profile updated successfully.");
+      setEditDraft(null);
 
       setUsers((currentUsers) =>
         currentUsers.map((user) =>
