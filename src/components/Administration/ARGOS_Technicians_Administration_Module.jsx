@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import { canManageTechnicians } from "../../utils/ARGOS_Permission_Resolver";
+import {
+  ARGOS_AUDIT_CATEGORIES,
+  ARGOS_AUDIT_OUTCOMES,
+  ARGOS_AUDIT_SEVERITIES,
+  logARGOSAuditEvent,
+} from "../../services/ARGOS_Audit_Log_Service";
 import "./ARGOS_Technicians_Administration_Module.css";
 
 const SELECT_FIELDS = "id, organization_id, technician_name, employee_number, email, phone, is_active, created_at, updated_at";
@@ -130,6 +136,16 @@ export default function ARGOSTechniciansAdministrationModule({ isDemoMode }) {
       return;
     }
 
+    try{
+      const auditResult=await logARGOSAuditEvent({
+        organizationId,category:ARGOS_AUDIT_CATEGORIES.ADMINISTRATION,action:"technician_created",
+        entityType:"technician",entityId:data?.id,entityName:data?.technician_name,
+        outcome:ARGOS_AUDIT_OUTCOMES.SUCCESS,severity:ARGOS_AUDIT_SEVERITIES.INFORMATION,
+        summary:`Technician created: ${data?.technician_name}.`,
+        details:{technicianId:data?.id,name:data?.technician_name,employeeNumber:data?.employee_number,email:data?.email,phone:data?.phone,isActive:data?.is_active!==data?.is_active!==false},
+        source:"technician_administration"});
+      if(auditResult.error) console.error("ARGOS Audit Log: technician creation audit failed:",auditResult.error);
+    }catch(auditError){console.error("ARGOS Audit Log: unexpected technician creation audit failure:",auditError);}
     setTechnicians((current) => sortRows([...current, data]));
     setDraft({ technician_name: "", employee_number: "", email: "", phone: "" });
     setShowAdd(false);
@@ -163,6 +179,16 @@ export default function ARGOSTechniciansAdministrationModule({ isDemoMode }) {
       return;
     }
 
+    try{
+      const auditResult=await logARGOSAuditEvent({
+        organizationId,category:ARGOS_AUDIT_CATEGORIES.ADMINISTRATION,action:"technician_updated",
+        entityType:"technician",entityId:data?.id||row.id,entityName:data?.technician_name||row.technician_name,
+        outcome:ARGOS_AUDIT_OUTCOMES.SUCCESS,severity:ARGOS_AUDIT_SEVERITIES.INFORMATION,
+        summary:`Technician updated: ${data?.technician_name||row.technician_name}.`,
+        details:{previous:{name:row.technician_name,employeeNumber:row.employee_number,email:row.email,phone:row.phone},updated:{name:data?.technician_name,employeeNumber:data?.employee_number,email:data?.email,phone:data?.phone}},
+        source:"technician_administration"});
+      if(auditResult.error) console.error("ARGOS Audit Log: technician update audit failed:",auditResult.error);
+    }catch(auditError){console.error("ARGOS Audit Log: unexpected technician update audit failure:",auditError);}
     setTechnicians((current) => sortRows(current.map((item) => item.id === data.id ? data : item)));
     setEditingId(null);
     setActionMessage("Technician updated.");
@@ -188,6 +214,16 @@ export default function ARGOSTechniciansAdministrationModule({ isDemoMode }) {
       .single();
 
     if (error) return setActionMessage("ARGOS could not disable the technician.");
+    try{
+      const auditResult=await logARGOSAuditEvent({
+        organizationId,category:ARGOS_AUDIT_CATEGORIES.ADMINISTRATION,action:"technician_disabled",
+        entityType:"technician",entityId:data?.id||row.id,entityName:data?.technician_name||row.technician_name,
+        outcome:ARGOS_AUDIT_OUTCOMES.SUCCESS,severity:ARGOS_AUDIT_SEVERITIES.INFORMATION,
+        summary:`Technician disabled: ${data?.technician_name||row.technician_name}.`,
+        details:{previousStatus:"active",newStatus:"inactive",technicianId:data?.id||row.id},
+        source:"technician_administration"});
+      if(auditResult.error) console.error("ARGOS Audit Log: technician disable audit failed:",auditResult.error);
+    }catch(auditError){console.error("ARGOS Audit Log: unexpected technician disable audit failure:",auditError);}
     setTechnicians((current) => current.map((item) => item.id === data.id ? data : item));
     setActionMessage("Technician disabled.");
   }
