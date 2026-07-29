@@ -1725,6 +1725,183 @@ if (returnStatusHistoryError) {
   return;
 }
 
+try {
+  const auditResult = await logARGOSAuditEvent({
+    organizationId,
+    userId: session?.user?.id || null,
+    userName:
+      profile?.full_name ||
+      session?.user?.user_metadata?.full_name ||
+      session?.user?.email ||
+      null,
+    userEmail: session?.user?.email || null,
+    userRole: profile?.role || null,
+
+    category: ARGOS_AUDIT_CATEGORIES.REPAIR,
+    action: "repair_completed",
+
+    entityType: "asset",
+    entityId: savedReturnedAsset?.id || data?.id || selectedAsset?.id || null,
+    entityName:
+      savedReturnedAsset?.unit ||
+      savedCompletedEvent?.unit ||
+      selectedAsset?.unit ||
+      null,
+
+    outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+    severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+
+    summary: `Repair completed${
+      savedReturnedAsset?.unit || savedCompletedEvent?.unit
+        ? `: Unit ${savedReturnedAsset?.unit || savedCompletedEvent?.unit}`
+        : ""
+    } returned to Ready.`,
+
+    details: {
+      assetId:
+        savedReturnedAsset?.id ||
+        data?.id ||
+        selectedAsset?.id ||
+        null,
+      repairHistoryId:
+        savedRepairHistory?.id ||
+        savedCompletedEvent?.id ||
+        null,
+      statusHistoryId: savedReturnStatusHistory?.id || null,
+      unit:
+        savedReturnedAsset?.unit ||
+        savedCompletedEvent?.unit ||
+        selectedAsset?.unit ||
+        "",
+      vin:
+        savedReturnedAsset?.vin ||
+        selectedAsset?.vin ||
+        "",
+      asset:
+        savedReturnedAsset?.asset ||
+        savedCompletedEvent?.asset ||
+        selectedAsset?.asset ||
+        "",
+      department:
+        savedReturnedAsset?.department ||
+        savedCompletedEvent?.department ||
+        selectedAsset?.department ||
+        "",
+      priorStatus:
+        savedCompletedEvent?.status ||
+        returnToReadyStatusHistoryEvent.previousStatus ||
+        selectedAsset?.status ||
+        "",
+      finalStatus:
+        savedCompletedEvent?.finalStatus ||
+        returnToReadyStatusHistoryEvent.newStatus ||
+        savedReturnedAsset?.status ||
+        "Ready",
+      reason:
+        savedCompletedEvent?.reason ||
+        selectedAsset?.reason ||
+        "",
+      priority:
+        savedCompletedEvent?.priority ||
+        selectedAsset?.priority ||
+        "",
+      technician:
+        savedCompletedEvent?.technician ||
+        returnToReadyStatusHistoryEvent.technician ||
+        selectedAsset?.technician ||
+        "",
+      finalDaysDown:
+        savedCompletedEvent?.finalDaysDown ??
+        savedRepairHistory?.days_down ??
+        0,
+      workOrderNumber:
+        savedRepairHistory?.work_order_number ||
+        completedEvent?.workOrderNumber ||
+        null,
+      vendorShop:
+        savedRepairHistory?.vendor_shop ||
+        completedEvent?.vendorShop ||
+        null,
+      mileageAtRepair:
+        savedRepairHistory?.mileage_at_repair ??
+        completedEvent?.mileageAtRepair ??
+        null,
+      engineHoursAtRepair:
+        savedRepairHistory?.engine_hours_at_repair ??
+        completedEvent?.engineHoursAtRepair ??
+        null,
+      repairOpenedAt:
+        savedRepairHistory?.repair_opened_at ||
+        completedEvent?.repairOpenedAt ||
+        completedEvent?.downSince ||
+        null,
+      repairCompletedAt:
+        savedRepairHistory?.repair_completed_at ||
+        savedCompletedEvent?.completedDate ||
+        completedEvent?.completedDate ||
+        new Date().toISOString(),
+      warrantyStatus:
+        savedRepairHistory?.warranty_status ||
+        completedEvent?.warrantyStatus ||
+        "Unknown",
+      primaryVmrs:
+        savedRepairHistory?.primary_vmrs ||
+        completedEvent?.primaryVmrs ||
+        null,
+      secondaryVmrs:
+        savedRepairHistory?.secondary_vmrs ||
+        completedEvent?.secondaryVmrs ||
+        null,
+      vmrsSystemCode:
+        savedRepairHistory?.vmrs_system_code ||
+        completedEvent?.vmrsSystemCode ||
+        null,
+      vmrsAssemblyCode:
+        savedRepairHistory?.vmrs_assembly_code ||
+        completedEvent?.vmrsAssemblyCode ||
+        null,
+      vmrsComponentCode:
+        savedRepairHistory?.vmrs_component_code ||
+        completedEvent?.vmrsComponentCode ||
+        null,
+      vmrsReasonCode:
+        savedRepairHistory?.vmrs_reason_code ||
+        completedEvent?.vmrsReasonCode ||
+        null,
+      vmrsWorkAccomplishedCode:
+        savedRepairHistory?.vmrs_work_accomplished_code ||
+        completedEvent?.vmrsWorkAccomplishedCode ||
+        null,
+      vmrsPositionCode:
+        savedRepairHistory?.vmrs_position_code ||
+        completedEvent?.vmrsPositionCode ||
+        null,
+      statusChangedAt:
+        savedReturnStatusHistory?.changed_at ||
+        returnToReadyStatusHistoryEvent.recordedAt ||
+        new Date().toISOString(),
+      details:
+        savedCompletedEvent?.details ||
+        completedEvent?.details ||
+        "",
+    },
+
+    source: "repair_completion",
+  });
+
+  if (auditResult.error) {
+    console.error(
+      "ARGOS Audit Log: repair completion succeeded, but the audit event was not recorded:",
+      auditResult.error
+    );
+  }
+} catch (auditError) {
+  console.error(
+    "ARGOS Audit Log: unexpected repair completion audit failure:",
+    auditError
+  );
+}
+
 setStatusHistoryEvents((currentEvents) => [
   {
     ...returnToReadyStatusHistoryEvent,
