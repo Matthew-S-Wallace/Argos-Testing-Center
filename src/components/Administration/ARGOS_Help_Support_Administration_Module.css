@@ -1,0 +1,627 @@
+.argos-help-support-content {
+  padding: 30px;
+  color: #071a33;
+}
+
+.argos-help-support-heading,
+.argos-help-section-heading,
+.argos-help-support-panel,
+.argos-help-system-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.argos-help-support-heading {
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e5e5df;
+}
+
+.argos-help-support-heading h4,
+.argos-help-support-content h5,
+.argos-help-support-content h6 {
+  margin: 0;
+  color: #071a33;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+}
+
+.argos-help-support-heading h4 {
+  font-size: 30px;
+}
+
+.argos-help-support-heading > div > p:last-child {
+  max-width: 790px;
+  margin: 10px 0 0;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.argos-help-support-version {
+  min-width: 245px;
+  padding: 16px 18px;
+  border: 1px solid #d8d8d2;
+  border-radius: 9px;
+  background: #f7f7f4;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-help-support-version span,
+.argos-help-support-version strong,
+.argos-help-support-version small {
+  display: block;
+}
+
+.argos-help-support-version span {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-help-support-version strong {
+  margin-top: 7px;
+  color: #071a33;
+  font-size: 16px;
+}
+
+.argos-help-support-version small {
+  margin-top: 5px;
+  color: #82550f;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.argos-help-system-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.argos-help-system-summary > div {
+  min-height: 86px;
+  padding: 16px;
+  border: 1px solid #dfe3e7;
+  border-radius: 9px;
+  background: #fbfbf8;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-help-system-summary span,
+.argos-help-system-summary strong {
+  display: block;
+}
+
+.argos-help-system-summary span {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.argos-help-system-summary strong {
+  margin-top: 8px;
+  color: #27384d;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.argos-help-introduction {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 22px;
+  margin-top: 22px;
+}
+
+.argos-help-introduction-copy,
+.argos-help-operating-question,
+.argos-help-section,
+.argos-help-support-panel,
+.argos-help-system-actions {
+  border: 1px solid #d8d8d2;
+  border-radius: 11px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(7, 26, 51, 0.06);
+}
+
+.argos-help-introduction-copy {
+  padding: 24px;
+  border-top: 4px solid #d8a93b;
+}
+
+.argos-help-introduction-copy h5,
+.argos-help-section h5,
+.argos-help-support-panel h5,
+.argos-help-system-actions h5 {
+  font-size: 23px;
+}
+
+.argos-help-introduction-copy > p:not(.eyebrow),
+.argos-help-support-copy > p:not(.eyebrow),
+.argos-help-system-actions > div > p:last-child {
+  margin: 12px 0 0;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.argos-help-operating-question {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at bottom right, rgba(216, 169, 59, 0.15), transparent 40%),
+    linear-gradient(145deg, #061b36, #0a3158);
+  color: #ffffff;
+}
+
+.argos-help-operating-question > span {
+  margin-bottom: 13px;
+  color: #d8a93b;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.argos-help-operating-question strong {
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.argos-help-operating-question strong:last-child {
+  border-bottom: 0;
+}
+
+.argos-help-section {
+  margin-top: 22px;
+  padding: 24px;
+}
+
+.argos-help-section-heading {
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.argos-help-section-heading > span {
+  color: #667085;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.argos-help-principles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.argos-help-principles article {
+  position: relative;
+  min-height: 176px;
+  padding: 20px;
+  overflow: hidden;
+  border: 1px solid #e1e4e8;
+  border-radius: 9px;
+  background: #fbfbf8;
+}
+
+.argos-help-principles article > span {
+  position: absolute;
+  top: 11px;
+  right: 14px;
+  color: rgba(154, 102, 20, 0.2);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 38px;
+  font-weight: 700;
+}
+
+.argos-help-principles h6,
+.argos-help-workflows h6 {
+  font-size: 19px;
+}
+
+.argos-help-principles p {
+  margin: 12px 0 0;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.argos-help-workflows {
+  display: grid;
+  gap: 14px;
+  text-align: left;
+}
+
+.argos-help-workflows,
+.argos-help-workflows > article,
+.argos-help-workflow-heading,
+.argos-help-workflows ol,
+.argos-help-workflow-note {
+  text-align: left;
+}
+
+.argos-help-workflow-heading {
+  align-items: flex-start;
+}
+
+.argos-help-workflows ol {
+  width: 100%;
+}
+
+.argos-help-workflows > article {
+  padding: 20px;
+  border: 1px solid #e1e4e8;
+  border-radius: 9px;
+  background: #fbfbf8;
+}
+
+.argos-help-workflow-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.argos-help-workflow-heading > span {
+  color: #9a6614;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-help-workflows ol {
+  display: grid;
+  gap: 9px;
+  margin: 16px 0 0;
+  padding-left: 21px;
+  color: #31415a;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.argos-help-workflows li::marker {
+  color: #9a6614;
+  font-weight: 800;
+}
+
+.argos-help-workflow-note {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-left: 4px solid #d8a93b;
+  background: #fffaf0;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.argos-help-workflow-note strong {
+  flex: 0 0 auto;
+  color: #82550f;
+}
+
+.argos-help-workflow-note span {
+  color: #526174;
+}
+
+.argos-help-faq-heading {
+  align-items: flex-end;
+}
+
+.argos-help-search {
+  display: grid;
+  gap: 6px;
+  min-width: 270px;
+  color: #667085;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.argos-help-search input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #cfd5dc;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #071a33;
+  font: 13px Inter, system-ui, sans-serif;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.argos-help-search input:focus {
+  outline: none;
+  border-color: #d8a93b;
+  box-shadow: 0 0 0 3px rgba(216, 169, 59, 0.15);
+}
+
+.argos-help-faq-list {
+  display: grid;
+  gap: 9px;
+}
+
+.argos-help-faq-list article {
+  overflow: hidden;
+  border: 1px solid #dfe3e7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.argos-help-faq-list article.open {
+  border-color: rgba(154, 102, 20, 0.45);
+}
+
+.argos-help-faq-list button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 15px 17px;
+  border: 0;
+  border-radius: 0;
+  background: #fbfbf8;
+  color: #071a33;
+  box-shadow: none;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+}
+
+.argos-help-faq-list button:hover {
+  background: #f4f3ee;
+}
+
+.argos-help-faq-list button b {
+  color: #9a6614;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.argos-help-faq-list article > p {
+  margin: 0;
+  padding: 15px 17px 17px;
+  border-top: 1px solid #e5e5df;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.argos-help-no-results {
+  padding: 24px;
+  border: 1px dashed #cfd5dc;
+  border-radius: 8px;
+  color: #667085;
+  font-family: Inter, system-ui, sans-serif;
+  text-align: center;
+}
+
+.argos-help-support-panel {
+  margin-top: 22px;
+  padding: 24px;
+  border-top: 4px solid #d8a93b;
+}
+
+.argos-help-support-copy {
+  max-width: 430px;
+}
+
+.argos-help-support-hours {
+  margin-top: 18px;
+  padding: 13px 14px;
+  border: 1px solid #e1d4b2;
+  border-radius: 8px;
+  background: #fffaf0;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-help-support-hours span,
+.argos-help-support-hours strong {
+  display: block;
+}
+
+.argos-help-support-hours span {
+  color: #82550f;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.argos-help-support-hours strong {
+  margin-top: 6px;
+  color: #31415a;
+  font-size: 12px;
+}
+
+.argos-help-contact-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  min-width: 310px;
+}
+
+.argos-help-contact-item {
+  display: block;
+  padding: 14px 16px;
+  border: 1px solid #dfe3e7;
+  border-radius: 8px;
+  background: #fbfbf8;
+  color: inherit;
+  font-family: Inter, system-ui, sans-serif;
+  text-decoration: none;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.argos-help-contact-item:hover {
+  border-color: #d8a93b;
+  background: #fffaf0;
+}
+
+.argos-help-contact-item span,
+.argos-help-contact-item strong,
+.argos-help-contact-item small {
+  display: block;
+}
+
+.argos-help-contact-item span {
+  color: #667085;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-help-contact-item strong {
+  margin-top: 5px;
+  color: #071a33;
+  font-size: 14px;
+}
+
+.argos-help-contact-item small {
+  margin-top: 4px;
+  color: #667085;
+  font-size: 10px;
+}
+
+.argos-help-system-actions {
+  align-items: center;
+  margin-top: 22px;
+  padding: 22px 24px;
+  background: #fbfbf8;
+}
+
+.argos-help-system-actions > div {
+  max-width: 670px;
+}
+
+.argos-help-system-actions button {
+  flex: 0 0 auto;
+}
+
+.argos-help-closing {
+  margin-top: 22px;
+  padding: 22px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #061b36, #0a3158);
+  text-align: center;
+}
+
+.argos-help-closing strong,
+.argos-help-closing span {
+  display: block;
+}
+
+.argos-help-closing strong {
+  color: #ffffff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.argos-help-closing span {
+  margin-top: 7px;
+  color: #d8a93b;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1050px) {
+  .argos-help-system-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .argos-help-support-panel {
+    flex-direction: column;
+  }
+
+  .argos-help-contact-grid {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .argos-help-support-heading,
+  .argos-help-section-heading,
+  .argos-help-system-actions {
+    flex-direction: column;
+  }
+
+  .argos-help-support-version,
+  .argos-help-search {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .argos-help-introduction {
+    grid-template-columns: 1fr;
+  }
+
+  .argos-help-principles,
+  .argos-help-contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .argos-help-faq-heading {
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 600px) {
+  .argos-help-support-content {
+    padding: 22px 18px;
+  }
+
+  .argos-help-system-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .argos-help-introduction-copy,
+  .argos-help-operating-question,
+  .argos-help-section,
+  .argos-help-support-panel,
+  .argos-help-system-actions {
+    padding: 19px;
+  }
+
+  .argos-help-support-heading h4 {
+    font-size: 26px;
+  }
+
+  .argos-help-workflow-note {
+    flex-direction: column;
+    gap: 4px;
+  }
+}

@@ -11,6 +11,7 @@ import ARGOSVMRSConfigurationAdministrationModule from "./ARGOS_VMRS_Configurati
 import ARGOSArchivedAssetsAdministrationModule from "./ARGOS_Archived_Assets_Administration_Module";
 import ARGOSAuditLogAdministrationModule from "./ARGOS_Audit_Log_Administration_Module";
 import ARGOSReleaseNotesAdministrationModule from "./ARGOS_Release_Notes_Administration_Module";
+import ARGOSHelpSupportAdministrationModule from "./ARGOS_Help_Support_Administration_Module";
 import ARGOSDataManagementModule from "../DataManagement/ARGOS_Data_Management_Module";
 import {
   canViewAdministration,
@@ -164,6 +165,7 @@ export default function AdministrationModule({
   const isArchivedAssetsSection = activeSection === "Archived Assets";
   const isAuditLogSection = activeSection === "Audit Log";
   const isReleaseNotesSection = activeSection === "Release Notes";
+  const isHelpSupportSection = activeSection === "Help & Support";
   const isDataManagementSection =
     isCSVImportSection || isCSVExportSection || isImportHistorySection;
 
@@ -276,6 +278,10 @@ export default function AdministrationModule({
             />
           ) : isReleaseNotesSection ? (
             <ARGOSReleaseNotesAdministrationModule />
+          ) : isHelpSupportSection ? (
+            <ARGOSHelpSupportAdministrationModule
+              onOpenReleaseNotes={() => onSelectSection("Release Notes")}
+            />
           ) : (
             <PlannedAdministrationWorkspace section={activeSection} />
           )}
