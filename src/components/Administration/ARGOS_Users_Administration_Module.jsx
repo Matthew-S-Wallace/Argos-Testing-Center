@@ -6,6 +6,12 @@ import {
   updateArgosUserProfile,
 } from "../../utils/ARGOS_Identity_Service";
 import {
+  ARGOS_AUDIT_CATEGORIES,
+  ARGOS_AUDIT_OUTCOMES,
+  ARGOS_AUDIT_SEVERITIES,
+  logARGOSAuditEvent,
+} from "../../services/ARGOS_Audit_Log_Service";
+import {
   canChangeUserDepartment,
   canChangeUserRole,
   canDemoteUser,
@@ -533,6 +539,64 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+
+      try {
+        const auditResult = await logARGOSAuditEvent({
+          category: ARGOS_AUDIT_CATEGORIES.ADMINISTRATION,
+          action: "user_invited",
+
+          entityType: "user",
+          entityId:
+            data?.user_id ||
+            data?.userId ||
+            data?.invited_user_id ||
+            data?.invitedUserId ||
+            null,
+          entityName: payload.full_name || payload.email,
+
+          outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+          severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+
+          summary: `User invitation sent: ${payload.full_name} (${payload.email}).`,
+
+          details: {
+            invitedUserId:
+              data?.user_id ||
+              data?.userId ||
+              data?.invited_user_id ||
+              data?.invitedUserId ||
+              null,
+            fullName: payload.full_name,
+            firstName: payload.first_name,
+            lastName: payload.last_name,
+            email: payload.email,
+            assignedRole: payload.role,
+            invitationMethod: "supabase_edge_function",
+            edgeFunction: "argos-invite-user",
+            invitationStatus:
+              data?.status ||
+              data?.invitation_status ||
+              data?.invitationStatus ||
+              "sent",
+            invitationMessage: data?.message || null,
+            invitedAt: new Date().toISOString(),
+          },
+
+          source: "user_administration",
+        });
+
+        if (auditResult.error) {
+          console.error(
+            "ARGOS Audit Log: user invitation succeeded, but the audit event was not recorded:",
+            auditResult.error,
+          );
+        }
+      } catch (auditError) {
+        console.error(
+          "ARGOS Audit Log: unexpected user invitation audit failure:",
+          auditError,
+        );
+      }
 
       setInviteDraft({
         first_name: "",
