@@ -10,6 +10,7 @@ import ARGOSAPWAMappingAdministrationModule from "./ARGOS_APWA_Mapping_Administr
 import ARGOSVMRSConfigurationAdministrationModule from "./ARGOS_VMRS_Configuration_Administration_Module";
 import ARGOSArchivedAssetsAdministrationModule from "./ARGOS_Archived_Assets_Administration_Module";
 import ARGOSAuditLogAdministrationModule from "./ARGOS_Audit_Log_Administration_Module";
+import ARGOSReleaseNotesAdministrationModule from "./ARGOS_Release_Notes_Administration_Module";
 import ARGOSDataManagementModule from "../DataManagement/ARGOS_Data_Management_Module";
 import {
   canViewAdministration,
@@ -162,6 +163,7 @@ export default function AdministrationModule({
   const isImportHistorySection = activeSection === "Import History";
   const isArchivedAssetsSection = activeSection === "Archived Assets";
   const isAuditLogSection = activeSection === "Audit Log";
+  const isReleaseNotesSection = activeSection === "Release Notes";
   const isDataManagementSection =
     isCSVImportSection || isCSVExportSection || isImportHistorySection;
 
@@ -272,6 +274,8 @@ export default function AdministrationModule({
               organizationId={organizationId}
               isDemoMode={isDemoMode}
             />
+          ) : isReleaseNotesSection ? (
+            <ARGOSReleaseNotesAdministrationModule />
           ) : (
             <PlannedAdministrationWorkspace section={activeSection} />
           )}

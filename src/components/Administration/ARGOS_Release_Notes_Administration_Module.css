@@ -1,0 +1,309 @@
+.argos-release-notes-content {
+  padding: 30px;
+  color: #071a33;
+}
+
+.argos-release-notes-heading,
+.argos-release-notes-current-header,
+.argos-release-notes-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.argos-release-notes-heading {
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e5e5df;
+}
+
+.argos-release-notes-heading h4,
+.argos-release-notes-current h5,
+.argos-release-notes-section h5 {
+  margin: 0;
+  color: #071a33;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+}
+
+.argos-release-notes-heading h4 {
+  font-size: 29px;
+}
+
+.argos-release-notes-heading > div > p:last-child,
+.argos-release-notes-current-header > div > p:last-child {
+  max-width: 760px;
+  margin: 10px 0 0;
+  color: #526174;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.argos-release-notes-read-only {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border: 1px solid rgba(154, 102, 20, 0.35);
+  border-radius: 999px;
+  background: #fff8e8;
+  color: #82550f;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-release-notes-current,
+.argos-release-notes-section {
+  margin-top: 22px;
+  padding: 24px;
+  border: 1px solid #d8d8d2;
+  border-radius: 11px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(7, 26, 51, 0.06);
+}
+
+.argos-release-notes-current {
+  border-top: 4px solid #d8a93b;
+}
+
+.argos-release-notes-version-label {
+  margin: 0 0 7px;
+  color: #9a6614;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.argos-release-notes-current h5 {
+  font-size: 30px;
+}
+
+.argos-release-notes-status {
+  min-width: 250px;
+  padding: 16px 18px;
+  border: 1px solid #d8d8d2;
+  border-radius: 9px;
+  background: #f7f7f4;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-release-notes-status span,
+.argos-release-notes-status strong,
+.argos-release-notes-status small {
+  display: block;
+}
+
+.argos-release-notes-status span {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argos-release-notes-status strong {
+  margin-top: 6px;
+  color: #071a33;
+  font-size: 14px;
+}
+
+.argos-release-notes-status small {
+  margin-top: 5px;
+  color: #82550f;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.argos-release-notes-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.argos-release-notes-summary > div {
+  padding: 15px 16px;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  background: #fbfbf8;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-release-notes-summary span,
+.argos-release-notes-summary strong {
+  display: block;
+}
+
+.argos-release-notes-summary span {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.argos-release-notes-summary strong {
+  margin-top: 6px;
+  color: #071a33;
+  font-size: 13px;
+}
+
+.argos-release-notes-section-heading {
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.argos-release-notes-section h5 {
+  font-size: 23px;
+}
+
+.argos-release-notes-section-heading > span {
+  color: #667085;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.argos-release-notes-capabilities {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.argos-release-notes-capabilities > div {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 48px;
+  padding: 11px 13px;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  background: #fbfbf8;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-release-notes-capabilities span {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  flex: 0 0 23px;
+  border-radius: 50%;
+  background: #e4f2e8;
+  color: #146c2e;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.argos-release-notes-capabilities strong {
+  color: #27384d;
+  font-size: 13px;
+}
+
+.argos-release-notes-table-wrap {
+  overflow-x: auto;
+}
+
+.argos-release-notes-table {
+  min-width: 720px;
+}
+
+.argos-release-notes-status-pill {
+  display: inline-flex;
+  padding: 6px 9px;
+  border: 1px solid rgba(154, 102, 20, 0.25);
+  border-radius: 999px;
+  background: #fff8e8;
+  color: #82550f;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.argos-release-notes-guidance {
+  display: flex;
+  gap: 14px;
+  margin-top: 22px;
+  padding: 18px 20px;
+  border: 1px solid #e1d4b2;
+  border-radius: 10px;
+  background: #fffaf0;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.argos-release-notes-guidance > div {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 50%;
+  background: #82550f;
+  color: #ffffff;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+}
+
+.argos-release-notes-guidance p {
+  margin: 0;
+}
+
+.argos-release-notes-guidance strong,
+.argos-release-notes-guidance span {
+  display: block;
+}
+
+.argos-release-notes-guidance strong {
+  color: #82550f;
+  font-size: 13px;
+}
+
+.argos-release-notes-guidance span {
+  margin-top: 5px;
+  color: #526174;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+@media (max-width: 850px) {
+  .argos-release-notes-summary,
+  .argos-release-notes-capabilities {
+    grid-template-columns: 1fr;
+  }
+
+  .argos-release-notes-heading,
+  .argos-release-notes-current-header {
+    flex-direction: column;
+  }
+
+  .argos-release-notes-status {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .argos-release-notes-content {
+    padding: 22px 18px;
+  }
+
+  .argos-release-notes-current,
+  .argos-release-notes-section {
+    padding: 19px;
+  }
+
+  .argos-release-notes-heading h4 {
+    font-size: 26px;
+  }
+
+  .argos-release-notes-current h5 {
+    font-size: 26px;
+  }
+}
