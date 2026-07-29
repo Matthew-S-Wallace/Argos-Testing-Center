@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import { canManageAssetTypes } from "../../utils/ARGOS_Permission_Resolver";
+import {
+  ARGOS_AUDIT_CATEGORIES,
+  ARGOS_AUDIT_OUTCOMES,
+  ARGOS_AUDIT_SEVERITIES,
+  logARGOSAuditEvent,
+} from "../../services/ARGOS_Audit_Log_Service";
 import "./ARGOS_Asset_Types_Administration_Module.css";
 
 const DEMO_ASSET_TYPES = [
@@ -237,6 +243,40 @@ export default function ARGOSAssetTypesAdministrationModule({ isDemoMode }) {
       return;
     }
 
+    try {
+      const auditResult = await logARGOSAuditEvent({
+        organizationId,
+        category: ARGOS_AUDIT_CATEGORIES.ADMINISTRATION,
+        action: "asset_type_created",
+        entityType: "asset_type",
+        entityId: data?.id || null,
+        entityName: data?.asset_type_name || cleanedName,
+        outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+        severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+        summary: `Asset Type created: ${data?.asset_type_name || cleanedName}.`,
+        details: {
+          assetTypeId: data?.id || null,
+          assetTypeName: data?.asset_type_name || cleanedName,
+          assetTypeCode: data?.asset_type_code || cleanedCode || null,
+          isActive: data?.is_active !== false,
+          createdAt: data?.created_at || new Date().toISOString(),
+        },
+        source: "asset_type_administration",
+      });
+
+      if (auditResult.error) {
+        console.error(
+          "ARGOS Audit Log: Asset Type creation succeeded, but the audit event was not recorded:",
+          auditResult.error
+        );
+      }
+    } catch (auditError) {
+      console.error(
+        "ARGOS Audit Log: unexpected Asset Type creation audit failure:",
+        auditError
+      );
+    }
+
     setAssetTypes((currentAssetTypes) =>
       [...currentAssetTypes, data].sort((first, second) =>
         first.asset_type_name.localeCompare(second.asset_type_name)
@@ -307,6 +347,56 @@ export default function ARGOSAssetTypesAdministrationModule({ isDemoMode }) {
       return;
     }
 
+    try {
+      const auditResult = await logARGOSAuditEvent({
+        organizationId,
+        category: ARGOS_AUDIT_CATEGORIES.ADMINISTRATION,
+        action: "asset_type_updated",
+        entityType: "asset_type",
+        entityId: data?.id || assetType.id,
+        entityName: data?.asset_type_name || cleanedName,
+        outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+        severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+        summary: `Asset Type updated: ${data?.asset_type_name || cleanedName}.`,
+        details: {
+          assetTypeId: data?.id || assetType.id,
+          previous: {
+            assetTypeName: assetType.asset_type_name || "",
+            assetTypeCode: assetType.asset_type_code || null,
+            isActive: assetType.is_active !== false,
+          },
+          updated: {
+            assetTypeName: data?.asset_type_name || cleanedName,
+            assetTypeCode: data?.asset_type_code || cleanedCode || null,
+            isActive: data?.is_active !== false,
+          },
+          changedFields: [
+            assetType.asset_type_name !== (data?.asset_type_name || cleanedName)
+              ? "asset_type_name"
+              : null,
+            (assetType.asset_type_code || null) !==
+            (data?.asset_type_code || cleanedCode || null)
+              ? "asset_type_code"
+              : null,
+          ].filter(Boolean),
+          updatedAt: data?.updated_at || new Date().toISOString(),
+        },
+        source: "asset_type_administration",
+      });
+
+      if (auditResult.error) {
+        console.error(
+          "ARGOS Audit Log: Asset Type update succeeded, but the audit event was not recorded:",
+          auditResult.error
+        );
+      }
+    } catch (auditError) {
+      console.error(
+        "ARGOS Audit Log: unexpected Asset Type update audit failure:",
+        auditError
+      );
+    }
+
     setAssetTypes((currentAssetTypes) =>
       currentAssetTypes
         .map((currentAssetType) =>
@@ -358,6 +448,47 @@ export default function ARGOSAssetTypesAdministrationModule({ isDemoMode }) {
       return;
     }
 
+    try {
+      const auditResult = await logARGOSAuditEvent({
+        organizationId,
+        category: ARGOS_AUDIT_CATEGORIES.ADMINISTRATION,
+        action: "asset_type_disabled",
+        entityType: "asset_type",
+        entityId: data?.id || assetType.id,
+        entityName: data?.asset_type_name || assetType.asset_type_name,
+        outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+        severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+        summary: `Asset Type disabled: ${
+          data?.asset_type_name || assetType.asset_type_name
+        }.`,
+        details: {
+          assetTypeId: data?.id || assetType.id,
+          assetTypeName:
+            data?.asset_type_name || assetType.asset_type_name || "",
+          assetTypeCode:
+            data?.asset_type_code || assetType.asset_type_code || null,
+          previousStatus: "active",
+          newStatus: "inactive",
+          previousIsActive: assetType.is_active !== false,
+          newIsActive: data?.is_active !== false,
+          disabledAt: data?.updated_at || new Date().toISOString(),
+        },
+        source: "asset_type_administration",
+      });
+
+      if (auditResult.error) {
+        console.error(
+          "ARGOS Audit Log: Asset Type disable succeeded, but the audit event was not recorded:",
+          auditResult.error
+        );
+      }
+    } catch (auditError) {
+      console.error(
+        "ARGOS Audit Log: unexpected Asset Type disable audit failure:",
+        auditError
+      );
+    }
+
     setAssetTypes((currentAssetTypes) =>
       currentAssetTypes.map((currentAssetType) =>
         currentAssetType.id === data.id ? data : currentAssetType
@@ -377,15 +508,9 @@ export default function ARGOSAssetTypesAdministrationModule({ isDemoMode }) {
             asset records, reporting, VIN defaults, and future maintenance analytics.
           </p>
         </div>
-      </div>
-
-      {actionMessage && (
-        <div className="argos-asset-types-action-message">{actionMessage}</div>
-      )}
-
-      <div className="argos-asset-types-summary">
-        <div><span>Total Asset Types</span><strong>{assetTypes.length}</strong></div>
-        <div><span>Active Asset Types</span><strong>{activeAssetTypes.length}</strong></div>
+        <span className="argos-asset-types-mode">
+          {isAdministrator ? "Administrator" : "Read Only"}
+        </span>
       </div>
 
       <div className="argos-asset-types-actions">
@@ -429,6 +554,15 @@ export default function ARGOSAssetTypesAdministrationModule({ isDemoMode }) {
           </button>
         </form>
       )}
+
+      {actionMessage && (
+        <div className="argos-asset-types-action-message">{actionMessage}</div>
+      )}
+
+      <div className="argos-asset-types-summary">
+        <div><span>Total Asset Types</span><strong>{assetTypes.length}</strong></div>
+        <div><span>Active Asset Types</span><strong>{activeAssetTypes.length}</strong></div>
+      </div>
 
       {isLoading ? (
         <AssetTypesState>Loading Asset Types…</AssetTypesState>
@@ -498,6 +632,14 @@ export default function ARGOSAssetTypesAdministrationModule({ isDemoMode }) {
         </div>
       )}
 
+      <div className="argos-asset-types-foundation-note">
+        <strong>Sprint 001K operational boundary</strong>
+        <span>
+          Asset Types are organization-scoped production records. Existing assets retain
+          their descriptive Asset field while receiving a controlled Asset Type relationship.
+          Version 1.0 supports create, edit, and disable; deletion is intentionally unavailable.
+        </span>
+      </div>
     </div>
   );
 }
