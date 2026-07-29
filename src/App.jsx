@@ -1743,6 +1743,8 @@ setActiveView("history");
 return;
     }
 
+    let savedStatusChangeAuditContext = null;
+
     if (statusChanged) {
       const statusHistoryEvent = createStatusHistoryEvent(
         selectedAsset,
@@ -1780,6 +1782,11 @@ return;
         alert("ARGOS could not save this Status History record to the cloud.");
         return;
       }
+
+      savedStatusChangeAuditContext = {
+        statusHistoryEvent,
+        savedStatusHistory,
+      };
 
       setStatusHistoryEvents((currentEvents) => [
         {
@@ -1955,6 +1962,123 @@ try {
     "ARGOS Audit Log: unexpected asset update audit failure:",
     auditError
   );
+}
+
+if (savedStatusChangeAuditContext) {
+  const {
+    statusHistoryEvent,
+    savedStatusHistory,
+  } = savedStatusChangeAuditContext;
+
+  try {
+    const auditResult = await logARGOSAuditEvent({
+      organizationId,
+      userId: session?.user?.id || null,
+      userName:
+        profile?.full_name ||
+        session?.user?.user_metadata?.full_name ||
+        session?.user?.email ||
+        null,
+      userEmail: session?.user?.email || null,
+      userRole: profile?.role || null,
+
+      category: ARGOS_AUDIT_CATEGORIES.ASSET,
+      action: "asset_status_changed",
+
+      entityType: "asset",
+      entityId: savedAsset?.id || data?.id || selectedAsset?.id || null,
+      entityName:
+        savedAsset?.unit ||
+        updatedAsset.unit ||
+        selectedAsset?.unit ||
+        null,
+
+      outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+      severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+
+      summary: `Asset status changed${
+        savedAsset?.unit || updatedAsset.unit
+          ? `: Unit ${savedAsset?.unit || updatedAsset.unit}`
+          : ""
+      } from ${statusHistoryEvent.previousStatus || "Unknown"} to ${
+        statusHistoryEvent.newStatus || savedAsset?.status || updatedAsset.status || "Unknown"
+      }.`,
+
+      details: {
+        assetId: savedAsset?.id || data?.id || selectedAsset?.id || null,
+        statusHistoryId: savedStatusHistory?.id || null,
+        unit:
+          savedAsset?.unit ||
+          updatedAsset.unit ||
+          selectedAsset?.unit ||
+          "",
+        vin:
+          savedAsset?.vin ||
+          updatedAsset.vin ||
+          selectedAsset?.vin ||
+          "",
+        asset:
+          savedAsset?.asset ||
+          updatedAsset.asset ||
+          selectedAsset?.asset ||
+          "",
+        department:
+          savedAsset?.department ||
+          updatedAsset.department ||
+          selectedAsset?.department ||
+          "",
+        previousStatus: statusHistoryEvent.previousStatus || "",
+        newStatus:
+          statusHistoryEvent.newStatus ||
+          savedAsset?.status ||
+          updatedAsset.status ||
+          "",
+        reason:
+          statusHistoryEvent.reason ||
+          savedAsset?.reason ||
+          updatedAsset.reason ||
+          "",
+        priority:
+          savedAsset?.priority ||
+          updatedAsset.priority ||
+          "",
+        technician:
+          statusHistoryEvent.technician ||
+          savedAsset?.technician ||
+          updatedAsset.technician ||
+          "",
+        statusStartedAt: statusHistoryEvent.statusStartedAt || null,
+        statusEndedAt: statusHistoryEvent.statusEndedAt || null,
+        changedAt:
+          savedStatusHistory?.changed_at ||
+          statusHistoryEvent.recordedAt ||
+          new Date().toISOString(),
+        durationDays:
+          savedStatusHistory?.duration_days ??
+          Math.floor(statusHistoryEvent.durationDays || 0),
+        durationMinutes:
+          savedStatusHistory?.duration_minutes ??
+          Math.max(
+            0,
+            Math.round((statusHistoryEvent.durationDays || 0) * 24 * 60)
+          ),
+      },
+
+      source: "asset_status_change",
+    });
+
+    if (auditResult.error) {
+      console.error(
+        "ARGOS Audit Log: status change completed, but the audit event was not recorded:",
+        auditResult.error
+      );
+    }
+  } catch (auditError) {
+    console.error(
+      "ARGOS Audit Log: unexpected asset status change audit failure:",
+      auditError
+    );
+  }
 }
 
 setAssets((currentAssets) =>
