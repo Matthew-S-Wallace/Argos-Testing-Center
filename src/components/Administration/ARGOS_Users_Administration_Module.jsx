@@ -650,6 +650,68 @@ export default function ARGOSUsersAdministrationModule({ isDemoMode }) {
       }
 
       const nextIsActive = shouldRestore;
+
+      try {
+        const auditResult = await logARGOSAuditEvent({
+          category: ARGOS_AUDIT_CATEGORIES.ADMINISTRATION,
+          action: shouldRestore ? "user_restored" : "user_suspended",
+
+          entityType: "user",
+          entityId: selectedUser.id,
+          entityName:
+            selectedUser.fullName ||
+            selectedUser.email ||
+            selectedUser.id,
+
+          outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+          severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+
+          summary: `User ${
+            shouldRestore ? "restored" : "suspended"
+          }: ${
+            selectedUser.fullName ||
+            selectedUser.email ||
+            selectedUser.id
+          }.`,
+
+          details: {
+            targetUserId: selectedUser.id,
+            fullName: selectedUser.fullName || "",
+            email:
+              selectedUser.email === "Protected by Supabase Auth"
+                ? null
+                : selectedUser.email || null,
+            role: selectedUser.roleValue || "",
+            departmentId: selectedUser.departmentId || null,
+            department: selectedUser.department || "Not assigned",
+            previousStatus:
+              selectedUser.is_active === false ? "suspended" : "active",
+            newStatus: nextIsActive ? "active" : "suspended",
+            previousIsActive: selectedUser.is_active !== false,
+            newIsActive: nextIsActive,
+            changedAt: new Date().toISOString(),
+          },
+
+          source: "user_administration",
+        });
+
+        if (auditResult.error) {
+          console.error(
+            `ARGOS Audit Log: user ${
+              shouldRestore ? "restoration" : "suspension"
+            } succeeded, but the audit event was not recorded:`,
+            auditResult.error,
+          );
+        }
+      } catch (auditError) {
+        console.error(
+          `ARGOS Audit Log: unexpected user ${
+            shouldRestore ? "restoration" : "suspension"
+          } audit failure:`,
+          auditError,
+        );
+      }
+
       setUsers((currentUsers) =>
         currentUsers.map((user) =>
           user.id === selectedUser.id
