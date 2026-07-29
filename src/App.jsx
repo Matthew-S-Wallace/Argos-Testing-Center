@@ -1872,6 +1872,91 @@ if (error) {
 
 const savedAsset = mapSupabaseAsset(data);
 
+try {
+  const auditResult = await logARGOSAuditEvent({
+    organizationId,
+    userId: session?.user?.id || null,
+    userName:
+      profile?.full_name ||
+      session?.user?.user_metadata?.full_name ||
+      session?.user?.email ||
+      null,
+    userEmail: session?.user?.email || null,
+    userRole: profile?.role || null,
+
+    category: ARGOS_AUDIT_CATEGORIES.ASSET,
+    action: "asset_updated",
+
+    entityType: "asset",
+    entityId: savedAsset?.id || data?.id || selectedAsset?.id || null,
+    entityName:
+      savedAsset?.unit ||
+      updatedAsset.unit ||
+      savedAsset?.asset ||
+      updatedAsset.asset ||
+      null,
+
+    outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+    severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+
+    summary: `Asset updated${
+      savedAsset?.unit || updatedAsset.unit
+        ? `: Unit ${savedAsset?.unit || updatedAsset.unit}`
+        : ""
+    }.`,
+
+    details: {
+      assetId: savedAsset?.id || data?.id || selectedAsset?.id || null,
+      originalUnit: selectedAsset?.unit || originalUnit || "",
+      updatedUnit: savedAsset?.unit || updatedAsset.unit || "",
+      originalVin: selectedAsset?.vin || originalVin || "",
+      updatedVin: savedAsset?.vin || updatedAsset.vin || "",
+      originalAsset: selectedAsset?.asset || "",
+      updatedAsset: savedAsset?.asset || updatedAsset.asset || "",
+      originalDepartment: selectedAsset?.department || "",
+      updatedDepartment:
+        savedAsset?.department || updatedAsset.department || "",
+      originalDepartmentId: selectedAsset?.departmentId || null,
+      updatedDepartmentId:
+        savedAsset?.departmentId || updatedAsset.departmentId || null,
+      originalAssetTypeId: selectedAsset?.assetTypeId || null,
+      updatedAssetTypeId:
+        savedAsset?.assetTypeId || updatedAsset.assetTypeId || null,
+      originalYear: selectedAsset?.year || null,
+      updatedYear: savedAsset?.year || updatedAsset.year || null,
+      originalMake: selectedAsset?.make || "",
+      updatedMake: savedAsset?.make || updatedAsset.make || "",
+      originalModel: selectedAsset?.model || "",
+      updatedModel: savedAsset?.model || updatedAsset.model || "",
+      originalStatus: selectedAsset?.status || "",
+      updatedStatus: savedAsset?.status || updatedAsset.status || "",
+      originalReason: selectedAsset?.reason || "",
+      updatedReason: savedAsset?.reason || updatedAsset.reason || "",
+      originalPriority: selectedAsset?.priority || "",
+      updatedPriority: savedAsset?.priority || updatedAsset.priority || "",
+      originalTechnician: selectedAsset?.technician || "",
+      updatedTechnician:
+        savedAsset?.technician || updatedAsset.technician || "",
+      updatedAt:
+        data?.updated_at || savedAsset?.updatedAt || new Date().toISOString(),
+    },
+
+    source: "asset_update",
+  });
+
+  if (auditResult.error) {
+    console.error(
+      "ARGOS Audit Log: asset update completed, but the audit event was not recorded:",
+      auditResult.error
+    );
+  }
+} catch (auditError) {
+  console.error(
+    "ARGOS Audit Log: unexpected asset update audit failure:",
+    auditError
+  );
+}
+
 setAssets((currentAssets) =>
   currentAssets.map((asset) => (asset.unit === originalUnit ? savedAsset : asset))
 );
@@ -1984,6 +2069,78 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
   }
 
   const savedAsset = mapSupabaseAsset(data);
+
+  try {
+    const auditResult = await logARGOSAuditEvent({
+      organizationId,
+      userId: session?.user?.id || null,
+      userName:
+        profile?.full_name ||
+        session?.user?.user_metadata?.full_name ||
+        session?.user?.email ||
+        null,
+      userEmail: session?.user?.email || null,
+      userRole: profile?.role || null,
+
+      category: ARGOS_AUDIT_CATEGORIES.ASSET,
+      action: "asset_created",
+
+      entityType: "asset",
+      entityId: savedAsset?.id || data?.id || null,
+      entityName:
+        savedAsset?.unit ||
+        cleanedAsset.unit ||
+        savedAsset?.asset ||
+        cleanedAsset.asset ||
+        null,
+
+      outcome: ARGOS_AUDIT_OUTCOMES.SUCCESS,
+      severity: ARGOS_AUDIT_SEVERITIES.INFORMATION,
+
+      summary: `Asset created${
+        savedAsset?.unit || cleanedAsset.unit
+          ? `: Unit ${savedAsset?.unit || cleanedAsset.unit}`
+          : ""
+      }.`,
+
+      details: {
+        assetId: savedAsset?.id || data?.id || null,
+        unit: savedAsset?.unit || cleanedAsset.unit || "",
+        vin: savedAsset?.vin || cleanedAsset.vin || "",
+        asset: savedAsset?.asset || cleanedAsset.asset || "",
+        department:
+          savedAsset?.department || cleanedAsset.department || "",
+        departmentId:
+          savedAsset?.departmentId || cleanedAsset.departmentId || null,
+        assetTypeId:
+          savedAsset?.assetTypeId || cleanedAsset.assetTypeId || null,
+        year: savedAsset?.year || cleanedAsset.year || null,
+        make: savedAsset?.make || cleanedAsset.make || "",
+        model: savedAsset?.model || cleanedAsset.model || "",
+        status: savedAsset?.status || cleanedAsset.status || "",
+        reason: savedAsset?.reason || cleanedAsset.reason || "",
+        priority: savedAsset?.priority || cleanedAsset.priority || "",
+        technician:
+          savedAsset?.technician || cleanedAsset.technician || "",
+        createdAt:
+          data?.created_at || savedAsset?.createdAt || new Date().toISOString(),
+      },
+
+      source: "asset_create",
+    });
+
+    if (auditResult.error) {
+      console.error(
+        "ARGOS Audit Log: asset creation completed, but the audit event was not recorded:",
+        auditResult.error
+      );
+    }
+  } catch (auditError) {
+    console.error(
+      "ARGOS Audit Log: unexpected asset creation audit failure:",
+      auditError
+    );
+  }
 
   setAssets((currentAssets) => [...currentAssets, savedAsset]);
   setSelectedAsset(savedAsset);
