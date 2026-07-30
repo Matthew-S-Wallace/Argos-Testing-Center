@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { BrowserMultiFormatReader } from "@zxing/browser";
 import { supabase } from "./supabaseClient";
 import AdministrationModule from "./components/Administration/ARGOS_Administration_Module_Component";
 import CommandCenter from "./components/CommandCenter/ARGOS_Command_Center_Component";
 import ARGOSReportsModule from "./components/Reports/ARGOS_Reports_Module_001Z3";
 import ARGOSRepairHistoryModule from "./components/RepairHistory/ARGOS_Repair_History_Module";
-import ARGOSOperationsNavigation from "./components/Layout/ARGOS_Operations_Navigation_Blue_Shield_Reference_001U";
 import ARGOSDailySummaryPage from "./components/DailySummary/ARGOS_Daily_Summary_Page";
+import ARGOSApplicationShell from "./components/Layout/ARGOS_Application_Shell";
+import ARGOSVINScanner from "./components/VINScanner/ARGOS_VIN_Scanner_Component";
 import { canViewAdministration } from "./utils/ARGOS_Permission_Resolver";
 import { exportCSVReportFile } from "./services/ARGOS_CSV_Data_Management_Service";
 import {
@@ -71,15 +71,11 @@ import {
   normalizeTechnicianKey,
 } from "./services/ARGOS_Asset_Normalization_Service";
 import {
-  decodeVinVehicleInformation,
-  isLikelyVIN,
-  normalizeScannedVIN,
-} from "./services/ARGOS_VIN_Service";
-import {
   calculateServiceAwareness,
   calculateWarrantyAwareness,
 } from "./services/ARGOS_Asset_Awareness_Service";
 import "./App.css";
+import "./styles/ARGOS_Responsive.css";
 
 
 
@@ -198,19 +194,9 @@ function App() {
     details: "",
   });
   const [reportSort, setReportSort] = useState({ key: "currentUnits", direction: "desc" });
-  const vinScannerVideoRef = useRef(null);
-  const vinScannerControlsRef = useRef(null);
-  const vinScanLockedRef = useRef(false);
   const fieldSaveCompletedRef = useRef(false);
   const [showVinScanner, setShowVinScanner] = useState(false);
-  const [vinScanStatus, setVinScanStatus] = useState("");
-  const [vinScanSuccess, setVinScanSuccess] = useState(false);
-  const [torchSupported, setTorchSupported] = useState(false);
-  const [torchEnabled, setTorchEnabled] = useState(false);
-  const [lastScannedVin, setLastScannedVin] = useState("");
-  const [manualVinEntry, setManualVinEntry] = useState("");
   const [pendingNewAssetDraft, setPendingNewAssetDraft] = useState(null);
-  const [scannerRunId, setScannerRunId] = useState(0);
   const [session, setSession] = useState(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
@@ -829,68 +815,6 @@ useEffect(() => {
     setPendingNewAssetDraft(null);
   }, [pendingNewAssetDraft, showVinScanner]);
 
-  useEffect(() => {
-    if (!showVinScanner) return undefined;
-
-    let isCancelled = false;
-    const codeReader = new BrowserMultiFormatReader();
-
-    async function startVinScanner() {
-      if (!vinScannerVideoRef.current) return;
-
-      setLastScannedVin("");
-      setVinScanStatus("Starting camera. Allow camera access when prompted.");
-
-      try {
-        const videoDevices = await BrowserMultiFormatReader.listVideoInputDevices();
-        const preferredCamera =
-          videoDevices.find((device) => device.label.toLowerCase().includes("back")) ||
-          videoDevices.find((device) => device.label.toLowerCase().includes("rear")) ||
-          videoDevices.find((device) => device.label.toLowerCase().includes("environment")) ||
-          videoDevices[videoDevices.length - 1];
-
-        const controls = await codeReader.decodeFromVideoDevice(
-          preferredCamera?.deviceId,
-          vinScannerVideoRef.current,
-          (result) => {
-            if (isCancelled || !result) return;
-
-            handleVinScanResult(result.getText(), "scanner");
-          }
-        );
-
-        if (!isCancelled) {
-          vinScannerControlsRef.current = controls;
-
-          const activeTrack = vinScannerVideoRef.current?.srcObject
-            ?.getVideoTracks?.()[0];
-          const capabilities = activeTrack?.getCapabilities?.() || {};
-          setTorchSupported(Boolean(capabilities.torch));
-          setTorchEnabled(false);
-
-          setVinScanStatus(
-            preferredCamera
-              ? `Camera active (${preferredCamera.label || "rear camera"}). Center the VIN barcode or registration barcode in view.`
-              : "Camera active. Center the VIN barcode or registration barcode in view."
-          );
-        } else {
-          controls.stop();
-        }
-      } catch (error) {
-        setVinScanStatus("ARGOS could not start the camera. Confirm browser camera permissions and use HTTPS or localhost.");
-      }
-    }
-
-    startVinScanner();
-
-    return () => {
-      isCancelled = true;
-      vinScannerControlsRef.current?.stop();
-      vinScannerControlsRef.current = null;
-      setTorchSupported(false);
-      setTorchEnabled(false);
-    };
-  }, [showVinScanner, scannerRunId, assets]);
 
   const statusOptions = statusConfigurations.map((status) => status.status_name);
   const activeBoardAssets = assets.filter((asset) => asset.status !== "Ready");
@@ -2578,153 +2502,42 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
   }
 
 
-  async function handleToggleScannerTorch() {
-    const activeTrack = vinScannerVideoRef.current?.srcObject
-      ?.getVideoTracks?.()[0];
-
-    if (!activeTrack || !torchSupported) return;
-
-    const nextTorchState = !torchEnabled;
-
-    try {
-      await activeTrack.applyConstraints({
-        advanced: [{ torch: nextTorchState }],
-      });
-      setTorchEnabled(nextTorchState);
-    } catch (error) {
-      console.warn("ARGOS scanner torch control is unavailable:", error);
-      setTorchSupported(false);
-      setTorchEnabled(false);
-    }
-  }
-
-  function resetVinScannerFeedback() {
-    setVinScanSuccess(false);
-    setTorchSupported(false);
-    setTorchEnabled(false);
-  }
-
   function handleOpenVinScanner() {
-    vinScanLockedRef.current = false;
     setSelectedAsset(null);
     setEditAsset(null);
     setNewAsset(null);
-    setLastScannedVin("");
-    setManualVinEntry("");
     setPendingNewAssetDraft(null);
-    setVinScanStatus("");
-    resetVinScannerFeedback();
     setFieldScanContext(null);
     setShowVinScanner(true);
-    setScannerRunId((currentRunId) => currentRunId + 1);
   }
 
   function handleCloseVinScanner() {
-    vinScanLockedRef.current = false;
-    vinScannerControlsRef.current?.stop();
-    vinScannerControlsRef.current = null;
-    resetVinScannerFeedback();
     setShowVinScanner(false);
   }
 
-  function handleScanAgain() {
-    vinScanLockedRef.current = false;
-    vinScannerControlsRef.current?.stop();
-    vinScannerControlsRef.current = null;
-    setLastScannedVin("");
-    setVinScanStatus("");
-    resetVinScannerFeedback();
-    setScannerRunId((currentRunId) => currentRunId + 1);
+  function handleVINScannerMatchedAsset({ vin, asset }) {
+    setFieldScanContext({ type: "matched", vin, unit: asset.unit });
+    setShowVinScanner(false);
+    setShowFieldHome(false);
+    setActiveView("fleet");
+    handleSelectAsset(asset);
   }
 
-  async function openAssetFromVin(vin, sourceLabel) {
-    const scannedVin = normalizeScannedVIN(vin);
-
-    if (!isLikelyVIN(scannedVin)) {
-      setLastScannedVin(scannedVin || vin);
-      setVinScanStatus(
-        `${sourceLabel} read a value, but ARGOS could not normalize it into a valid 17-character VIN.`
-      );
-      return;
-    }
-
-    const matchedAsset = assets.find(
-      (asset) => normalizeScannedVIN(asset.vin) === scannedVin
-    );
-
-    vinScannerControlsRef.current?.stop();
-    vinScannerControlsRef.current = null;
-    setLastScannedVin(scannedVin);
-    setVinScanSuccess(true);
-    setVinScanStatus(
-      matchedAsset
-        ? `VIN recognized. Unit ${matchedAsset.unit} found.`
-        : "VIN recognized. Preparing a new vehicle record."
-    );
-
-    await new Promise((resolve) => window.setTimeout(resolve, 650));
-
-    if (matchedAsset) {
-      setVinScanStatus(`Matched VIN ${scannedVin} to Unit ${matchedAsset.unit}.`);
-      setFieldScanContext({ type: "matched", vin: scannedVin, unit: matchedAsset.unit });
-      setShowVinScanner(false);
-      setShowFieldHome(false);
-      setActiveView("fleet");
-      handleSelectAsset(matchedAsset);
-      return;
-    }
-
-    setVinScanStatus("VIN scanned successfully. Decoding vehicle information...");
-
-    const decodedVehicle = await decodeVinVehicleInformation(scannedVin);
-    const decodedAssetDescription = decodedVehicle.assetDescription;
-
-    if (decodedAssetDescription) {
-      setVinScanStatus(
-        `VIN scanned successfully. Vehicle identified as ${decodedAssetDescription}. Opening new asset record.`
-      );
-    } else {
-      setVinScanStatus(
-        "VIN scanned successfully, but vehicle information could not be retrieved. Opening new asset record for manual completion."
-      );
-    }
-
-    setFieldScanContext({ type: "new", vin: scannedVin, description: decodedAssetDescription || "Vehicle details pending" });
+  function handleVINScannerNewAsset({ vin, assetDescription }) {
+    setFieldScanContext({
+      type: "new",
+      vin,
+      description: assetDescription || "Vehicle details pending",
+    });
     setShowVinScanner(false);
     setShowFieldHome(false);
     setSelectedAsset(null);
     setEditAsset(null);
     setPendingNewAssetDraft({
-      vin: scannedVin,
-      asset: decodedAssetDescription,
+      vin,
+      asset: assetDescription,
     });
     setActiveView("command");
-  }
-
-  async function handleVinScanResult(rawValue, source = "scanner") {
-    if (vinScanLockedRef.current) return;
-
-    const scannedVin = normalizeScannedVIN(rawValue);
-
-    if (!isLikelyVIN(scannedVin)) {
-      setLastScannedVin(scannedVin || rawValue);
-      setVinScanStatus(
-        "Barcode detected, but ARGOS could not read it as a valid 17-character VIN. Try reducing glare, moving closer, scanning the registration barcode, or entering the VIN manually."
-      );
-      return;
-    }
-
-    vinScanLockedRef.current = true;
-
-    if (source === "scanner" && typeof navigator !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate([90, 45, 140]);
-    }
-
-    await openAssetFromVin(scannedVin, source === "manual" ? "Manual entry" : "Scanner");
-  }
-
-  function handleManualVinSubmit() {
-    handleVinScanResult(manualVinEntry, "manual");
   }
 
   function handleVmrsSelection(fieldPrefix, codeId) {
@@ -3573,109 +3386,39 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
   }
 
   return (
-    <main className={`argos-shell ${showFieldHome ? "argos-field-home-active" : "argos-field-workspace-active"}`}>
-      <section className="argos-field-home" aria-label="ARGOS Field mobile workspace">
-        <header className="argos-field-hero">
-          <div>
-            <p className="argos-field-kicker">Technician Fleet Operations</p>
-            <h1>ARGOS <span>Field</span></h1>
-            <p>{getFieldGreeting(fieldCurrentTime)}, {profile?.full_name?.split(" ")?.[0] || "Operator"}.</p>
-          </div>
-          <div className="argos-field-availability" aria-label={`${availability}% fleet availability`}>
-            <span>Availability</span>
-            <strong>{availability}%</strong>
-          </div>
-        </header>
-
-        {isDemoMode && <p className="argos-field-demo-badge">Demo environment · fictional fleet data</p>}
-
-        <section className="argos-field-priority-strip" aria-label="Technician work metrics">
-          <article><span>Assigned to Me</span><strong>{assignedToMeAssets.length}</strong></article>
-          <article className="critical"><span>Critical</span><strong>{criticalAssets}</strong></article>
-          <article><span>Waiting Parts</span><strong>{waitingParts}</strong></article>
-          <article><span>Awaiting QC</span><strong>{awaitingQcAssets.length}</strong></article>
-          <article><span>Ready Pickup</span><strong>{readyForPickupAssets.length}</strong></article>
-        </section>
-
-        <section className="argos-field-primary-workflow" aria-label="Primary technician action">
-          <button className="argos-field-scan-button" type="button" onClick={() => { setShowFieldHome(false); handleOpenVinScanner(); }}>
-            <span className="argos-field-scan-icon">▣</span>
-            <span><strong>Scan VIN</strong><small>Identify a vehicle and open its record</small></span>
-            <b>›</b>
-          </button>
-        </section>
-
-        <div className="argos-field-actions">
-          <button className="argos-field-action argos-field-action-emphasis" type="button" onClick={() => openFieldView("fleet", { resetFleet: true, fieldQueueMode: "assigned" })}>
-            <span className="argos-field-action-icon">✓</span>
-            <span><strong>My Assigned Work</strong><small>{assignedToMeAssets.length} vehicles currently assigned to your technician record</small></span>
-            <b>›</b>
-          </button>
-
-          <button className="argos-field-action" type="button" onClick={() => openFieldView("fleet", { resetFleet: true, fieldQueueMode: "awaiting" })}>
-            <span className="argos-field-action-icon">!</span>
-            <span><strong>Units Awaiting Me</strong><small>{unitsAwaitingMeAssets.length} assigned units require action</small></span>
-            <b>›</b>
-          </button>
-
-          <button className="argos-field-action" type="button" onClick={() => openFieldView("fleet", { resetFleet: true })}>
-            <span className="argos-field-action-icon">⌕</span>
-            <span><strong>Find Vehicle</strong><small>Search the complete fleet by unit number</small></span>
-            <b>›</b>
-          </button>
-
-          <button className="argos-field-action" type="button" onClick={() => openFieldView("command")}>
-            <span className="argos-field-action-icon">↯</span>
-            <span><strong>Update Vehicle Status</strong><small>Open the operational exception board</small></span>
-            <b>›</b>
-          </button>
-
-          <button className="argos-field-action" type="button" onClick={() => { setShowFieldHome(false); setActiveView("daily-summary"); }}>
-            <span className="argos-field-action-icon">✦</span>
-            <span><strong>Daily Summary</strong><small>Review your work, handoffs, blockers, and completed activity</small></span>
-            <b>›</b>
-          </button>
-        </div>
-
-        <footer className="argos-field-footer">
-          <div><span>Signed in as</span><strong>{profile?.full_name || session?.user?.email || "ARGOS Demo Visitor"}</strong></div>
-          <button type="button" onClick={handleSignOut}>{isDemoMode ? "Exit Demo" : "Log Out"}</button>
-        </footer>
-      </section>
-      <header className="argos-field-workspace-header">
-        <button type="button" onClick={() => setShowFieldHome(true)} aria-label="Return to ARGOS Field home">‹</button>
-        <div><strong>ARGOS Field</strong><span>{activeView === "command" ? "Update Vehicle Status" : activeView === "fleet" && fieldQueueMode === "assigned" ? "My Assigned Work" : activeView === "fleet" && fieldQueueMode === "awaiting" ? "Units Awaiting Me" : activeView === "fleet" ? "Find Vehicle" : activeView}</span></div>
-        <button type="button" onClick={handleOpenVinScanner} aria-label="Scan VIN">▣</button>
-      </header>
-      <ARGOSOperationsNavigation
-        activeView={activeView}
-        onNavigate={(nextView) => {
-          if (nextView === "fleet") {
-            setFleetSearch("");
-            setFleetStatusFilter("All Statuses");
-          }
-
-          setActiveView(nextView);
-        }}
-        onOpenDailySummary={() => setActiveView("daily-summary")}
-        onSignOut={handleSignOut}
-        hasAdministrationAccess={hasAdministrationAccess}
-        isDemoMode={isDemoMode}
-        organizationName={
-          organizationProfile?.fleet_name ||
-          organizationProfile?.name ||
-          "Fleet Services"
+    <ARGOSApplicationShell
+      activeView={activeView}
+      availability={availability}
+      assignedToMeAssets={assignedToMeAssets}
+      criticalAssets={criticalAssets}
+      fieldCurrentTime={fieldCurrentTime}
+      fieldQueueMode={fieldQueueMode}
+      getFieldGreeting={getFieldGreeting}
+      hasAdministrationAccess={hasAdministrationAccess}
+      isDemoMode={isDemoMode}
+      onNavigate={(nextView) => {
+        if (nextView === "fleet") {
+          setFleetSearch("");
+          setFleetStatusFilter("All Statuses");
         }
-        userName={
-          profile?.full_name ||
-          session?.user?.email ||
-          "ARGOS Demo Visitor"
-        }
-        userRole={profile?.role || (isDemoMode ? "demo" : "user")}
-        versionLabel="Version 1.0"
-      />
-
-      <section className="dashboard">
+        setActiveView(nextView);
+      }}
+      onOpenDailySummary={() => { setShowFieldHome(false); setActiveView("daily-summary"); }}
+      onOpenFieldView={openFieldView}
+      onOpenVinScanner={() => { setShowFieldHome(false); handleOpenVinScanner(); }}
+      onReturnFieldHome={() => setShowFieldHome(true)}
+      onSignOut={handleSignOut}
+      organizationName={organizationProfile?.fleet_name || organizationProfile?.name || "Fleet Services"}
+      profile={profile}
+      readyForPickupAssets={readyForPickupAssets}
+      session={session}
+      showFieldHome={showFieldHome}
+      unitsAwaitingMeAssets={unitsAwaitingMeAssets}
+      userName={profile?.full_name || session?.user?.email || "ARGOS Demo Visitor"}
+      userRole={profile?.role || (isDemoMode ? "demo" : "user")}
+      waitingParts={waitingParts}
+      awaitingQcAssets={awaitingQcAssets}
+    >
         {activeView === "command" && (
           <CommandCenter
             availability={availability}
@@ -4095,105 +3838,13 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
         )}
 
 
-        {showVinScanner && (
-          <div className="update-overlay">
-            <section className="update-panel">
-              <div className="update-panel-header">
-                <div>
-                  <p className="eyebrow">Mobile Fleet Lookup</p>
-                  <h3>Scan VIN</h3>
-                  <p className="update-asset-name">Scan a vehicle VIN or registration barcode to find an asset or start a new asset record</p>
-                </div>
-
-                <button className="close-button" onClick={handleCloseVinScanner} type="button">
-                  ×
-                </button>
-              </div>
-
-              <div className="update-form">
-                <div className="issue-field">
-                  <div
-                    className={`argos-vin-scanner-viewport${vinScanSuccess ? " is-success" : ""}`}
-                  >
-                    <video
-                      ref={vinScannerVideoRef}
-                      className="argos-vin-scanner-video"
-                      muted
-                      playsInline
-                    />
-
-                    <div className="argos-vin-scanner-overlay" aria-hidden="true">
-                      <div className="argos-vin-scanner-shade argos-vin-scanner-shade-top" />
-                      <div className="argos-vin-scanner-shade argos-vin-scanner-shade-bottom" />
-
-                      <div className="argos-vin-scanner-target">
-                        <span className="argos-vin-scanner-corner corner-top-left" />
-                        <span className="argos-vin-scanner-corner corner-top-right" />
-                        <span className="argos-vin-scanner-corner corner-bottom-left" />
-                        <span className="argos-vin-scanner-corner corner-bottom-right" />
-                        <span className="argos-vin-scanner-laser" />
-                      </div>
-
-                      {vinScanSuccess && (
-                        <div className="argos-vin-scanner-success">
-                          <span aria-hidden="true">✓</span>
-                          <strong>VIN Recognized</strong>
-                        </div>
-                      )}
-
-                      <div className="argos-vin-scanner-instruction">
-                        {vinScanSuccess
-                          ? "Opening vehicle record"
-                          : "Align VIN barcode inside the guide"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="issue-field">
-                  <p className="eyebrow">Scanner Status</p>
-                  <strong>{vinScanStatus || "Preparing VIN scanner."}</strong>
-                  {lastScannedVin && <p>Last scanned value: {lastScannedVin}</p>}
-                  <p>Tips: reduce windshield glare, move slowly, let the barcode fill most of the camera view, or scan the registration barcode instead.</p>
-                </div>
-
-                <label className="issue-field">
-                  Manual VIN Entry
-                  <input
-                    type="text"
-                    value={manualVinEntry}
-                    onChange={(event) => setManualVinEntry(event.target.value.toUpperCase())}
-                    placeholder="Enter or paste 17-character VIN"
-                  />
-                </label>
-              </div>
-
-              <div className="update-actions argos-vin-scanner-actions">
-                {torchSupported && (
-                  <button
-                    className={`cancel-button argos-vin-torch-button${torchEnabled ? " active" : ""}`}
-                    onClick={handleToggleScannerTorch}
-                    type="button"
-                  >
-                    {torchEnabled ? "Turn Flashlight Off" : "Turn Flashlight On"}
-                  </button>
-                )}
-
-                <button className="cancel-button" onClick={handleCloseVinScanner} type="button">
-                  Cancel
-                </button>
-
-                <button className="cancel-button" onClick={handleScanAgain} type="button">
-                  Scan Again
-                </button>
-
-                <button className="save-button" onClick={handleManualVinSubmit} type="button">
-                  Use VIN
-                </button>
-              </div>
-            </section>
-          </div>
-        )}
+        <ARGOSVINScanner
+          isOpen={showVinScanner}
+          assets={assets}
+          onClose={handleCloseVinScanner}
+          onMatchedAsset={handleVINScannerMatchedAsset}
+          onNewAsset={handleVINScannerNewAsset}
+        />
 
         {newAsset && (
           <div className="update-overlay">
@@ -4369,8 +4020,7 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
             </section>
           </div>
         )}
-      </section>
-    </main>
+    </ARGOSApplicationShell>
   );
 }
 
