@@ -47,49 +47,33 @@
     box-shadow: 0 16px 36px rgba(7, 26, 51, 0.22);
   }
 
-  .argos-field-brand {
-    min-width: 0;
-  }
-
-  .argos-field-atlas-mark {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: flex-start;
-    line-height: 1;
-  }
-
-  .argos-field-atlas-mark strong {
-    color: #ffffff;
-    font-family: Inter, system-ui, sans-serif;
-    font-size: clamp(30px, 9vw, 40px);
+  .argos-field-kicker {
+    margin: 0 0 7px;
+    color: #e2ba5e;
+    font-size: 11px;
     font-weight: 900;
-    letter-spacing: 0.16em;
-  }
-
-  .argos-field-atlas-mark span {
-    margin-top: 5px;
-    color: #d8a93b;
-    font-size: 8px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.13em;
     text-transform: uppercase;
   }
 
-  .argos-field-product-name {
-    margin: 10px 0 0;
-    color: #ffffff;
+  .argos-field-hero h1 {
+    margin: 0;
     font-family: Georgia, "Times New Roman", serif;
-    font-size: 15px;
+    font-size: clamp(34px, 10vw, 46px);
     font-weight: 500;
-    letter-spacing: 0.04em;
+    line-height: 0.95;
   }
 
-  .argos-field-greeting {
-    margin: 6px 0 0;
+  .argos-field-hero h1 span {
+    color: #d8a93b;
+  }
+
+  .argos-field-hero p:last-child {
+    margin: 10px 0 0;
     max-width: 240px;
     color: #d9e2eb;
-    font-size: 12px;
-    line-height: 1.4;
+    font-size: 13px;
+    line-height: 1.45;
   }
 
   .argos-field-availability {
@@ -431,20 +415,8 @@
     font-size: 25px;
   }
 
-  .argos-field-workspace-header > div {
+  .argos-field-workspace-header div {
     text-align: center;
-  }
-
-  .argos-field-workspace-brand {
-    min-width: 0;
-  }
-
-  .argos-field-workspace-atlas {
-    color: #ffffff;
-    font-family: Inter, system-ui, sans-serif;
-    font-size: 13px;
-    font-weight: 900;
-    letter-spacing: 0.16em;
   }
 
   .argos-field-workspace-header strong,
@@ -453,11 +425,9 @@
   }
 
   .argos-field-workspace-header strong {
-    margin-top: 1px;
     font-family: Georgia, "Times New Roman", serif;
-    font-size: 12px;
+    font-size: 19px;
     font-weight: 500;
-    letter-spacing: 0.03em;
   }
 
   .argos-field-workspace-header span {
@@ -473,12 +443,6 @@
     padding: 18px 14px 30px;
   }
 
-  /* Sprint 001AJ — Mobile Command Center space optimization */
-  .argos-command-center-mobile > .dashboard > .dashboard-header {
-    display: none;
-  }
-
-
   .argos-field-workspace-active .dashboard-header h2 {
     font-size: 32px;
   }
@@ -491,5 +455,16 @@
   .argos-field-workspace-active .update-panel {
     width: 100%;
     padding: 22px 18px max(24px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Sprint 001AJ — Mobile field-only surface */
+@media (max-width: 760px) {
+  .argos-field-workspace-active > .argos-sidebar {
+    display: none;
+  }
+
+  .argos-command-center-mobile > .dashboard > .dashboard-header {
+    display: none;
   }
 }
