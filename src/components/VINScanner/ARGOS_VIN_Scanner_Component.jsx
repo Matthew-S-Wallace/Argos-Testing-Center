@@ -78,15 +78,15 @@ function ARGOSVINScanner({
       setScanStatus("Starting camera. Allow camera access when prompted.");
 
       try {
-        const videoDevices = await BrowserMultiFormatReader.listVideoInputDevices();
-        const preferredCamera =
-          videoDevices.find((device) => device.label.toLowerCase().includes("back")) ||
-          videoDevices.find((device) => device.label.toLowerCase().includes("rear")) ||
-          videoDevices.find((device) => device.label.toLowerCase().includes("environment")) ||
-          videoDevices[videoDevices.length - 1];
+        const cameraConstraints = {
+          audio: false,
+          video: {
+            facingMode: { ideal: "environment" },
+          },
+        };
 
-        const controls = await codeReader.decodeFromVideoDevice(
-          preferredCamera?.deviceId,
+        const controls = await codeReader.decodeFromConstraints(
+          cameraConstraints,
           videoRef.current,
           (result) => {
             if (isCancelled || !result) return;
@@ -112,7 +112,12 @@ function ARGOSVINScanner({
             });
           }
 
-          await videoRef.current.play();
+          try {
+            await videoRef.current.play();
+          } catch (playbackError) {
+            if (!videoRef.current.srcObject) throw playbackError;
+            console.warn("ARGOS VIN scanner video playback required browser-managed startup:", playbackError);
+          }
         }
 
         const activeTrack = videoRef.current?.srcObject?.getVideoTracks?.()[0];
