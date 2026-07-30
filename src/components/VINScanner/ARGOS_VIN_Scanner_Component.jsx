@@ -16,6 +16,7 @@ function ARGOSVINScanner({
 }) {
   const videoRef = useRef(null);
   const controlsRef = useRef(null);
+  const assetsRef = useRef(assets);
   const scanLockedRef = useRef(false);
   const [scanStatus, setScanStatus] = useState("");
   const [scanSuccess, setScanSuccess] = useState(false);
@@ -24,6 +25,10 @@ function ARGOSVINScanner({
   const [lastScannedVin, setLastScannedVin] = useState("");
   const [manualVinEntry, setManualVinEntry] = useState("");
   const [scannerRunId, setScannerRunId] = useState(0);
+
+  useEffect(() => {
+    assetsRef.current = assets;
+  }, [assets]);
 
   function stopScanner() {
     controlsRef.current?.stop();
@@ -95,6 +100,21 @@ function ARGOSVINScanner({
         }
 
         controlsRef.current = controls;
+
+        if (videoRef.current) {
+          videoRef.current.muted = true;
+          videoRef.current.playsInline = true;
+
+          if (videoRef.current.readyState < 2) {
+            await new Promise((resolve) => {
+              videoRef.current.addEventListener("loadedmetadata", resolve, { once: true });
+              window.setTimeout(resolve, 1200);
+            });
+          }
+
+          await videoRef.current.play();
+        }
+
         const activeTrack = videoRef.current?.srcObject?.getVideoTracks?.()[0];
         const capabilities = activeTrack?.getCapabilities?.() || {};
         setTorchSupported(Boolean(capabilities.torch));
@@ -116,7 +136,7 @@ function ARGOSVINScanner({
       setTorchSupported(false);
       setTorchEnabled(false);
     };
-  }, [isOpen, scannerRunId, assets]);
+  }, [isOpen, scannerRunId]);
 
   async function resolveVin(vin, sourceLabel) {
     const scannedVin = normalizeScannedVIN(vin);
@@ -130,7 +150,7 @@ function ARGOSVINScanner({
       return;
     }
 
-    const matchedAsset = assets.find(
+    const matchedAsset = assetsRef.current.find(
       (asset) => normalizeScannedVIN(asset.vin) === scannedVin
     );
 
@@ -232,7 +252,13 @@ function ARGOSVINScanner({
         <div className="update-form">
           <div className="issue-field">
             <div className={`argos-vin-scanner-viewport${scanSuccess ? " is-success" : ""}`}>
-              <video ref={videoRef} className="argos-vin-scanner-video" muted playsInline />
+              <video
+                ref={videoRef}
+                className="argos-vin-scanner-video"
+                autoPlay
+                muted
+                playsInline
+              />
               <div className="argos-vin-scanner-overlay" aria-hidden="true">
                 <div className="argos-vin-scanner-shade argos-vin-scanner-shade-top" />
                 <div className="argos-vin-scanner-shade argos-vin-scanner-shade-bottom" />
