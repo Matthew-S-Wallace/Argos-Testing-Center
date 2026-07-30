@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import ARGOSOperationsNavigation from "./ARGOS_Operations_Navigation_Blue_Shield_Reference_001U";
-import ARGOSLogo from "../../assets/ARGOS_Logo_Official.png";
+import ARGOSLogo from "../../assets/Argos_Logo_Official.png";
 import "./ARGOS_Application_Shell.css";
 
 function ARGOSApplicationShell({
