@@ -99,11 +99,7 @@ function ARGOSVINScanner({
         const capabilities = activeTrack?.getCapabilities?.() || {};
         setTorchSupported(Boolean(capabilities.torch));
         setTorchEnabled(false);
-        setScanStatus(
-          preferredCamera
-            ? `Camera active (${preferredCamera.label || "rear camera"}). Center the VIN barcode or registration barcode in view.`
-            : "Camera active. Center the VIN barcode or registration barcode in view."
-        );
+        setScanStatus("Ready to scan. Center the VIN barcode or registration barcode in view.");
       } catch (error) {
         console.error("ARGOS VIN scanner camera initialization failed:", error);
         setScanStatus(

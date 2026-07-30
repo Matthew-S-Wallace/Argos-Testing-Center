@@ -31,13 +31,16 @@ function ARGOSApplicationShell({
   children,
 }) {
   return (
-    <main className={`argos-shell ${showFieldHome ? "argos-field-home-active" : "argos-field-workspace-active"}`}>
+    <main className={`argos-shell ${showFieldHome ? "argos-field-home-active" : "argos-field-workspace-active"}${!showFieldHome && activeView === "command" ? " argos-command-center-mobile" : ""}`}>
       <section className="argos-field-home" aria-label="ARGOS Field mobile workspace">
         <header className="argos-field-hero">
-          <div>
-            <p className="argos-field-kicker">Technician Fleet Operations</p>
-            <h1>ARGOS <span>Field</span></h1>
-            <p>{getFieldGreeting(fieldCurrentTime)}, {profile?.full_name?.split(" ")?.[0] || "Operator"}.</p>
+          <div className="argos-field-brand">
+            <div className="argos-field-atlas-mark" aria-label="Atlas Government Fleet Solutions">
+              <strong>ATLAS</strong>
+              <span>Government Fleet Solutions</span>
+            </div>
+            <p className="argos-field-product-name">ARGOS Field</p>
+            <p className="argos-field-greeting">{getFieldGreeting(fieldCurrentTime)}, {profile?.full_name?.split(" ")?.[0] || "Operator"}.</p>
           </div>
           <div className="argos-field-availability" aria-label={`${availability}% fleet availability`}>
             <span>Availability</span>
@@ -99,7 +102,8 @@ function ARGOSApplicationShell({
 
       <header className="argos-field-workspace-header">
         <button type="button" onClick={onReturnFieldHome} aria-label="Return to ARGOS Field home">‹</button>
-        <div>
+        <div className="argos-field-workspace-brand">
+          <div className="argos-field-workspace-atlas" aria-label="Atlas Government Fleet Solutions">ATLAS</div>
           <strong>ARGOS Field</strong>
           <span>{activeView === "command" ? "Update Vehicle Status" : activeView === "fleet" && fieldQueueMode === "assigned" ? "My Assigned Work" : activeView === "fleet" && fieldQueueMode === "awaiting" ? "Units Awaiting Me" : activeView === "fleet" ? "Find Vehicle" : activeView}</span>
         </div>
