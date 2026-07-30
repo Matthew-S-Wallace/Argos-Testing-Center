@@ -16,6 +16,7 @@ function ARGOSVINScanner({
 }) {
   const videoRef = useRef(null);
   const controlsRef = useRef(null);
+  const cameraStreamRef = useRef(null);
   const assetsRef = useRef(assets);
   const scanLockedRef = useRef(false);
   const [scanStatus, setScanStatus] = useState("");
@@ -33,6 +34,13 @@ function ARGOSVINScanner({
   function stopScanner() {
     controlsRef.current?.stop();
     controlsRef.current = null;
+
+    cameraStreamRef.current?.getTracks?.().forEach((track) => track.stop());
+    cameraStreamRef.current = null;
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
   }
 
   function resetFeedback() {
@@ -85,8 +93,24 @@ function ARGOSVINScanner({
           },
         };
 
-        const controls = await codeReader.decodeFromConstraints(
-          cameraConstraints,
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error("Camera access is not supported by this browser.");
+        }
+
+        // Request the stream directly so iOS can complete its permission
+        // handshake before ZXing begins decoding. This prevents the first-run
+        // blue fallback field that previously cleared only after Scan Again.
+        const cameraStream = await navigator.mediaDevices.getUserMedia(cameraConstraints);
+
+        if (isCancelled) {
+          cameraStream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        cameraStreamRef.current = cameraStream;
+
+        const controls = await codeReader.decodeFromStream(
+          cameraStream,
           videoRef.current,
           (result) => {
             if (isCancelled || !result) return;
