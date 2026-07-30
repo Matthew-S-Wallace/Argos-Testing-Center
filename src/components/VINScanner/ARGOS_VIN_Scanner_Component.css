@@ -31,8 +31,8 @@
   position: absolute;
   left: 0;
   width: 100%;
-  height: 31%;
-  background: rgba(2, 11, 23, 0.5);
+  height: 38%;
+  background: rgba(2, 11, 23, 0.78);
   backdrop-filter: blur(1px);
 }
 
@@ -46,10 +46,10 @@
 
 .argos-vin-scanner-target {
   position: absolute;
-  top: 31%;
-  right: 8%;
-  bottom: 31%;
-  left: 8%;
+  top: 38%;
+  right: 12%;
+  bottom: 38%;
+  left: 12%;
 }
 
 .argos-vin-scanner-corner {
@@ -154,8 +154,8 @@
   }
 
   .argos-vin-scanner-target {
-    right: 6%;
-    left: 6%;
+    right: 10%;
+    left: 10%;
   }
 
   .argos-vin-scanner-instruction {
