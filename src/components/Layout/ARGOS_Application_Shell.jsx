@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import ARGOSOperationsNavigation from "./ARGOS_Operations_Navigation_Blue_Shield_Reference_001U";
+import ARGOSLogo from "../../assets/ARGOS_Logo_Official.png";
 import "./ARGOS_Application_Shell.css";
 
 function ARGOSApplicationShell({
@@ -54,16 +55,23 @@ function ARGOSApplicationShell({
     <main className={`argos-shell ${showFieldHome ? "argos-field-home-active" : "argos-field-workspace-active"}${!showFieldHome && activeView === "command" ? " argos-command-center-mobile" : ""}`}>
       <section className="argos-field-home" aria-label="ARGOS Field mobile workspace">
         <header className="argos-field-hero">
-          <div>
-            <p className="argos-field-kicker">Technician Fleet Operations</p>
-            <h1>ARGOS <span>Field</span></h1>
-            <p>{getFieldGreeting(fieldCurrentTime)}, {profile?.full_name?.split(" ")?.[0] || "Operator"}.</p>
-          </div>
+          <img
+            src={ARGOSLogo}
+            alt="ARGOS Fleet Operations Platform"
+            className="argos-field-logo"
+          />
+          <p className="argos-field-mobile-label">Mobile Operations</p>
+        </header>
+
+        <section className="argos-field-status-row" aria-label="ARGOS Field status">
+          <p className="argos-field-greeting">
+            {getFieldGreeting(fieldCurrentTime)}, {profile?.full_name?.split(" ")?.[0] || "Operator"}.
+          </p>
           <div className="argos-field-availability" aria-label={`${availability}% fleet availability`}>
             <span>Availability</span>
             <strong>{availability}%</strong>
           </div>
-        </header>
+        </section>
 
         {isDemoMode && <p className="argos-field-demo-badge">Demo environment · fictional fleet data</p>}
 
