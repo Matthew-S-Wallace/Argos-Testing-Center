@@ -808,6 +808,10 @@ useEffect(() => {
     setNewAsset({
       ...createBlankAsset(),
       vin: pendingNewAssetDraft.vin || "",
+      year: pendingNewAssetDraft.year || "",
+      make: pendingNewAssetDraft.make || "",
+      model: pendingNewAssetDraft.model || "",
+      engine: pendingNewAssetDraft.engine || "",
       asset: pendingNewAssetDraft.asset || "",
       __fromVinScan: true,
       __decodedAssetDescription: pendingNewAssetDraft.asset || "",
@@ -2523,11 +2527,28 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     handleSelectAsset(asset);
   }
 
-  function handleVINScannerNewAsset({ vin, assetDescription }) {
+  function handleVINScannerNewAsset({
+    vin,
+    year,
+    make,
+    model,
+    engine,
+    assetDescription,
+    decodedVehicle,
+  }) {
+    const decodedYear = year || decodedVehicle?.year || "";
+    const decodedMake = make || decodedVehicle?.make || "";
+    const decodedModel = model || decodedVehicle?.model || "";
+    const decodedEngine = engine || decodedVehicle?.engine || "";
+    const decodedAssetDescription =
+      assetDescription ||
+      decodedVehicle?.assetDescription ||
+      [decodedYear, decodedMake, decodedModel].filter(Boolean).join(" ");
+
     setFieldScanContext({
       type: "new",
       vin,
-      description: assetDescription || "Vehicle details pending",
+      description: decodedAssetDescription || "Vehicle details pending",
     });
     setShowVinScanner(false);
     setShowFieldHome(false);
@@ -2535,7 +2556,11 @@ setActiveView(savedAsset.status === "Ready" ? "history" : "command");
     setEditAsset(null);
     setPendingNewAssetDraft({
       vin,
-      asset: assetDescription,
+      year: decodedYear,
+      make: decodedMake,
+      model: decodedModel,
+      engine: decodedEngine,
+      asset: decodedAssetDescription,
     });
     setActiveView("command");
   }
