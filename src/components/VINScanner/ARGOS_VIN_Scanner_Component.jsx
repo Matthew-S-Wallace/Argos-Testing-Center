@@ -16,9 +16,10 @@ function ARGOSVINScanner({
 }) {
   const videoRef = useRef(null);
   const controlsRef = useRef(null);
-  const cameraStreamRef = useRef(null);
   const assetsRef = useRef(assets);
   const scanLockedRef = useRef(false);
+  const scannerGenerationRef = useRef(0);
+
   const [scanStatus, setScanStatus] = useState("");
   const [scanSuccess, setScanSuccess] = useState(false);
   const [torchSupported, setTorchSupported] = useState(false);
@@ -32,13 +33,14 @@ function ARGOSVINScanner({
   }, [assets]);
 
   function stopScanner() {
-    controlsRef.current?.stop();
+    controlsRef.current?.stop?.();
     controlsRef.current = null;
 
-    cameraStreamRef.current?.getTracks?.().forEach((track) => track.stop());
-    cameraStreamRef.current = null;
+    const activeStream = videoRef.current?.srcObject;
+    activeStream?.getTracks?.().forEach((track) => track.stop());
 
     if (videoRef.current) {
+      videoRef.current.pause?.();
       videoRef.current.srcObject = null;
     }
   }
@@ -50,6 +52,7 @@ function ARGOSVINScanner({
   }
 
   function resetScanner() {
+    scannerGenerationRef.current += 1;
     scanLockedRef.current = false;
     stopScanner();
     setLastScannedVin("");
@@ -70,100 +73,175 @@ function ARGOSVINScanner({
     setScanStatus("");
     resetFeedback();
     setScannerRunId((currentRunId) => currentRunId + 1);
+
     return undefined;
   }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
 
+    const generation = scannerGenerationRef.current + 1;
+    scannerGenerationRef.current = generation;
+
+    let localControls = null;
     let isCancelled = false;
     const codeReader = new BrowserMultiFormatReader();
 
     async function startScanner() {
-      if (!videoRef.current) return;
+      const videoElement = videoRef.current;
+      if (!videoElement) return;
 
       setLastScannedVin("");
       setScanStatus("Starting camera. Allow camera access when prompted.");
 
       try {
-        const cameraConstraints = {
-          audio: false,
-          video: {
-            facingMode: { ideal: "environment" },
-          },
-        };
-
         if (!navigator.mediaDevices?.getUserMedia) {
           throw new Error("Camera access is not supported by this browser.");
         }
 
-        // Request the stream directly so iOS can complete its permission
-        // handshake before ZXing begins decoding. This prevents the first-run
-        // blue fallback field that previously cleared only after Scan Again.
-        const cameraStream = await navigator.mediaDevices.getUserMedia(cameraConstraints);
+        videoElement.muted = true;
+        videoElement.playsInline = true;
+        videoElement.setAttribute("playsinline", "true");
+        videoElement.setAttribute("webkit-playsinline", "true");
 
-        if (isCancelled) {
-          cameraStream.getTracks().forEach((track) => track.stop());
-          return;
-        }
+        const cameraConstraints = {
+          audio: false,
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
+        };
 
-        cameraStreamRef.current = cameraStream;
+        // ZXing must own camera acquisition and the decoding lifecycle.
+        // The previous refactor opened getUserMedia separately and then passed
+        // the stream into ZXing, allowing React effect cleanup to cancel the
+        // decoder while leaving a camera preview visible.
+        localControls = await codeReader.decodeFromConstraints(
+          cameraConstraints,
+          videoElement,
+          (result, error) => {
+            if (
+              isCancelled ||
+              scannerGenerationRef.current !== generation ||
+              scanLockedRef.current
+            ) {
+              return;
+            }
 
-        const controls = await codeReader.decodeFromStream(
-          cameraStream,
-          videoRef.current,
-          (result) => {
-            if (isCancelled || !result) return;
-            handleScanResult(result.getText(), "scanner");
+            if (result) {
+              void handleScanResult(result.getText(), "scanner");
+              return;
+            }
+
+            // ZXing reports normal per-frame decode misses as errors. They are
+            // intentionally ignored so continuous scanning remains active.
+            if (error?.name === "NotAllowedError") {
+              setScanStatus("Camera permission was denied. Enable camera access and try again.");
+            }
           }
         );
 
-        if (isCancelled) {
-          controls.stop();
+        if (isCancelled || scannerGenerationRef.current !== generation) {
+          localControls?.stop?.();
           return;
         }
 
-        controlsRef.current = controls;
+        controlsRef.current = localControls;
 
-        if (videoRef.current) {
-          videoRef.current.muted = true;
-          videoRef.current.playsInline = true;
+        if (videoElement.readyState < 2) {
+          await new Promise((resolve) => {
+            const timeoutId = window.setTimeout(resolve, 1500);
+            videoElement.addEventListener(
+              "loadedmetadata",
+              () => {
+                window.clearTimeout(timeoutId);
+                resolve();
+              },
+              { once: true }
+            );
+          });
+        }
 
-          if (videoRef.current.readyState < 2) {
-            await new Promise((resolve) => {
-              videoRef.current.addEventListener("loadedmetadata", resolve, { once: true });
-              window.setTimeout(resolve, 1200);
-            });
+        try {
+          await videoElement.play();
+        } catch (playbackError) {
+          if (!videoElement.srcObject) throw playbackError;
+          console.warn(
+            "ARGOS VIN scanner video playback required browser-managed startup:",
+            playbackError
+          );
+        }
+
+        const activeTrack = videoElement.srcObject?.getVideoTracks?.()[0];
+        const capabilities = activeTrack?.getCapabilities?.() || {};
+
+        if (activeTrack?.applyConstraints) {
+          const advancedConstraints = [];
+
+          if (Array.isArray(capabilities.focusMode) && capabilities.focusMode.includes("continuous")) {
+            advancedConstraints.push({ focusMode: "continuous" });
           }
 
-          try {
-            await videoRef.current.play();
-          } catch (playbackError) {
-            if (!videoRef.current.srcObject) throw playbackError;
-            console.warn("ARGOS VIN scanner video playback required browser-managed startup:", playbackError);
+          if (capabilities.zoom) {
+            const minimumZoom = Number(capabilities.zoom.min ?? 1);
+            const maximumZoom = Number(capabilities.zoom.max ?? minimumZoom);
+            const preferredZoom = Math.min(maximumZoom, Math.max(minimumZoom, 1.25));
+            advancedConstraints.push({ zoom: preferredZoom });
+          }
+
+          if (advancedConstraints.length > 0) {
+            try {
+              await activeTrack.applyConstraints({ advanced: advancedConstraints });
+            } catch (constraintError) {
+              console.warn("ARGOS scanner camera enhancements were unavailable:", constraintError);
+            }
           }
         }
 
-        const activeTrack = videoRef.current?.srcObject?.getVideoTracks?.()[0];
-        const capabilities = activeTrack?.getCapabilities?.() || {};
         setTorchSupported(Boolean(capabilities.torch));
         setTorchEnabled(false);
         setScanStatus("Ready to scan. Center the VIN barcode or registration barcode in view.");
       } catch (error) {
+        if (isCancelled || scannerGenerationRef.current !== generation) return;
+
         console.error("ARGOS VIN scanner camera initialization failed:", error);
-        setScanStatus(
-          "ARGOS could not start the camera. Confirm browser camera permissions and use HTTPS or localhost."
-        );
+
+        if (error?.name === "NotAllowedError") {
+          setScanStatus("Camera permission was denied. Enable camera access and try again.");
+        } else if (error?.name === "NotFoundError") {
+          setScanStatus("No compatible camera was found on this device.");
+        } else {
+          setScanStatus(
+            "ARGOS could not start the camera. Confirm browser camera permissions and use HTTPS or localhost."
+          );
+        }
       }
     }
 
-    startScanner();
+    void startScanner();
 
     return () => {
       isCancelled = true;
-      stopScanner();
-      setTorchSupported(false);
-      setTorchEnabled(false);
+      localControls?.stop?.();
+
+      // Only clear the shared references when this effect still owns them.
+      // This prevents a stale React cleanup from stopping a newer scan run.
+      if (scannerGenerationRef.current === generation) {
+        if (controlsRef.current === localControls) {
+          controlsRef.current = null;
+        }
+
+        const activeStream = videoRef.current?.srcObject;
+        activeStream?.getTracks?.().forEach((track) => track.stop());
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = null;
+        }
+
+        setTorchSupported(false);
+        setTorchEnabled(false);
+      }
     };
   }, [isOpen, scannerRunId]);
 
@@ -187,9 +265,7 @@ function ARGOSVINScanner({
     setLastScannedVin(scannedVin);
     setScanSuccess(true);
     setScanStatus(
-      matchedAsset
-        ? `Unit ${matchedAsset.unit} located.`
-        : "Creating vehicle record…"
+      matchedAsset ? `Unit ${matchedAsset.unit} located.` : "Creating vehicle record…"
     );
 
     await new Promise((resolve) => window.setTimeout(resolve, 375));
