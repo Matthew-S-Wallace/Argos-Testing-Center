@@ -67,10 +67,7 @@
   }
 
   .argos-field-status-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
-    align-items: center;
+    display: block;
     margin-top: 12px;
     padding: 11px 13px;
     border: 1px solid #d4dbe2;
@@ -80,42 +77,14 @@
   }
 
   .argos-field-greeting {
+    width: 100%;
     margin: 0;
     color: #31415a;
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.35;
-  }
-
-  .argos-field-availability {
-    display: flex;
-    align-items: baseline;
-    gap: 7px;
-    min-width: 0;
-    padding: 7px 9px;
-    border: 1px solid rgba(154, 102, 20, 0.28);
-    border-radius: 10px;
-    background: #fff8e8;
-    text-align: right;
-  }
-
-  .argos-field-availability span {
-    display: block;
-    color: #82550f;
-    font-size: 8px;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .argos-field-availability strong {
-    display: block;
-    margin: 0;
-    color: #9a6614;
     font-family: Georgia, "Times New Roman", serif;
-    font-size: 20px;
-    font-weight: 600;
-    line-height: 1;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: center;
   }
 
   .argos-field-demo-badge {

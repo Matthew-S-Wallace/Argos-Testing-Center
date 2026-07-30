@@ -63,14 +63,10 @@ function ARGOSApplicationShell({
           <p className="argos-field-mobile-label">Mobile Operations</p>
         </header>
 
-        <section className="argos-field-status-row" aria-label="ARGOS Field status">
+        <section className="argos-field-status-row" aria-label="ARGOS Field greeting">
           <p className="argos-field-greeting">
             {getFieldGreeting(fieldCurrentTime)}, {profile?.full_name?.split(" ")?.[0] || "Operator"}.
           </p>
-          <div className="argos-field-availability" aria-label={`${availability}% fleet availability`}>
-            <span>Availability</span>
-            <strong>{availability}%</strong>
-          </div>
         </section>
 
         {isDemoMode && <p className="argos-field-demo-badge">Demo environment · fictional fleet data</p>}
@@ -105,6 +101,11 @@ function ARGOSApplicationShell({
           <button className="argos-field-action" type="button" onClick={() => onOpenFieldView("fleet", { resetFleet: true })}>
             <span className="argos-field-action-icon">⌕</span>
             <span><strong>Find Vehicle</strong><small>Search the complete fleet by unit number</small></span>
+            <b>›</b>
+          </button>
+          <button className="argos-field-action" type="button" onClick={() => onOpenFieldView("command")}>
+            <span className="argos-field-action-icon">◉</span>
+            <span><strong>Command Center</strong><small>{availability}% Available</small></span>
             <b>›</b>
           </button>
         </div>
