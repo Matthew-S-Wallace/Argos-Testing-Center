@@ -188,25 +188,25 @@ function ARGOSVINScanner({
     setScanSuccess(true);
     setScanStatus(
       matchedAsset
-        ? `VIN recognized. Unit ${matchedAsset.unit} found.`
-        : "VIN recognized. Preparing a new vehicle record."
+        ? `Unit ${matchedAsset.unit} located.`
+        : "Creating vehicle record…"
     );
 
-    await new Promise((resolve) => window.setTimeout(resolve, 650));
+    await new Promise((resolve) => window.setTimeout(resolve, 375));
 
     if (matchedAsset) {
       onMatchedAsset?.({ vin: scannedVin, asset: matchedAsset });
       return;
     }
 
-    setScanStatus("VIN scanned successfully. Decoding vehicle information...");
+    setScanStatus("Identifying vehicle…");
     const decodedVehicle = await decodeVinVehicleInformation(scannedVin);
     const assetDescription = decodedVehicle.assetDescription;
 
     setScanStatus(
       assetDescription
-        ? `VIN scanned successfully. Vehicle identified as ${assetDescription}. Opening new asset record.`
-        : "VIN scanned successfully, but vehicle information could not be retrieved. Opening new asset record for manual completion."
+        ? `${assetDescription} identified. Opening vehicle record…`
+        : "Vehicle identified. Opening vehicle record…"
     );
 
     onNewAsset?.({ vin: scannedVin, assetDescription });
@@ -220,7 +220,7 @@ function ARGOSVINScanner({
     if (!isLikelyVIN(scannedVin)) {
       setLastScannedVin(scannedVin || rawValue);
       setScanStatus(
-        "Barcode detected, but ARGOS could not read it as a valid 17-character VIN. Try reducing glare, moving closer, scanning the registration barcode, or entering the VIN manually."
+        "Unable to read a valid VIN. Move closer, reduce glare, or scan the registration barcode."
       );
       return;
     }
