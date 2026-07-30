@@ -64,6 +64,7 @@ export async function decodeVinVehicleInformation(vin) {
       year: "",
       make: "",
       model: "",
+      engine: "",
       assetDescription: "",
     };
   }
@@ -82,10 +83,23 @@ export async function decodeVinVehicleInformation(vin) {
     const data = await response.json();
     const result = data?.Results?.[0] || {};
 
+    const displacementLiters = cleanDecodedVehicleValue(result.DisplacementL);
+    const engineCylinders = cleanDecodedVehicleValue(result.EngineCylinders);
+    const engineModel = cleanDecodedVehicleValue(result.EngineModel);
+
+    const engine = [
+      displacementLiters ? `${displacementLiters}L` : "",
+      engineCylinders ? `${engineCylinders}-cylinder` : "",
+      engineModel,
+    ]
+      .filter(Boolean)
+      .join(" ");
+
     const decodedVehicle = {
       year: cleanDecodedVehicleValue(result.ModelYear),
       make: cleanDecodedVehicleValue(result.Make),
       model: cleanDecodedVehicleValue(result.Model),
+      engine,
     };
 
     return {
@@ -98,6 +112,7 @@ export async function decodeVinVehicleInformation(vin) {
       year: "",
       make: "",
       model: "",
+      engine: "",
       assetDescription: "",
     };
   }

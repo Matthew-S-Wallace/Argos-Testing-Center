@@ -285,7 +285,15 @@ function ARGOSVINScanner({
         : "Vehicle identified. Opening vehicle record…"
     );
 
-    onNewAsset?.({ vin: scannedVin, assetDescription });
+    onNewAsset?.({
+      vin: scannedVin,
+      year: decodedVehicle.year || "",
+      make: decodedVehicle.make || "",
+      model: decodedVehicle.model || "",
+      engine: decodedVehicle.engine || "",
+      assetDescription,
+      decodedVehicle,
+    });
   }
 
   async function handleScanResult(rawValue, source = "scanner") {
