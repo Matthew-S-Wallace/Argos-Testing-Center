@@ -27,6 +27,7 @@ function ARGOSVINScanner({
   const [lastScannedVin, setLastScannedVin] = useState("");
   const [manualVinEntry, setManualVinEntry] = useState("");
   const [scannerRunId, setScannerRunId] = useState(0);
+  const [scannerOrientation, setScannerOrientation] = useState("auto");
 
   useEffect(() => {
     assetsRef.current = assets;
@@ -64,6 +65,7 @@ function ARGOSVINScanner({
     if (!isOpen) {
       resetScanner();
       setManualVinEntry("");
+      setScannerOrientation("auto");
       return undefined;
     }
 
@@ -334,6 +336,14 @@ function ARGOSVINScanner({
     }
   }
 
+  function handleOrientationChange(nextOrientation) {
+    setScannerOrientation(nextOrientation);
+
+    window.requestAnimationFrame(() => {
+      videoRef.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+    });
+  }
+
   function handleScanAgain() {
     resetScanner();
     setScannerRunId((currentRunId) => currentRunId + 1);
@@ -348,7 +358,7 @@ function ARGOSVINScanner({
 
   return (
     <div className="update-overlay">
-      <section className="update-panel">
+      <section className={`update-panel argos-vin-scanner-panel orientation-${scannerOrientation}`}>
         <div className="update-panel-header">
           <div>
             <p className="eyebrow">Mobile Fleet Lookup</p>
@@ -363,8 +373,38 @@ function ARGOSVINScanner({
         </div>
 
         <div className="update-form">
+          <div className="issue-field argos-vin-orientation-field">
+            <div className="argos-vin-orientation-heading">
+              <div>
+                <p className="eyebrow">Scanner Orientation</p>
+                <strong>{scannerOrientation === "landscape" ? "Landscape scanning" : "Automatic orientation"}</strong>
+              </div>
+              <div className="argos-vin-orientation-control" role="group" aria-label="VIN scanner orientation">
+                <button
+                  className={scannerOrientation === "auto" ? "active" : ""}
+                  onClick={() => handleOrientationChange("auto")}
+                  type="button"
+                >
+                  Auto
+                </button>
+                <button
+                  className={scannerOrientation === "landscape" ? "active" : ""}
+                  onClick={() => handleOrientationChange("landscape")}
+                  type="button"
+                >
+                  Landscape
+                </button>
+              </div>
+            </div>
+            <p className="argos-vin-orientation-help">
+              {scannerOrientation === "landscape"
+                ? "Rotate the phone sideways and align a vertically presented VIN barcode across the wider guide."
+                : "Use Auto for windshield, registration, and standard horizontal VIN barcodes."}
+            </p>
+          </div>
+
           <div className="issue-field">
-            <div className={`argos-vin-scanner-viewport${scanSuccess ? " is-success" : ""}`}>
+            <div className={`argos-vin-scanner-viewport orientation-${scannerOrientation}${scanSuccess ? " is-success" : ""}`}>
               <video
                 ref={videoRef}
                 className="argos-vin-scanner-video"
@@ -389,7 +429,11 @@ function ARGOSVINScanner({
                   </div>
                 )}
                 <div className="argos-vin-scanner-instruction">
-                  {scanSuccess ? "Opening vehicle record" : "Align VIN barcode inside the guide"}
+                  {scanSuccess
+                    ? "Opening vehicle record"
+                    : scannerOrientation === "landscape"
+                      ? "Rotate phone sideways and align VIN across the guide"
+                      : "Align VIN barcode inside the guide"}
                 </div>
               </div>
             </div>
