@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import ARGOSOperationsNavigation from "./ARGOS_Operations_Navigation_Blue_Shield_Reference_001U";
 import "./ARGOS_Application_Shell.css";
 
@@ -30,6 +31,25 @@ function ARGOSApplicationShell({
   awaitingQcAssets,
   children,
 }) {
+  const [isMobileExperience, setIsMobileExperience] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 760px)").matches : false
+  );
+
+  useEffect(() => {
+    const mobileMediaQuery = window.matchMedia("(max-width: 760px)");
+
+    const handleViewportChange = (event) => {
+      setIsMobileExperience(event.matches);
+    };
+
+    setIsMobileExperience(mobileMediaQuery.matches);
+    mobileMediaQuery.addEventListener("change", handleViewportChange);
+
+    return () => {
+      mobileMediaQuery.removeEventListener("change", handleViewportChange);
+    };
+  }, []);
+
   return (
     <main className={`argos-shell ${showFieldHome ? "argos-field-home-active" : "argos-field-workspace-active"}${!showFieldHome && activeView === "command" ? " argos-command-center-mobile" : ""}`}>
       <section className="argos-field-home" aria-label="ARGOS Field mobile workspace">
@@ -96,18 +116,20 @@ function ARGOSApplicationShell({
         <button type="button" onClick={onOpenVinScanner} aria-label="Scan VIN">▣</button>
       </header>
 
-      <ARGOSOperationsNavigation
-        activeView={activeView}
-        onNavigate={onNavigate}
-        onOpenDailySummary={onOpenDailySummary}
-        onSignOut={onSignOut}
-        hasAdministrationAccess={hasAdministrationAccess}
-        isDemoMode={isDemoMode}
-        organizationName={organizationName}
-        userName={userName}
-        userRole={userRole}
-        versionLabel={versionLabel}
-      />
+      {!isMobileExperience && (
+        <ARGOSOperationsNavigation
+          activeView={activeView}
+          onNavigate={onNavigate}
+          onOpenDailySummary={onOpenDailySummary}
+          onSignOut={onSignOut}
+          hasAdministrationAccess={hasAdministrationAccess}
+          isDemoMode={isDemoMode}
+          organizationName={organizationName}
+          userName={userName}
+          userRole={userRole}
+          versionLabel={versionLabel}
+        />
+      )}
 
       <section className="dashboard">{children}</section>
     </main>
